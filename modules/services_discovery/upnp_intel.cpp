@@ -54,6 +54,8 @@
 struct services_discovery_sys_t
 {
     playlist_t *p_playlist;
+    playlist_item_t *p_node_cat;
+    playlist_item_t *p_node_one;
 };
 
 
@@ -300,7 +302,7 @@ static int Open( vlc_object_t *p_this )
 {
     services_discovery_t *p_sd = ( services_discovery_t* )p_this;
     services_discovery_sys_t *p_sys  = ( services_discovery_sys_t * )
-            malloc( sizeof( services_discovery_sys_t ) );
+            calloc( 1, sizeof( services_discovery_sys_t ) );
 
     p_sd->pf_run = Run;
     p_sd->p_sys = p_sys;
@@ -797,9 +799,9 @@ IXML_Document* MediaServer::_browseAction( const char* pObjectID,
     
     if ( res != UPNP_E_SUCCESS ) 
     {
-        /* msg_Dbg( _cookie->serviceDiscovery,
-         *          "%s:%d: ERROR: %s", __FILE__, __LINE__,
-         *          UpnpGetErrorMessage( res ) ); */
+        msg_Dbg( _cookie->serviceDiscovery,
+                 "%s:%d: ERROR: %s", __FILE__, __LINE__,
+                 UpnpGetErrorMessage( res ) );
         goto browseActionCleanup;
     }
 
@@ -808,9 +810,9 @@ IXML_Document* MediaServer::_browseAction( const char* pObjectID,
     
     if ( res != UPNP_E_SUCCESS )
     {
-        /* msg_Dbg( _cookie->serviceDiscovery,
-         *      "%s:%d: ERROR: %s", __FILE__, __LINE__,
-         *      UpnpGetErrorMessage( res ) ); */
+        msg_Dbg( _cookie->serviceDiscovery,
+             "%s:%d: ERROR: %s", __FILE__, __LINE__,
+             UpnpGetErrorMessage( res ) );
         goto browseActionCleanup;
     }
 
@@ -819,9 +821,9 @@ IXML_Document* MediaServer::_browseAction( const char* pObjectID,
     
     if ( res != UPNP_E_SUCCESS )
     {
-        /* msg_Dbg( _cookie->serviceDiscovery,
-         *      "%s:%d: ERROR: %s", __FILE__, __LINE__,
-         *      UpnpGetErrorMessage( res ) ); */
+        msg_Dbg( _cookie->serviceDiscovery,
+             "%s:%d: ERROR: %s", __FILE__, __LINE__,
+             UpnpGetErrorMessage( res ) );
         goto browseActionCleanup;
     }
 
@@ -830,9 +832,9 @@ IXML_Document* MediaServer::_browseAction( const char* pObjectID,
 
     if ( res != UPNP_E_SUCCESS )
     {
-        /* msg_Dbg( _cookie->serviceDiscovery,
-         *      "%s:%d: ERROR: %s", __FILE__, __LINE__,
-         *      UpnpGetErrorMessage( res ) ); */
+        msg_Dbg( _cookie->serviceDiscovery,
+             "%s:%d: ERROR: %s", __FILE__, __LINE__,
+             UpnpGetErrorMessage( res ) );
         goto browseActionCleanup;
     }
 
@@ -841,18 +843,18 @@ IXML_Document* MediaServer::_browseAction( const char* pObjectID,
 
     if ( res != UPNP_E_SUCCESS )
     {
-        /* msg_Dbg( _cookie->serviceDiscovery,
-         *      "%s:%d: ERROR: %s", __FILE__, __LINE__,
-         *      UpnpGetErrorMessage( res ) ); */ goto browseActionCleanup; }
+        msg_Dbg( _cookie->serviceDiscovery,
+                "%s:%d: ERROR: %s", __FILE__, __LINE__,
+                UpnpGetErrorMessage( res ) ); goto browseActionCleanup; }
 
     res = UpnpAddToAction( &action, "Browse",
             serviceType, "SortCriteria", SortCriteria );
     
     if ( res != UPNP_E_SUCCESS )
     {
-        /* msg_Dbg( _cookie->serviceDiscovery,
-         *      "%s:%d: ERROR: %s", __FILE__, __LINE__,
-         *      UpnpGetErrorMessage( res ) ); */
+        msg_Dbg( _cookie->serviceDiscovery,
+             "%s:%d: ERROR: %s", __FILE__, __LINE__,
+             UpnpGetErrorMessage( res ) );
         goto browseActionCleanup;
     }
 
@@ -866,8 +868,9 @@ IXML_Document* MediaServer::_browseAction( const char* pObjectID,
     if ( res != UPNP_E_SUCCESS )
     {
         msg_Dbg( _cookie->serviceDiscovery,
-                "%s:%d: ERROR: %s", __FILE__, __LINE__,
-                UpnpGetErrorMessage( res ) );
+                "%s:%d: ERROR: %s when trying the send() action with URL: %s",
+                __FILE__, __LINE__,
+                UpnpGetErrorMessage( res ), url );
 
         ixmlDocument_free( response );
         response = 0;
@@ -897,7 +900,7 @@ void MediaServer::fetchContents()
     if ( _contents )
     {
         PL_LOCK;
-        playlist_NodeEmpty( p_playlist, _playlistNode, true );
+        //playlist_NodeEmpty( p_playlist, _playlistNode, true );
         PL_UNLOCK;
         delete _contents;
     }
@@ -923,7 +926,8 @@ bool MediaServer::_fetchContents( Container* parent )
     if ( !response )
     {
         msg_Dbg( _cookie->serviceDiscovery,
-                "%s:%d: ERROR!", __FILE__, __LINE__ );
+                "%s:%d: ERROR! No response from browse() action",
+                __FILE__, __LINE__ );
         return false;
     }
 
@@ -933,7 +937,8 @@ bool MediaServer::_fetchContents( Container* parent )
     if ( !result )
     {
         msg_Dbg( _cookie->serviceDiscovery,
-                "%s:%d: ERROR!", __FILE__, __LINE__ );
+                "%s:%d: ERROR! browse() response parsing failed",
+                __FILE__, __LINE__ );
         return false;
     }
 
@@ -1096,12 +1101,34 @@ bool MediaServerList::addServer( MediaServer* s )
     msg_Dbg( _cookie->serviceDiscovery, "Adding server '%s'",
             s->getFriendlyName() );
 
-    _list.push_back( s );
+    /** XXX: Huuuuuge ugly temporary kludge, this will be removed when the code
+     * migrates to the services discovery API.
+     * It's here only to fix upnp related issues beforehand */
+    services_discovery_t* p_sd = _cookie->serviceDiscovery;
+    services_discovery_sys_t* p_sys = p_sd->p_sys;
+    for(int i = 0; i < p_sys->p_playlist->i_sds; i++ )
+    {
+        if(p_sys->p_playlist->pp_sds[i]->p_sd == p_sd )
+        {
+            p_sys->p_node_cat = p_sys->p_playlist->pp_sds[i]->p_cat;
+            p_sys->p_node_one = p_sys->p_playlist->pp_sds[i]->p_one;
+            break;
+        }
+    }
 
-    services_discovery_AddItem( _cookie->serviceDiscovery,
-            input_ItemNewExt( _cookie->serviceDiscovery, "url",
-                              s->getFriendlyName(), 0, NULL, -1),
-            "category");
+    assert (p_sys->p_node_cat);
+    assert (p_sys->p_node_one);
+
+    _list.push_back( s );
+    
+    char* name = strdup( s->getFriendlyName() );
+    playlist_item_t* node =
+            playlist_NodeCreate( pl_Get( _cookie->serviceDiscovery ),
+                    name, _cookie->serviceDiscovery->p_sys->p_node_cat,
+                    0, NULL );
+    
+    free( name );
+    s->setPlaylistNode( node );
 
     return true;
 }
