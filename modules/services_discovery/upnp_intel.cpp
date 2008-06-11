@@ -268,10 +268,6 @@ private:
 static int Open( vlc_object_t* );
 static void Close( vlc_object_t* );
 static void Run( services_discovery_t *p_sd );
-static playlist_t *pl_Get( services_discovery_t *p_sd )
-{
-    return p_sd->p_sys->p_playlist;
-}
 
 // Module descriptor
 
@@ -306,7 +302,6 @@ static int Open( vlc_object_t *p_this )
 
     p_sd->pf_run = Run;
     p_sd->p_sys = p_sys;
-    p_sys->p_playlist = pl_Yield( p_sd );
 
     services_discovery_SetLocalizedName( p_sd, _("UPnP devices") );
 
@@ -894,13 +889,13 @@ IXML_Document* MediaServer::_browseAction( const char* pObjectID,
 void MediaServer::fetchContents()
 {
     Container* root = new Container( 0, "0", getFriendlyName() );
-    playlist_t * p_playlist = pl_Get( _cookie->serviceDiscovery );
+    playlist_t * p_playlist = pl_Yield( _cookie->serviceDiscovery );
     _fetchContents( root );
 
     if ( _contents )
     {
         PL_LOCK;
-        //playlist_NodeEmpty( p_playlist, _playlistNode, true );
+        playlist_NodeEmpty( p_playlist, _playlistNode, true );
         PL_UNLOCK;
         delete _contents;
     }
@@ -909,6 +904,7 @@ void MediaServer::fetchContents()
     _contents->setPlaylistNode( _playlistNode );
 
     _buildPlaylist( _contents );
+    pl_Release (p_playlist );
 }
 
 bool MediaServer::_fetchContents( Container* parent )
@@ -1031,7 +1027,7 @@ bool MediaServer::_fetchContents( Container* parent )
 
 void MediaServer::_buildPlaylist( Container* parent )
 {
-    playlist_t *p_playlist = pl_Get( _cookie->serviceDiscovery );
+    playlist_t *p_playlist = pl_Yield( _cookie->serviceDiscovery );
     for ( unsigned int i = 0; i < parent->getNumContainers(); i++ )
     {
         Container* container = parent->getContainer( i );
@@ -1066,6 +1062,7 @@ void MediaServer::_buildPlaylist( Container* parent )
         assert( p_node );
         item->setPlaylistNode( p_node );
     }
+    pl_Release( p_playlist );
 }
 
 void MediaServer::setPlaylistNode( playlist_item_t* playlistNode )
@@ -1106,12 +1103,13 @@ bool MediaServerList::addServer( MediaServer* s )
      * It's here only to fix upnp related issues beforehand */
     services_discovery_t* p_sd = _cookie->serviceDiscovery;
     services_discovery_sys_t* p_sys = p_sd->p_sys;
-    for(int i = 0; i < p_sys->p_playlist->i_sds; i++ )
+    playlist_t* p_playlist = pl_Yield( _cookie->serviceDiscovery );
+    for(int i = 0; i < p_playlist->i_sds; i++ )
     {
-        if(p_sys->p_playlist->pp_sds[i]->p_sd == p_sd )
+        if(p_playlist->pp_sds[i]->p_sd == p_sd )
         {
-            p_sys->p_node_cat = p_sys->p_playlist->pp_sds[i]->p_cat;
-            p_sys->p_node_one = p_sys->p_playlist->pp_sds[i]->p_one;
+            p_sys->p_node_cat = p_playlist->pp_sds[i]->p_cat;
+            p_sys->p_node_one = p_playlist->pp_sds[i]->p_one;
             break;
         }
     }
@@ -1123,10 +1121,10 @@ bool MediaServerList::addServer( MediaServer* s )
     
     char* name = strdup( s->getFriendlyName() );
     playlist_item_t* node =
-            playlist_NodeCreate( pl_Get( _cookie->serviceDiscovery ),
-                    name, _cookie->serviceDiscovery->p_sys->p_node_cat,
+            playlist_NodeCreate( p_playlist, name,
+                    _cookie->serviceDiscovery->p_sys->p_node_cat,
                     0, NULL );
-    
+    pl_Release( p_playlist );
     free( name );
     s->setPlaylistNode( node );
 
