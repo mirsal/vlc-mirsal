@@ -53,7 +53,6 @@
 
 struct services_discovery_sys_t
 {
-    playlist_t *p_playlist;
     playlist_item_t *p_node_cat;
     playlist_item_t *p_node_one;
 };
