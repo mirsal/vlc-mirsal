@@ -4809,7 +4809,7 @@ AS_IF([test "x${enable_upnp}" != "xno"], [
     AC_MSG_ERROR([cannot find Intel UPnP SDK (libupnp)])
   ])
   AS_IF([test "${has_upnp}" = "yes"], [
-    VLC_ADD_LIBS([upnp_intel], [-lupnp -lixml])
+    VLC_ADD_LIBS([upnp upnp_intel], [-lupnp -lixml])
   ])
 ], [
   has_upnp="no"
@@ -4817,6 +4817,7 @@ AS_IF([test "x${enable_upnp}" != "xno"], [
 
 AS_IF([test "${has_upnp}" = "yes"], [
   VLC_ADD_PLUGIN([upnp_intel])
+  VLC_ADD_PLUGIN([upnp])
 ])
 
 
@@ -5834,6 +5835,7 @@ AC_CONFIG_FILES([
   modules/codec/xvmc/Makefile
   modules/control/Makefile
   modules/control/http/Makefile
+  modules/control/upnp/Makefile
   modules/demux/Makefile
   modules/demux/asf/Makefile
   modules/demux/avformat/Makefile
