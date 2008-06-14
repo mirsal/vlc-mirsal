@@ -3763,7 +3763,8 @@ class testclass : public SearchResponseListener, public MediaPlayer
 dnl
 dnl UPnP Plugin (Intel SDK)
 dnl
-PKG_ENABLE_MODULES_VLC([UPNP], [upnp_intel], [libupnp], [Intel UPnp SDK],[auto])
+
+PKG_ENABLE_MODULES_VLC([UPNP], [upnp upnp_intel], [libupnp], [Intel UPnp SDK],[auto])
 
 dnl
 dnl  UPNP DLNA plugin (via libdlna)
@@ -4727,8 +4728,12 @@ AC_CONFIG_FILES([
   modules/codec/wmafixed/Makefile
   modules/control/Makefile
   modules/control/http/Makefile
+<<<<<<< HEAD
   modules/control/dbus/Makefile
   modules/control/globalhotkeys/Makefile
+=======
+  modules/control/upnp/Makefile
+>>>>>>> UPnP Media Server module stub
   modules/demux/Makefile
   modules/demux/asf/Makefile
   modules/demux/avformat/Makefile

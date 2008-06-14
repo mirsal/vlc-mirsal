@@ -1,0 +1,3 @@
+SOURCES_upnp = \
+	upnp.c \
+	$(NULL)
