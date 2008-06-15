@@ -29,6 +29,8 @@
 #include <vlc_plugin.h>
 #include <vlc_interface.h>
 
+#include <upnp/upnp.h>
+
 static int  Open    ( vlc_object_t * );
 static void Close   ( vlc_object_t * );
 static void Run     ( intf_thread_t * );
@@ -58,9 +60,23 @@ static int Open( vlc_object_t* p_this )
 {
     intf_thread_t   *p_intf = (intf_thread_t*)p_this;
     intf_sys_t      *p_sys  = malloc( sizeof( intf_sys_t ) );
+    int              e;
     
+    if( !p_sys )
+        return VLC_ENOMEM;
+
     p_intf->pf_run = Run;
     p_intf->p_sys = p_sys;
+
+    if( e = UpnpInit( NULL, 0 ) != UPNP_E_SUCCESS )
+    {
+        msg_Err( p_this, "%s", UpnpGetErrorMessage( e ));
+        free( p_sys );
+        return VLC_EGENERIC;
+    }
+
+    msg_Info( p_this, "UPnP subsystem initialized on %s:%d",
+           UpnpGetServerIpAddress(), UpnpGetServerPort() );
 
     return VLC_SUCCESS;
 }
@@ -73,6 +89,7 @@ static void Close( vlc_object_t *p_this )
 {
     intf_thread_t   *p_intf     = (intf_thread_t*) p_this;
     
+    UpnpFinish();
     free( p_intf->p_sys );
 }
 
