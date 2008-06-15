@@ -30,6 +30,9 @@
 #include <vlc_interface.h>
 
 #include <upnp/upnp.h>
+#include <upnp/upnptools.h>
+
+#include "webserver.h"
 
 static int  Open    ( vlc_object_t * );
 static void Close   ( vlc_object_t * );
@@ -77,6 +80,8 @@ static int Open( vlc_object_t* p_this )
 
     msg_Info( p_this, "UPnP subsystem initialized on %s:%d",
            UpnpGetServerIpAddress(), UpnpGetServerPort() );
+
+    webserver_init();
 
     return VLC_SUCCESS;
 }

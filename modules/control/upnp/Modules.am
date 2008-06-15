@@ -1,4 +1,6 @@
 SOURCES_upnp = \
         device-description.h \
+        webserver.h \
+        webserver.c \
 	upnp.c \
 	$(NULL)
