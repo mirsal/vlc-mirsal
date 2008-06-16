@@ -40,6 +40,7 @@ static void Run     ( intf_thread_t * );
 
 struct intf_sys_t
 {
+    webserver_t* p_webserver;
 };
 
 /*****************************************************************************
@@ -62,16 +63,16 @@ vlc_module_end();
 static int Open( vlc_object_t* p_this )
 {
     intf_thread_t   *p_intf = (intf_thread_t*)p_this;
-    intf_sys_t      *p_sys  = malloc( sizeof( intf_sys_t ) );
+    intf_sys_t      *p_sys  = calloc( 1, sizeof( intf_sys_t ) );
     int              e;
-    
+
     if( !p_sys )
         return VLC_ENOMEM;
 
     p_intf->pf_run = Run;
     p_intf->p_sys = p_sys;
 
-    if( e = UpnpInit( NULL, 0 ) != UPNP_E_SUCCESS )
+    if( (e = UpnpInit( NULL, 0 )) != UPNP_E_SUCCESS )
     {
         msg_Err( p_this, "%s", UpnpGetErrorMessage( e ));
         free( p_sys );
@@ -81,7 +82,12 @@ static int Open( vlc_object_t* p_this )
     msg_Info( p_this, "UPnP subsystem initialized on %s:%d",
            UpnpGetServerIpAddress(), UpnpGetServerPort() );
 
-    webserver_init();
+    if( !(p_sys->p_webserver = webserver_init( UpnpGetServerIpAddress(), 0 )) )
+    {
+        msg_Err( p_this, "Webserver initialization failed" );
+        free( p_sys );
+        return VLC_EGENERIC;
+    } 
 
     return VLC_SUCCESS;
 }
@@ -93,7 +99,8 @@ static int Open( vlc_object_t* p_this )
 static void Close( vlc_object_t *p_this )
 {
     intf_thread_t   *p_intf     = (intf_thread_t*) p_this;
-    
+
+    webserver_destroy( p_intf->p_sys->p_webserver ); 
     UpnpFinish();
     free( p_intf->p_sys );
 }

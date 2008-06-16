@@ -26,6 +26,11 @@
 
 #include <vlc_common.h>
 
-int webserver_init();
+typedef struct
+{
+} webserver_t;
+
+webserver_t* webserver_init( char* psz_host, int i_port );
+void         webserver_destroy( webserver_t* p_webserver );
 
 #endif //!webserver.h
