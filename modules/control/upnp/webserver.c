@@ -21,65 +21,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 #include <vlc_common.h>
-#include <upnp/upnp.h>
+#include <vlc_httpd.h>
 
 #include "webserver.h"
 #include "device-description.h"
 
-static int ws_get_info( const char* psz_filename, struct File_Info* p_info );
-static int ws_read( UpnpWebFileHandle file, char* p_buf, size_t i_buflen );
-static int ws_write( UpnpWebFileHandle file, char* p_buf, size_t i_buflen );
-static int ws_seek( UpnpWebFileHandle file, long offset, int i_origin );
-static int ws_close( UpnpWebFileHandle file);
-static UpnpWebFileHandle ws_open( const char* psz_filename,
-        enum UpnpOpenFileMode i_mode );
-
-int webserver_init()
+webserver_t* webserver_init( char* psz_host, int i_port )
 {
-    struct UpnpVirtualDirCallbacks virtual_dir_callbacks =
-    {
-        ws_get_info,
-        ws_open,
-        ws_read,
-        ws_write,
-        ws_seek,
-        ws_close
-    };
-
-    UpnpSetVirtualDirCallbacks( &virtual_dir_callbacks );
-    UpnpAddVirtualDir( "/services" );
-    UpnpEnableWebserver( true );
-
-    return VLC_SUCCESS;
+    webserver_t* p_webserver = (webserver_t*) malloc( sizeof( webserver_t ) );
+    return p_webserver;
 }
 
-static int ws_get_info( const char* psz_filename, struct File_Info* p_info )
+void webserver_destroy( webserver_t* p_webserver )
 {
-    return 0;
-}
-
-static int ws_read( UpnpWebFileHandle file, char* p_buf, size_t i_buflen )
-{
-    return 0;
-}
-
-static int ws_write( UpnpWebFileHandle file, char* p_buf, size_t i_buflen )
-{
-    return 0;
-}
-
-static int ws_seek( UpnpWebFileHandle file, long offset, int i_origin )
-{
-    return 0;
-}
-
-static int ws_close( UpnpWebFileHandle file)
-{
-    return 0;
-}
-
-static UpnpWebFileHandle ws_open( const char* psz_filename,
-        enum UpnpOpenFileMode i_mode )
-{
-    return NULL;
+    free( p_webserver );
 }
