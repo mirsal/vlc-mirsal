@@ -57,7 +57,6 @@
 "        <controlURL>/services/ContentDirectory/control</controlURL>" \
 "        <eventSubURL>/services/ContentDirectory/event</eventSubURL>" \
 "      </service>" \
-"      <service>" \
 "    </serviceList>" \
 "    <presentationURL>http://www.videolan.org/</presentationURL>" \
 "  </device>" \

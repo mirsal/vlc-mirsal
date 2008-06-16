@@ -82,7 +82,8 @@ static int Open( vlc_object_t* p_this )
     msg_Info( p_this, "UPnP subsystem initialized on %s:%d",
            UpnpGetServerIpAddress(), UpnpGetServerPort() );
 
-    if( !(p_sys->p_webserver = webserver_init( UpnpGetServerIpAddress(), 0 )) )
+    if( !(p_sys->p_webserver = webserver_init( p_this, 
+                    UpnpGetServerIpAddress(), 0 )) )
     {
         msg_Err( p_this, "Webserver initialization failed" );
         free( p_sys );
