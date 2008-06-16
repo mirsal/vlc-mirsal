@@ -62,7 +62,7 @@ webserver_t* webserver_init( vlc_object_t* p_parent,
     while (!p_webserver->p_host);
 
     p_device_description->p_file = httpd_FileNew( p_webserver->p_host,
-            "/", "text/xml", NULL, NULL, NULL,
+            "/MediaServer.xml", "text/xml", NULL, NULL, NULL,
             device_description_cb, p_device_description ); 
 
     return p_webserver;
