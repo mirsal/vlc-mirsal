@@ -90,6 +90,9 @@ static int Open( vlc_object_t* p_this )
         return VLC_EGENERIC;
     } 
 
+    msg_Info( p_this, "MediaServer description hosted on %s",
+            webserver_get_device_description_url( p_sys->p_webserver ));
+
     return VLC_SUCCESS;
 }
 

@@ -79,8 +79,17 @@ void webserver_destroy( webserver_t* p_webserver )
 static int device_description_cb( httpd_file_sys_t* p_sys, httpd_file_t *p_file,
         uint8_t *psz_request, uint8_t **pp_data, int *pi_data )
 {
+    VLC_UNUSED( p_file ); VLC_UNUSED( psz_request );
+
     char** ppsz_data = (char**) pp_data;
+
     *ppsz_data = p_sys->psz_content;
     *pi_data = strlen( *ppsz_data );
+
     return VLC_SUCCESS;
+}
+
+char* webserver_get_device_description_url( webserver_t* p_this )
+{
+    return strdup( p_this->p_device_description->p_file->psz_url);
 }
