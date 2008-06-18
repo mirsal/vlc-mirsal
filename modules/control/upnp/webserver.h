@@ -27,12 +27,7 @@
 #include <vlc_common.h>
 #include <vlc_httpd.h>
 
-typedef struct
-{
-    vlc_object_t* p_parent;
-    httpd_host_t* p_host;
-    httpd_file_sys_t* p_device_description;
-} webserver_t;
+typedef struct _webserver_t webserver_t;
 
 webserver_t* webserver_init( vlc_object_t*, char* psz_host, int i_port );
 void         webserver_destroy( webserver_t* p_webserver );

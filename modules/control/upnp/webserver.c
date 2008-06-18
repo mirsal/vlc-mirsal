@@ -31,7 +31,17 @@
 struct httpd_file_sys_t
 {
     httpd_file_t* p_file;
+    char* psz_url;
     char* psz_content;
+};
+
+struct _webserver_t
+{
+    vlc_object_t* p_parent;
+    httpd_host_t* p_host;
+    char* psz_hostname;
+    int i_port;
+    httpd_file_sys_t* p_device_description;
 };
 
 static int device_description_cb( httpd_file_sys_t* p_sys, httpd_file_t *p_file,
@@ -40,7 +50,7 @@ static int device_description_cb( httpd_file_sys_t* p_sys, httpd_file_t *p_file,
 webserver_t* webserver_init( vlc_object_t* p_parent,
         char* psz_host, int i_port )
 {
-    webserver_t* p_webserver = (webserver_t*) malloc( sizeof( webserver_t ) );
+    webserver_t* p_this = (webserver_t*) malloc( sizeof( webserver_t ) );
     httpd_file_sys_t* p_device_description =
         (httpd_file_sys_t*) malloc( sizeof( httpd_file_sys_t) );
 
@@ -48,32 +58,44 @@ webserver_t* webserver_init( vlc_object_t* p_parent,
     
     srand( time( NULL ) );
 
-    p_webserver->p_parent = p_parent;
-    p_webserver->p_device_description = p_device_description;
+    p_this->p_parent = p_parent;
+    p_this->p_device_description = p_device_description;
 
     /*FIXME: ugly */
     if (i_port)
-        p_webserver->p_host = httpd_HostNew( p_parent, psz_host, i_port );
+        p_this->p_host = httpd_HostNew( p_parent, psz_host, i_port );
     else do
     {
         i_port = rand() % 60000 + 1024;
-        p_webserver->p_host = httpd_HostNew( p_parent, psz_host, i_port );
+        p_this->p_host = httpd_HostNew( p_parent, psz_host, i_port );
     }
-    while (!p_webserver->p_host);
+    while (!p_this->p_host);
 
-    p_device_description->p_file = httpd_FileNew( p_webserver->p_host,
-            "/MediaServer.xml", "text/xml", NULL, NULL, NULL,
+    if (!p_this->p_host)
+    {
+        msg_Err( p_parent, "the httpd could not listen on specified port" );
+        return NULL;
+    }
+
+    p_this->psz_hostname = strdup( psz_host );
+    p_this->i_port = i_port;
+
+    p_device_description->psz_url = strdup( MEDIASERVER_DESCRIPTION_URL );
+    p_device_description->p_file = httpd_FileNew( p_this->p_host,
+            p_device_description->psz_url, "text/xml", NULL, NULL, NULL,
             device_description_cb, p_device_description ); 
 
-    return p_webserver;
+    return p_this;
 }
 
-void webserver_destroy( webserver_t* p_webserver )
+void webserver_destroy( webserver_t* p_this )
 {
-    httpd_FileDelete( p_webserver->p_device_description->p_file );
-    httpd_HostDelete( p_webserver->p_host );
-    free( p_webserver->p_device_description );
-    free( p_webserver );
+    httpd_FileDelete( p_this->p_device_description->p_file );
+    httpd_HostDelete( p_this->p_host );
+    free( p_this->p_device_description->psz_url );
+    free( p_this->p_device_description );
+    free( p_this->psz_hostname );
+    free( p_this );
 }
 
 static int device_description_cb( httpd_file_sys_t* p_sys, httpd_file_t *p_file,
@@ -91,5 +113,10 @@ static int device_description_cb( httpd_file_sys_t* p_sys, httpd_file_t *p_file,
 
 char* webserver_get_device_description_url( webserver_t* p_this )
 {
-    return strdup( p_this->p_device_description->p_file->psz_url);
+    char* psz_url = malloc( strlen( p_this->psz_hostname ) + 6 +
+                            strlen( p_this->p_device_description->psz_url ) +
+                            1 );
+    sprintf( psz_url, "%s:%d%s", p_this->psz_hostname, p_this->i_port,
+            p_this->p_device_description->psz_url );
+    return psz_url;
 }

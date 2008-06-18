@@ -24,6 +24,8 @@
 #ifndef _MEDIASERVER_H
 #define _MEDIASERVER_H
 
+#define MEDIASERVER_DESCRIPTION_URL "/MediaServer.xml"
+
 #define MEDIASERVER_DESCRIPTION \
 "<?xml version=\"1.0\" encoding=\"utf-8\"?>" \
 "<root xmlns=\"urn:schemas-upnp-org:device-1-0\">" \
