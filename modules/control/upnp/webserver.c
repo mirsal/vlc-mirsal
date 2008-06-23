@@ -23,6 +23,8 @@
 #include <vlc_common.h>
 #include <vlc_httpd.h>
 
+#include <dlna.h>
+
 #include <stdlib.h>
 
 #include "webserver.h"
@@ -52,10 +54,13 @@ webserver_t* webserver_init( vlc_object_t* p_parent,
 {
     webserver_t* p_this = (webserver_t*) malloc( sizeof( webserver_t ) );
     httpd_file_sys_t* p_device_description =
-        (httpd_file_sys_t*) malloc( sizeof( httpd_file_sys_t) );
+        (httpd_file_sys_t*) calloc( 1, sizeof( httpd_file_sys_t) );
 
-    p_device_description->psz_content = strdup( MEDIASERVER_DESCRIPTION ); 
-    
+    p_device_description->psz_content = dlna_dms_description_get( 
+        FRIENDLY_NAME, MANUFACTURER, MANUFACTURER_URL, MODEL_DESCRIPTION,
+        MODEL_NAME, MODEL_NUMBER, MODEL_URL, SERIAL_NUMBER, UUID,
+        PRESENTATION_URL, CMS_SCPD_URL, CMS_CONTROL_URL, CMS_EVENT_URL,
+        CDS_SCPD_URL, CDS_CONTROL_URL, CMS_EVENT_URL );
     srand( time( NULL ) );
 
     p_this->p_parent = p_parent;

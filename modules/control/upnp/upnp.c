@@ -32,6 +32,8 @@
 #include <upnp/upnp.h>
 #include <upnp/upnptools.h>
 
+#include <dlna.h>
+
 #include "webserver.h"
 
 static int  Open    ( vlc_object_t * );
@@ -41,6 +43,7 @@ static void Run     ( intf_thread_t * );
 struct intf_sys_t
 {
     webserver_t* p_webserver;
+    dlna_t*      p_libdlna;
 };
 
 /*****************************************************************************
@@ -81,6 +84,8 @@ static int Open( vlc_object_t* p_this )
 
     msg_Info( p_this, "UPnP subsystem initialized on %s:%d",
            UpnpGetServerIpAddress(), UpnpGetServerPort() );
+    
+    p_sys->p_libdlna = dlna_init();
 
     if( !(p_sys->p_webserver = webserver_init( p_this, 
                     UpnpGetServerIpAddress(), 0 )) )
