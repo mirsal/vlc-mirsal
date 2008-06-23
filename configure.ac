@@ -4733,24 +4733,14 @@ dnl
 AC_ARG_ENABLE(upnp,
   AS_HELP_STRING([--enable-upnp],[Intel UPnP SDK (default enabled)]))
 
-VLC_ADD_CXXFLAGS([upnp_intel], [ ])
-AS_IF([test "x${enable_upnp}" != "xno"], [
-  AC_CHECK_LIB([upnp], [UpnpInit], [has_upnp="yes"], [has_upnp="no"], [-lpthread])
-  AS_IF([test "x${enable_upnp}" != "x" && test "${has_upnp}" = "no"], [
-    AC_MSG_ERROR([cannot find Intel UPnP SDK (libupnp)])
-  ])
-  AS_IF([test "${has_upnp}" = "yes"], [
-    VLC_ADD_LIBS([upnp upnp_intel], [-lupnp -lixml])
-  ])
-], [
-  has_upnp="no"
-])
-
-AS_IF([test "${has_upnp}" = "yes"], [
-  VLC_ADD_PLUGIN([upnp_intel])
+if test "${enable-upnp}" != "no"
+then
+  PKG_CHECK_MODULES(UPNP, [libupnp, libdlna])
+  VLC_ADD_CFLAGS([upnp upnp_intel],[${UPNP_CFLAGS}])
+  VLC_ADD_LIBS([upnp upnp_intel],[${UPNP_LIBS}])
   VLC_ADD_PLUGIN([upnp])
-])
-
+  VLC_ADD_PLUGIN([upnp_intel])
+fi
 
 dnl
 dnl  Interface plugins
