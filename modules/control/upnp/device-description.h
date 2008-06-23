@@ -26,42 +26,21 @@
 
 #define MEDIASERVER_DESCRIPTION_URL "/MediaServer.xml"
 
-#define MEDIASERVER_DESCRIPTION \
-"<?xml version=\"1.0\" encoding=\"utf-8\"?>" \
-"<root xmlns=\"urn:schemas-upnp-org:device-1-0\">" \
-"  <specVersion>" \
-"    <major>1</major>" \
-"    <minor>0</minor>" \
-"  </specVersion>" \
-"  <device>" \
-"    <deviceType>urn:schemas-upnp-org:device:MediaServer:1</deviceType>" \
-"    <friendlyName>VLC media player</friendlyName>" \
-"    <manufacturer>VideoLAN</manufacturer>" \
-"    <manufacturerURL>http://www.videolan.org/</manufacturerURL>" \
-"    <modelDescription>VLC media player</modelDescription>" \
-"    <modelName>vlc</modelName>" \
-"    <modelNumber>090</modelNumber>" \
-"    <modelURL>http://www.videolan.org/</modelURL>" \
-"    <serialNumber>vlc-0.9.0-git</serialNumber>" \
-"    <UDN>0</UDN>" \
-"    <serviceList>" \
-"      <service>" \
-"        <serviceType>urn:schemas-upnp-org:service:ConnectionManager:1</serviceType>" \
-"        <serviceId>urn:upnp-org:serviceId:ConnectionManager</serviceId>" \
-"        <SCPDURL>/services/ConnectionManager/ConnectionManager.xml</SCPDURL>" \
-"        <controlURL>/services/ConnectionManager/control</controlURL>" \
-"        <eventSubURL>/services/ConnectionManager/event</eventSubURL>" \
-"      </service>" \
-"      <service>" \
-"        <serviceType>urn:schemas-upnp-org:service:ContentDirectory:1</serviceType>" \
-"        <serviceId>urn:upnp-org:serviceId:ContentDirectory</serviceId>" \
-"        <SCPDURL>/services/ContentDirectory/ContentDirectory.xml</SCPDURL>" \
-"        <controlURL>/services/ContentDirectory/control</controlURL>" \
-"        <eventSubURL>/services/ContentDirectory/event</eventSubURL>" \
-"      </service>" \
-"    </serviceList>" \
-"    <presentationURL>http://www.videolan.org/</presentationURL>" \
-"  </device>" \
-"</root>"
+#define FRIENDLY_NAME     "VLC media player"
+#define MANUFACTURER      "The VideoLAN team"
+#define MANUFACTURER_URL  "http://www.videolan.org"
+#define MODEL_DESCRIPTION "VLC media player"
+#define MODEL_NAME        "vlc"
+#define MODEL_NUMBER      "0.9.0"
+#define MODEL_URL         "http://www.videolan.org/vlc"
+#define SERIAL_NUMBER     "0"
+#define UUID              "0"
+#define PRESENTATION_URL  "http://www.videolan.org/vlc"
+#define CMS_SCPD_URL      "/services/ConnectionManager/ConnectionManager.xml"
+#define CMS_CONTROL_URL   "/services/ConnectionManager/control"
+#define CMS_EVENT_URL     "/services/ConnectionManager/event"
+#define CDS_SCPD_URL      "/services/ContentDirectory/ContentDirectory.xml"
+#define CDS_CONTROL_URL   "/services/ContentDirectory/control"
+#define CDS_EVENT_URL     "/services/ContentDirectory/event"
 
 #endif //!mediaserver.h
