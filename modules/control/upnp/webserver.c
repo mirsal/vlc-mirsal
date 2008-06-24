@@ -118,10 +118,11 @@ static int device_description_cb( httpd_file_sys_t* p_sys, httpd_file_t *p_file,
 
 char* webserver_get_device_description_url( webserver_t* p_this )
 {
-    char* psz_url = malloc( strlen( p_this->psz_hostname ) + 6 +
+    char* psz_url = malloc( strlen( "http://" ) + 
+                            strlen( p_this->psz_hostname ) + 6 +
                             strlen( p_this->p_device_description->psz_url ) +
                             1 );
-    sprintf( psz_url, "%s:%d%s", p_this->psz_hostname, p_this->i_port,
+    sprintf( psz_url, "http://%s:%d%s", p_this->psz_hostname, p_this->i_port,
             p_this->p_device_description->psz_url );
     return psz_url;
 }

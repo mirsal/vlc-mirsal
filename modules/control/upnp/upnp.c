@@ -44,6 +44,7 @@ struct intf_sys_t
 {
     webserver_t* p_webserver;
     dlna_t*      p_libdlna;
+    UpnpDevice_Handle* p_device_handle;
 };
 
 /*****************************************************************************
@@ -114,12 +115,30 @@ static void Close( vlc_object_t *p_this )
     free( p_intf->p_sys );
 }
 
+static int event_callback( Upnp_EventType event_type, void* ev, void* cookie )
+{
+    intf_thread_t* p_intf = (intf_thread_t*) cookie;
+    msg_Info( p_intf, "Got an event !");
+    return 0; //The return value of this function is ignored by the SDK
+}
+
 /*****************************************************************************
  * Run: main loop
  *****************************************************************************/
 
 static void Run( intf_thread_t *p_intf )
 {
+    int e;
+    intf_sys_t* p_sys = p_intf->p_sys;
+    
+    p_sys->p_device_handle = malloc( sizeof( UpnpDevice_Handle ) );
+
+    if ((e = UpnpRegisterRootDevice(
+            webserver_get_device_description_url( p_intf->p_sys->p_webserver ),
+            event_callback, (void*) p_intf,
+            p_intf->p_sys->p_device_handle )) != UPNP_E_SUCCESS)
+        msg_Err( p_intf, "%s", UpnpGetErrorMessage( e ));
+
     while( !intf_ShouldDie( p_intf ) )
     {
         msleep( INTF_IDLE_SLEEP );
