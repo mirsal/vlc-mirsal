@@ -20,11 +20,17 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
+
+#ifdef HAVE_CONFIG_H
+#   include "config.h"
+#endif
+
 #include <vlc_common.h>
 #include <vlc_httpd.h>
 
 #include <dlna.h>
 
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "webserver.h"
@@ -110,7 +116,7 @@ static int device_description_cb( httpd_file_sys_t* p_sys, httpd_file_t *p_file,
 
     char** ppsz_data = (char**) pp_data;
 
-    *ppsz_data = p_sys->psz_content;
+    *ppsz_data = strdup( p_sys->psz_content );
     *pi_data = strlen( *ppsz_data );
 
     return VLC_SUCCESS;
@@ -118,8 +124,9 @@ static int device_description_cb( httpd_file_sys_t* p_sys, httpd_file_t *p_file,
 
 char* webserver_get_device_description_url( webserver_t* p_this )
 {
-    char* psz_url = NULL;
-    asprintf( &psz_url, "http://%s:%d%s", p_this->psz_hostname, p_this->i_port,
-            p_this->p_device_description->psz_url );
+    char* psz_url;
+    if( asprintf( &psz_url, "http://%s:%d%s", p_this->psz_hostname,
+        p_this->i_port, p_this->p_device_description->psz_url ) == -1 )
+        psz_url = NULL;
     return psz_url;
 }
