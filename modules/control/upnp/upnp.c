@@ -34,6 +34,8 @@
 
 #include <dlna.h>
 
+#include <stdio.h>
+
 #include "webserver.h"
 
 static int  Open    ( vlc_object_t * );
@@ -98,6 +100,8 @@ static int Open( vlc_object_t* p_this )
 
     msg_Info( p_this, "MediaServer description hosted on %s",
             webserver_get_device_description_url( p_sys->p_webserver ));
+    
+    p_sys->p_device_handle = malloc( sizeof( UpnpDevice_Handle ) );
 
     return VLC_SUCCESS;
 }
@@ -110,6 +114,7 @@ static void Close( vlc_object_t *p_this )
 {
     intf_thread_t   *p_intf     = (intf_thread_t*) p_this;
 
+    UpnpUnRegisterRootDevice( p_intf->p_sys->p_device_handle );
     webserver_destroy( p_intf->p_sys->p_webserver ); 
     UpnpFinish();
     free( p_intf->p_sys );
@@ -131,12 +136,10 @@ static void Run( intf_thread_t *p_intf )
     int e;
     intf_sys_t* p_sys = p_intf->p_sys;
     
-    p_sys->p_device_handle = malloc( sizeof( UpnpDevice_Handle ) );
-
     if ((e = UpnpRegisterRootDevice(
-            webserver_get_device_description_url( p_intf->p_sys->p_webserver ),
+            webserver_get_device_description_url( p_sys->p_webserver ),
             event_callback, (void*) p_intf,
-            p_intf->p_sys->p_device_handle )) != UPNP_E_SUCCESS)
+            p_sys->p_device_handle )) != UPNP_E_SUCCESS)
         msg_Err( p_intf, "%s", UpnpGetErrorMessage( e ));
 
     while( !intf_ShouldDie( p_intf ) )
