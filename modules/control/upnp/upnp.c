@@ -135,12 +135,15 @@ static void Run( intf_thread_t *p_intf )
 {
     int e;
     intf_sys_t* p_sys = p_intf->p_sys;
+    char* psz_url = webserver_get_device_description_url( p_sys->p_webserver );
     
     if ((e = UpnpRegisterRootDevice(
-            webserver_get_device_description_url( p_sys->p_webserver ),
+            psz_url,
             event_callback, (void*) p_intf,
             p_sys->p_device_handle )) != UPNP_E_SUCCESS)
         msg_Err( p_intf, "%s", UpnpGetErrorMessage( e ));
+
+    free( psz_url );
 
     while( !intf_ShouldDie( p_intf ) )
     {

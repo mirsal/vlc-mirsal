@@ -43,6 +43,11 @@ struct httpd_file_sys_t
     char* psz_content;
 };
 
+struct _webserver_service_t
+{
+    httpd_file_sys_t* p_sys;
+};
+
 struct _webserver_t
 {
     vlc_object_t* p_parent;
@@ -50,9 +55,11 @@ struct _webserver_t
     char* psz_hostname;
     int i_port;
     httpd_file_sys_t* p_device_description;
+    webserver_service_t* p_cds;
+    webserver_service_t* p_cms;
 };
 
-static int device_description_cb( httpd_file_sys_t* p_sys, httpd_file_t *p_file,
+static int static_content_cb( httpd_file_sys_t* p_sys, httpd_file_t *p_file,
         uint8_t *psz_request, uint8_t **pp_data, int *pi_data );
 
 webserver_t* webserver_init( vlc_object_t* p_parent,
@@ -71,6 +78,7 @@ webserver_t* webserver_init( vlc_object_t* p_parent,
 
     p_this->p_parent = p_parent;
     p_this->p_device_description = p_device_description;
+    p_this->p_cds = webserver_service_init( p_this, CDS_SCPD_URL );
 
     /*FIXME: ugly */
     if (i_port)
@@ -94,22 +102,49 @@ webserver_t* webserver_init( vlc_object_t* p_parent,
     p_device_description->psz_url = strdup( MEDIASERVER_DESCRIPTION_URL );
     p_device_description->p_file = httpd_FileNew( p_this->p_host,
             p_device_description->psz_url, "text/xml", NULL, NULL, NULL,
-            device_description_cb, p_device_description ); 
+            static_content_cb, p_device_description ); 
 
     return p_this;
 }
 
 void webserver_destroy( webserver_t* p_this )
 {
-    httpd_FileDelete( p_this->p_device_description->p_file );
     httpd_HostDelete( p_this->p_host );
+    webserver_service_destroy( p_this->p_cds );
+    httpd_FileDelete( p_this->p_device_description->p_file );
+    free( p_this->p_device_description->psz_content );
     free( p_this->p_device_description->psz_url );
     free( p_this->p_device_description );
     free( p_this->psz_hostname );
     free( p_this );
 }
 
-static int device_description_cb( httpd_file_sys_t* p_sys, httpd_file_t *p_file,
+webserver_service_t* webserver_service_init( webserver_t* p_this,
+                                             const char*  psz_url )
+{
+    webserver_service_t* p_service =
+        (webserver_service_t*) malloc( sizeof( webserver_service_t ) );
+    p_service->p_sys =
+        (httpd_file_sys_t*) malloc( sizeof( httpd_file_sys_t* ) );
+    p_service->p_sys->psz_url = strdup( psz_url );
+    p_service->p_sys->psz_content = strdup( "fuck" );
+    p_service->p_sys->p_file = httpd_FileNew( p_this->p_host,
+            p_service->p_sys->psz_url, "text/xml", NULL, NULL, NULL,
+            static_content_cb, p_service->p_sys ); 
+    return p_service;
+}
+
+void webserver_service_destroy( webserver_service_t* p_service )
+{
+    httpd_FileDelete( p_service->p_sys->p_file );
+    free( p_service->p_sys->psz_url );
+    free( p_service->p_sys->psz_content );
+    free( p_service->p_sys );
+    free( p_service );
+}
+
+
+static int static_content_cb( httpd_file_sys_t* p_sys, httpd_file_t *p_file,
         uint8_t *psz_request, uint8_t **pp_data, int *pi_data )
 {
     VLC_UNUSED( p_file ); VLC_UNUSED( psz_request );

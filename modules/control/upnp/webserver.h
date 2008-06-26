@@ -28,9 +28,14 @@
 #include <vlc_httpd.h>
 
 typedef struct _webserver_t webserver_t;
+typedef struct _webserver_service_t webserver_service_t;
 
 webserver_t* webserver_init( vlc_object_t*, char* psz_host, int i_port );
 void         webserver_destroy( webserver_t* p_webserver );
+
+webserver_service_t* webserver_service_init( webserver_t* p_this,
+                                             const char*  psz_url );
+void                 webserver_service_destroy( webserver_service_t* p_service);
 
 char*        webserver_get_device_description_url( webserver_t* p_webserver );
 #endif //!webserver.h
