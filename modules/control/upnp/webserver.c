@@ -78,7 +78,6 @@ webserver_t* webserver_init( vlc_object_t* p_parent,
 
     p_this->p_parent = p_parent;
     p_this->p_device_description = p_device_description;
-    p_this->p_cds = webserver_service_init( p_this, CDS_SCPD_URL );
 
     /*FIXME: ugly */
     if (i_port)
@@ -103,6 +102,8 @@ webserver_t* webserver_init( vlc_object_t* p_parent,
     p_device_description->p_file = httpd_FileNew( p_this->p_host,
             p_device_description->psz_url, "text/xml", NULL, NULL, NULL,
             static_content_cb, p_device_description ); 
+    
+    p_this->p_cds = webserver_service_init( p_this, CDS_SCPD_URL );
 
     return p_this;
 }
