@@ -84,7 +84,7 @@ webserver_t* webserver_init( vlc_object_t* p_parent,
         p_this->p_host = httpd_HostNew( p_parent, psz_host, i_port );
     else do
     {
-        i_port = rand() % 60000 + 1024;
+        i_port = rand() % 64511 + 1024;
         p_this->p_host = httpd_HostNew( p_parent, psz_host, i_port );
     }
     while (!p_this->p_host);
