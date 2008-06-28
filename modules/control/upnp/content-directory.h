@@ -1,5 +1,5 @@
 /*****************************************************************************
- * device-description.h : UPnP A/V Media Server device description
+ * content-directory.h : UPnP A/V ContentDirectory service
  *****************************************************************************
  * Copyright © 2008 Mirsal Ennaime
  * $Id$
@@ -88,16 +88,6 @@
 "      </argumentList>" \
 "    </action>" \
 "    <action>" \
-"      <name>DestroyObject</name>" \
-"      <argumentList>" \
-"        <argument>" \
-"          <name>ObjectID</name>" \
-"          <direction>in</direction>" \
-"          <relatedStateVariable>A_ARG_TYPE_ObjectID</relatedStateVariable>" \
-"        </argument>" \
-"      </argumentList>" \
-"    </action>" \
-"    <action>" \
 "      <name>GetSystemUpdateID</name>" \
 "      <argumentList>" \
 "        <argument>" \
@@ -124,26 +114,6 @@
 "          <name>SortCaps</name>" \
 "          <direction>out</direction>" \
 "          <relatedStateVariable>SortCapabilities</relatedStateVariable>" \
-"        </argument>" \
-"      </argumentList>" \
-"    </action>" \
-"    <action>" \
-"      <name>UpdateObject</name>" \
-"      <argumentList>" \
-"        <argument>" \
-"          <name>ObjectID</name>" \
-"          <direction>in</direction>" \
-"          <relatedStateVariable>A_ARG_TYPE_ObjectID</relatedStateVariable>" \
-"        </argument>" \
-"        <argument>" \
-"          <name>CurrentTagValue</name>" \
-"          <direction>in</direction>" \
-"          <relatedStateVariable>A_ARG_TYPE_TagValueList</relatedStateVariable>" \
-"        </argument>" \
-"        <argument>" \
-"          <name>NewTagValue</name>" \
-"          <direction>in</direction>" \
-"          <relatedStateVariable>A_ARG_TYPE_TagValueList</relatedStateVariable>" \
 "        </argument>" \
 "      </argumentList>" \
 "    </action>" \
