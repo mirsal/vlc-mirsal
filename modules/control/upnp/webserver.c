@@ -35,6 +35,7 @@
 
 #include "webserver.h"
 #include "device-description.h"
+#include "content-directory.h"
 
 struct httpd_file_sys_t
 {
@@ -102,8 +103,9 @@ webserver_t* webserver_init( vlc_object_t* p_parent,
     p_device_description->p_file = httpd_FileNew( p_this->p_host,
             p_device_description->psz_url, "text/xml", NULL, NULL, NULL,
             static_content_cb, p_device_description ); 
-    
-    p_this->p_cds = webserver_service_init( p_this, CDS_SCPD_URL );
+
+    p_this->p_cds = webserver_service_init( p_this,
+            CDS_SCPD_URL, CDS_DESCRIPTION );
 
     return p_this;
 }
@@ -121,14 +123,15 @@ void webserver_destroy( webserver_t* p_this )
 }
 
 webserver_service_t* webserver_service_init( webserver_t* p_this,
-                                             const char*  psz_url )
+                                             const char*  psz_url,
+                                             const char*  psz_description )
 {
     webserver_service_t* p_service =
         (webserver_service_t*) malloc( sizeof( webserver_service_t ) );
     p_service->p_sys =
         (httpd_file_sys_t*) malloc( sizeof( httpd_file_sys_t* ) );
     p_service->p_sys->psz_url = strdup( psz_url );
-    p_service->p_sys->psz_content = strdup( "fuck" );
+    p_service->p_sys->psz_content = strdup( psz_description );
     p_service->p_sys->p_file = httpd_FileNew( p_this->p_host,
             p_service->p_sys->psz_url, "text/xml", NULL, NULL, NULL,
             static_content_cb, p_service->p_sys ); 
