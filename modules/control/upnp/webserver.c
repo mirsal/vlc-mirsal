@@ -112,9 +112,9 @@ webserver_t* webserver_init( vlc_object_t* p_parent,
 
 void webserver_destroy( webserver_t* p_this )
 {
-    httpd_HostDelete( p_this->p_host );
-    webserver_service_destroy( p_this->p_cds );
     httpd_FileDelete( p_this->p_device_description->p_file );
+    webserver_service_destroy( p_this->p_cds );
+    httpd_HostDelete( p_this->p_host );
     free( p_this->p_device_description->psz_content );
     free( p_this->p_device_description->psz_url );
     free( p_this->p_device_description );
