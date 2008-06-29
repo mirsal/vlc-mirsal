@@ -1,5 +1,5 @@
 /*****************************************************************************
- * service.h : UPnP A/V Media Server UPnP services handling
+ * content-directory.c : UPnP A/V ContentDirectory service
  *****************************************************************************
  * Copyright © 2008 Mirsal Ennaime
  * $Id$
@@ -21,34 +21,28 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 
-#ifndef _SERVICE_H
-#define _SERVICE_H
-
 #include <vlc_common.h>
-#include "webserver.h"
 
-typedef struct _service_t service_t;
-typedef void (*service_request_handler_t)(void*);
+#include "content-directory.h"
+#include "service.h"
 
-struct _service_t
+struct _content_directory_t
 {
-    vlc_object_t* p_parent;
-
-    char* psz_description_url;
-    char* psz_control_url;
-    char* psz_event_url;
-    char* psz_description;
-
-    webserver_service_t* p_webserver_service;
-    service_request_handler_t pf_request_handler;
+    service_t* p_service;
 };
 
-service_t* service_init( vlc_object_t* p_parent,
-                         webserver_t* p_webserver,
-                         char* psz_upnp_base_url,
-                         char* psz_service_name,
-                         char* psz_description );
+content_directory_t* content_directory_init( vlc_object_t* p_parent,
+        webserver_t* p_webserver, char* psz_upnp_base_url )
+{
+    content_directory_t* p_this = malloc( sizeof( content_directory_t ) );
+    p_this->p_service = service_init( p_parent, p_webserver, psz_upnp_base_url,
+            "ContentDirectory", CDS_DESCRIPTION );
 
-void service_destroy( service_t* p_this );
+    return p_this;
+}
 
-#endif //!service.h
+void content_directory_destroy( content_directory_t* p_this )
+{
+    service_destroy( p_this->p_service );
+    free( p_this );
+}

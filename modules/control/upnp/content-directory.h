@@ -174,4 +174,13 @@
 "  </serviceStateTable>" \
 "</scpd>"
 
+#include <vlc_common.h>
+#include "webserver.h"
+
+typedef struct _content_directory_t content_directory_t;
+
+content_directory_t* content_directory_init( vlc_object_t* p_parent,
+        webserver_t* p_webserver, char* psz_upnp_base_url );
+void content_directory_destroy( content_directory_t* p_this );
+
 #endif //!content_directory.h

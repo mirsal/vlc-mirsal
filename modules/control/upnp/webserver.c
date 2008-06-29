@@ -55,9 +55,6 @@ struct _webserver_t
     httpd_host_t* p_host;
     char* psz_hostname;
     int i_port;
-    httpd_file_sys_t* p_device_description;
-    webserver_service_t* p_cds;
-    webserver_service_t* p_cms;
 };
 
 static int static_content_cb( httpd_file_sys_t* p_sys, httpd_file_t *p_file,
@@ -67,18 +64,10 @@ webserver_t* webserver_init( vlc_object_t* p_parent,
         char* psz_host, int i_port )
 {
     webserver_t* p_this = (webserver_t*) malloc( sizeof( webserver_t ) );
-    httpd_file_sys_t* p_device_description =
-        (httpd_file_sys_t*) calloc( 1, sizeof( httpd_file_sys_t) );
-
-    p_device_description->psz_content = dlna_dms_description_get( 
-        FRIENDLY_NAME, MANUFACTURER, MANUFACTURER_URL, MODEL_DESCRIPTION,
-        MODEL_NAME, MODEL_NUMBER, MODEL_URL, SERIAL_NUMBER, UUID,
-        PRESENTATION_URL, CMS_SCPD_URL, CMS_CONTROL_URL, CMS_EVENT_URL,
-        CDS_SCPD_URL, CDS_CONTROL_URL, CMS_EVENT_URL );
+    
     srand( time( NULL ) );
 
     p_this->p_parent = p_parent;
-    p_this->p_device_description = p_device_description;
 
     /*FIXME: ugly */
     if (i_port)
@@ -99,30 +88,20 @@ webserver_t* webserver_init( vlc_object_t* p_parent,
     p_this->psz_hostname = strdup( psz_host );
     p_this->i_port = i_port;
 
-    p_device_description->psz_url = strdup( MEDIASERVER_DESCRIPTION_URL );
-    p_device_description->p_file = httpd_FileNew( p_this->p_host,
-            p_device_description->psz_url, "text/xml", NULL, NULL, NULL,
-            static_content_cb, p_device_description ); 
-
-    p_this->p_cds = webserver_service_init( p_this,
-            CDS_SCPD_URL, CDS_DESCRIPTION );
+    msg_Info( p_parent, "httpd running on %s",
+            webserver_get_base_url( p_this ) );
 
     return p_this;
 }
 
 void webserver_destroy( webserver_t* p_this )
 {
-    httpd_FileDelete( p_this->p_device_description->p_file );
-    webserver_service_destroy( p_this->p_cds );
     httpd_HostDelete( p_this->p_host );
-    free( p_this->p_device_description->psz_content );
-    free( p_this->p_device_description->psz_url );
-    free( p_this->p_device_description );
     free( p_this->psz_hostname );
     free( p_this );
 }
 
-webserver_service_t* webserver_service_init( webserver_t* p_this,
+webserver_service_t* webserver_register_service( webserver_t* p_this,
                                              const char*  psz_url,
                                              const char*  psz_description )
 {
@@ -138,7 +117,7 @@ webserver_service_t* webserver_service_init( webserver_t* p_this,
     return p_service;
 }
 
-void webserver_service_destroy( webserver_service_t* p_service )
+void webserver_unregister_service( webserver_service_t* p_service )
 {
     httpd_FileDelete( p_service->p_sys->p_file );
     free( p_service->p_sys->psz_url );
@@ -161,11 +140,12 @@ static int static_content_cb( httpd_file_sys_t* p_sys, httpd_file_t *p_file,
     return VLC_SUCCESS;
 }
 
-char* webserver_get_device_description_url( webserver_t* p_this )
+char* webserver_get_base_url( webserver_t* p_this )
 {
     char* psz_url;
-    if( asprintf( &psz_url, "http://%s:%d%s", p_this->psz_hostname,
-        p_this->i_port, p_this->p_device_description->psz_url ) == -1 )
+    if( asprintf( &psz_url, "http://%s:%d", p_this->psz_hostname,
+            p_this->i_port ) == -1 )
         psz_url = NULL;
     return psz_url;
 }
+
