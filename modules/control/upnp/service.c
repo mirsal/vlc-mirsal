@@ -22,38 +22,39 @@
  *****************************************************************************/
 
 #include <vlc_common.h>
-#include "services.h"
+#include "service.h"
+#include "webserver.h"
 
-struct _service_t
-{
-    vlc_object_t* p_parent;
+#include <string.h>
 
-    char* psz_url;
-    char* psz_description;
-};
-
-service_t* service_init( vlc_object_t* p_parent,
-        char* psz_url, char* psz_description )
+service_t* service_init( vlc_object_t* p_parent, webserver_t* p_webserver,
+        char* psz_upnp_base_url, char* psz_service_name, char* psz_description )
 {
     service_t* p_this = (service_t*) calloc( 1, sizeof( service_t ) );
-    
+
     p_this->p_parent = p_parent;
-    p_this->psz_url = strdup( psz_url );
     p_this->psz_description = strdup( psz_description );
+    
+    asprintf( &p_this->psz_description_url,
+            "/services/%s/scpd.xml", psz_service_name );
+    asprintf( &p_this->psz_control_url, "%s/services/%s/control",
+            psz_upnp_base_url, psz_service_name );
+    asprintf( &p_this->psz_event_url, "%s/services/%s/event",
+            psz_upnp_base_url, psz_service_name );
+
+    p_this->p_webserver_service = webserver_register_service( p_webserver,
+            p_this->psz_description_url, p_this->psz_description );
+
+    return p_this;
 }
 
 void service_destroy( service_t* p_this )
 {
-    free( p_this->psz_url );
+    free( p_this->psz_description_url );
+    free( p_this->psz_control_url );
+    free( p_this->psz_event_url );
     free( p_this->psz_description );
+    webserver_unregister_service( p_this->p_webserver_service );
+    free( p_this );
 }
 
-char* service_get_url( service_t* p_this )
-{
-    return p_this->psz_url;
-}
-
-char* service_get_description( service_t* p_this )
-{
-    return p_this->psz_description;
-}

@@ -37,6 +37,8 @@
 #include <stdio.h>
 
 #include "webserver.h"
+#include "content-directory.h"
+#include "device-description.h"
 
 static int  Open    ( vlc_object_t * );
 static void Close   ( vlc_object_t * );
@@ -47,6 +49,9 @@ struct intf_sys_t
     webserver_t* p_webserver;
     dlna_t*      p_libdlna;
     UpnpDevice_Handle* p_device_handle;
+    char* psz_device_description;
+    char* psz_upnp_base_url;
+    content_directory_t* p_content_directory;
 };
 
 /*****************************************************************************
@@ -98,9 +103,12 @@ static int Open( vlc_object_t* p_this )
         return VLC_EGENERIC;
     } 
 
-    msg_Info( p_this, "MediaServer description hosted on %s",
-            webserver_get_device_description_url( p_sys->p_webserver ));
-    
+    asprintf( &p_sys->psz_upnp_base_url, "http://%s:%d",
+            UpnpGetServerIpAddress(), UpnpGetServerPort() );
+
+    p_sys->p_content_directory = content_directory_init( p_this,
+            p_sys->p_webserver, p_sys->psz_upnp_base_url );
+
     p_sys->p_device_handle = malloc( sizeof( UpnpDevice_Handle ) );
 
     return VLC_SUCCESS;
@@ -135,15 +143,15 @@ static void Run( intf_thread_t *p_intf )
 {
     int e;
     intf_sys_t* p_sys = p_intf->p_sys;
-    char* psz_url = webserver_get_device_description_url( p_sys->p_webserver );
-    
-    if ((e = UpnpRegisterRootDevice(
-            psz_url,
-            event_callback, (void*) p_intf,
-            p_sys->p_device_handle )) != UPNP_E_SUCCESS)
-        msg_Err( p_intf, "%s", UpnpGetErrorMessage( e ));
-
-    free( psz_url );
+//    char* psz_url = webserver_get_device_description_url( p_sys->p_webserver );
+//    
+//    if ((e = UpnpRegisterRootDevice(
+//            psz_url,
+//            event_callback, (void*) p_intf,
+//            p_sys->p_device_handle )) != UPNP_E_SUCCESS)
+//        msg_Err( p_intf, "%s", UpnpGetErrorMessage( e ));
+//
+//    free( psz_url );
 
     while( !intf_ShouldDie( p_intf ) )
     {

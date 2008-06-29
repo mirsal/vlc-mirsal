@@ -1,8 +1,9 @@
 SOURCES_upnp = \
         device-description.h \
-        content-directory.h \
         service.h \
         service.c \
+        content-directory.h \
+        content-directory.c \
         webserver.h \
         webserver.c \
 	upnp.c \
