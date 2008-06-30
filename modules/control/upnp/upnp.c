@@ -36,6 +36,7 @@
 
 #include <stdio.h>
 
+#include "service.h"
 #include "webserver.h"
 #include "content-directory.h"
 #include "device-description.h"
@@ -49,9 +50,9 @@ struct intf_sys_t
     webserver_t* p_webserver;
     dlna_t*      p_libdlna;
     UpnpDevice_Handle* p_device_handle;
-    char* psz_device_description;
-    char* psz_upnp_base_url;
     content_directory_t* p_content_directory;
+    webserver_service_t* p_device_description;
+    char* psz_upnp_base_url;
 };
 
 /*****************************************************************************
@@ -109,6 +110,22 @@ static int Open( vlc_object_t* p_this )
     p_sys->p_content_directory = content_directory_init( p_this,
             p_sys->p_webserver, p_sys->psz_upnp_base_url );
 
+    //TODO: make this a bit more readable ^_^
+    p_sys->p_device_description =
+        webserver_register_service( p_sys->p_webserver,
+                MEDIASERVER_DESCRIPTION_URL,
+                dlna_dms_description_get( FRIENDLY_NAME, MANUFACTURER,
+                    MANUFACTURER_URL, MODEL_DESCRIPTION, MODEL_NAME,
+                    MODEL_NUMBER, MODEL_URL, SERIAL_NUMBER, UUID,
+                    PRESENTATION_URL,
+                    "/cms/scpd.xml", "/cms/control", "/cms/event",
+                    (*(service_t**) p_sys->p_content_directory)
+                        ->psz_description_url,
+                    (*(service_t**) p_sys->p_content_directory)
+                        ->psz_control_url,
+                    (*(service_t**) p_sys->p_content_directory)
+                        ->psz_event_url ) ); 
+
     p_sys->p_device_handle = malloc( sizeof( UpnpDevice_Handle ) );
 
     return VLC_SUCCESS;
@@ -121,11 +138,15 @@ static int Open( vlc_object_t* p_this )
 static void Close( vlc_object_t *p_this )
 {
     intf_thread_t   *p_intf     = (intf_thread_t*) p_this;
+    intf_sys_t      *p_sys      = p_intf->p_sys;     
 
-    UpnpUnRegisterRootDevice( p_intf->p_sys->p_device_handle );
-    webserver_destroy( p_intf->p_sys->p_webserver ); 
+    //UpnpUnRegisterRootDevice( p_intf->p_sys->p_device_handle );
+    content_directory_destroy( p_sys->p_content_directory );
+    webserver_unregister_service( p_sys->p_device_description );
+    webserver_destroy( p_sys->p_webserver ); 
     UpnpFinish();
-    free( p_intf->p_sys );
+    free( p_sys->psz_upnp_base_url );
+    free( p_sys );
 }
 
 static int event_callback( Upnp_EventType event_type, void* ev, void* cookie )
@@ -143,15 +164,18 @@ static void Run( intf_thread_t *p_intf )
 {
     int e;
     intf_sys_t* p_sys = p_intf->p_sys;
-//    char* psz_url = webserver_get_device_description_url( p_sys->p_webserver );
-//    
-//    if ((e = UpnpRegisterRootDevice(
-//            psz_url,
-//            event_callback, (void*) p_intf,
-//            p_sys->p_device_handle )) != UPNP_E_SUCCESS)
-//        msg_Err( p_intf, "%s", UpnpGetErrorMessage( e ));
-//
-//    free( psz_url );
+    char* psz_url;
+    
+    asprintf( &psz_url, "%s%s", webserver_get_base_url( p_sys->p_webserver ),
+            MEDIASERVER_DESCRIPTION_URL );
+
+    if ((e = UpnpRegisterRootDevice(
+            psz_url,
+            event_callback, (void*) p_intf,
+            p_sys->p_device_handle )) != UPNP_E_SUCCESS)
+        msg_Err( p_intf, "%s", UpnpGetErrorMessage( e ));
+
+    free( psz_url );
 
     while( !intf_ShouldDie( p_intf ) )
     {

@@ -36,11 +36,5 @@
 #define SERIAL_NUMBER     "0"
 #define UUID              "0"
 #define PRESENTATION_URL  "http://www.videolan.org/vlc"
-#define CMS_SCPD_URL      "/services/ConnectionManager/ConnectionManager.xml"
-#define CMS_CONTROL_URL   "/services/ConnectionManager/control"
-#define CMS_EVENT_URL     "/services/ConnectionManager/event"
-#define CDS_SCPD_URL      "/services/ContentDirectory/ContentDirectory.xml"
-#define CDS_CONTROL_URL   "/services/ContentDirectory/control"
-#define CDS_EVENT_URL     "/services/ContentDirectory/event"
 
 #endif //!mediaserver.h
