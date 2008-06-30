@@ -27,10 +27,9 @@
 #include <vlc_common.h>
 #include "webserver.h"
 
-typedef struct _service_t service_t;
 typedef void (*service_request_handler_t)(void*);
 
-struct _service_t
+typedef struct _service_t
 {
     vlc_object_t* p_parent;
 
@@ -41,7 +40,7 @@ struct _service_t
 
     webserver_service_t* p_webserver_service;
     service_request_handler_t pf_request_handler;
-};
+} service_t;
 
 service_t* service_init( vlc_object_t* p_parent,
                          webserver_t* p_webserver,
