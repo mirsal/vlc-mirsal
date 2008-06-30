@@ -140,7 +140,7 @@ static void Close( vlc_object_t *p_this )
     intf_thread_t   *p_intf     = (intf_thread_t*) p_this;
     intf_sys_t      *p_sys      = p_intf->p_sys;     
 
-    //UpnpUnRegisterRootDevice( p_intf->p_sys->p_device_handle );
+    UpnpUnRegisterRootDevice( p_intf->p_sys->p_device_handle );
     content_directory_destroy( p_sys->p_content_directory );
     webserver_unregister_service( p_sys->p_device_description );
     webserver_destroy( p_sys->p_webserver ); 
