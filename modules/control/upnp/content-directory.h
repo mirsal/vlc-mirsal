@@ -174,6 +174,9 @@
 "  </serviceStateTable>" \
 "</scpd>"
 
+#define CDS_SERVICE_ID "urn:upnp-org:serviceId:ContentDirectory"
+#define CDS_SERVICE_TYPE "urn:schemas-upnp-org:service:ContentDirectory:1"
+
 #include <vlc_common.h>
 #include "webserver.h"
 
