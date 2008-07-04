@@ -38,6 +38,9 @@ typedef struct _service_t
     char* psz_event_url;
     char* psz_description;
 
+    char* psz_type;
+    char* psz_id;
+
     webserver_service_t* p_webserver_service;
     service_request_handler_t pf_request_handler;
 } service_t;
@@ -46,7 +49,9 @@ service_t* service_init( vlc_object_t* p_parent,
                          webserver_t* p_webserver,
                          char* psz_upnp_base_url,
                          char* psz_service_name,
-                         char* psz_description );
+                         char* psz_description,
+                         char* psz_type,
+                         char* psz_id );
 
 void service_destroy( service_t* p_this );
 

@@ -36,7 +36,8 @@ content_directory_t* content_directory_init( vlc_object_t* p_parent,
 {
     content_directory_t* p_this = malloc( sizeof( content_directory_t ) );
     p_this->p_service = service_init( p_parent, p_webserver, psz_upnp_base_url,
-            "ContentDirectory", CDS_DESCRIPTION );
+            "ContentDirectory", CDS_DESCRIPTION,
+            CDS_SERVICE_TYPE, CDS_SERVICE_ID );
 
     return p_this;
 }
