@@ -45,6 +45,10 @@ static int  Open    ( vlc_object_t * );
 static void Close   ( vlc_object_t * );
 static void Run     ( intf_thread_t * );
 
+static int dispatch_event( Upnp_EventType event_type, void* ev, void* cookie );
+static void dispatch_action_request( intf_thread_t* p_intf,
+        struct Upnp_Action_Request* ar );
+
 struct intf_sys_t
 {
     webserver_t* p_webserver;
@@ -140,7 +144,7 @@ static void Close( vlc_object_t *p_this )
     intf_thread_t   *p_intf     = (intf_thread_t*) p_this;
     intf_sys_t      *p_sys      = p_intf->p_sys;     
 
-    UpnpUnRegisterRootDevice( p_intf->p_sys->p_device_handle );
+    UpnpUnRegisterRootDevice( *p_intf->p_sys->p_device_handle );
     content_directory_destroy( p_sys->p_content_directory );
     webserver_unregister_service( p_sys->p_device_description );
     webserver_destroy( p_sys->p_webserver ); 
@@ -149,11 +153,27 @@ static void Close( vlc_object_t *p_this )
     free( p_sys );
 }
 
-static int event_callback( Upnp_EventType event_type, void* ev, void* cookie )
+static int dispatch_event( Upnp_EventType event_type, void* ev, void* cookie )
 {
     intf_thread_t* p_intf = (intf_thread_t*) cookie;
     msg_Info( p_intf, "Got an event !");
+
+    if (event_type == UPNP_CONTROL_ACTION_REQUEST)
+        dispatch_action_request( p_intf, (struct Upnp_Action_Request*) ev );
+
     return 0; //The return value of this function is ignored by the SDK
+}
+
+static void dispatch_action_request( intf_thread_t* p_intf,
+        struct Upnp_Action_Request* ar )
+{
+    msg_Dbg( (vlc_object_t*) p_intf,
+            "Dispatching %s action request to service %s",
+            ar->ActionName, ar->ServiceID );
+    
+    if( !strcmp( (*(service_t**) p_intf->p_sys->p_content_directory)->psz_id,
+                ar->ServiceID ) )
+        msg_Dbg( (vlc_object_t*) p_intf, "bum" );
 }
 
 /*****************************************************************************
@@ -171,7 +191,7 @@ static void Run( intf_thread_t *p_intf )
 
     if ((e = UpnpRegisterRootDevice(
             psz_url,
-            event_callback, (void*) p_intf,
+            dispatch_event, (void*) p_intf,
             p_sys->p_device_handle )) != UPNP_E_SUCCESS)
         msg_Err( p_intf, "%s", UpnpGetErrorMessage( e ));
 
