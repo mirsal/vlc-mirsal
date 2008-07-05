@@ -156,7 +156,7 @@ static void Close( vlc_object_t *p_this )
 static int dispatch_event( Upnp_EventType event_type, void* ev, void* cookie )
 {
     intf_thread_t* p_intf = (intf_thread_t*) cookie;
-    msg_Info( p_intf, "Got an event !");
+    msg_Dbg( p_intf, "Catched an event, dispatching it");
 
     if (event_type == UPNP_CONTROL_ACTION_REQUEST)
         dispatch_action_request( p_intf, (struct Upnp_Action_Request*) ev );
