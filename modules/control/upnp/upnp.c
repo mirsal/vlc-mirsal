@@ -167,13 +167,23 @@ static int dispatch_event( Upnp_EventType event_type, void* ev, void* cookie )
 static void dispatch_action_request( intf_thread_t* p_intf,
         struct Upnp_Action_Request* ar )
 {
+    intf_sys_t* p_sys = p_intf->p_sys;
+    service_t* p_cds = *(service_t**) p_intf->p_sys->p_content_directory;
+    service_request_handler_t pf_request_handler = NULL;
+
     msg_Dbg( (vlc_object_t*) p_intf,
             "Dispatching %s action request to service %s",
             ar->ActionName, ar->ServiceID );
     
-    if( !strcmp( (*(service_t**) p_intf->p_sys->p_content_directory)->psz_id,
-                ar->ServiceID ) )
-        msg_Dbg( (vlc_object_t*) p_intf, "bum" );
+    if( !strcmp( p_cds->psz_id, ar->ServiceID ) )
+    {
+        pf_request_handler =
+            (service_request_handler_t) vlc_dictionary_value_for_key(
+                p_cds->p_request_handlers, ar->ActionName );
+        if( pf_request_handler )
+                pf_request_handler( (void*) ar,
+                        (void*) p_sys->p_content_directory );
+    }
 }
 
 /*****************************************************************************

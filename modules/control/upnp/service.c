@@ -29,6 +29,7 @@
 #include <stdio.h>
 
 service_t* service_init( vlc_object_t* p_parent, webserver_t* p_webserver,
+        vlc_dictionary_t* p_request_handlers,
         char* psz_upnp_base_url, char* psz_service_name, char* psz_description,
         char* psz_type, char* psz_id )
 {
@@ -46,6 +47,8 @@ service_t* service_init( vlc_object_t* p_parent, webserver_t* p_webserver,
 
     p_this->psz_type = strdup( psz_type );
     p_this->psz_id = strdup( psz_id );
+
+    p_this->p_request_handlers = p_request_handlers;
 
     p_this->p_webserver_service = webserver_register_service( p_webserver,
             p_this->psz_description_url, p_this->psz_description );
