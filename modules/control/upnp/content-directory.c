@@ -29,14 +29,31 @@
 struct _content_directory_t
 {
     service_t* p_service;
+    vlc_dictionary_t* p_handlers;
 };
+
+static void handle_browse( void* ev, void* user_data );
+static void handle_get_search_capabilities( void* ev, void* user_data );
+static void handle_get_sort_capabilities( void* ev, void* user_data );
+static void handle_get_system_update_id( void* ev, void* user_data );
 
 content_directory_t* content_directory_init( vlc_object_t* p_parent,
         webserver_t* p_webserver, char* psz_upnp_base_url )
 {
     content_directory_t* p_this = malloc( sizeof( content_directory_t ) );
-    p_this->p_service = service_init( p_parent, p_webserver, psz_upnp_base_url,
-            "ContentDirectory", CDS_DESCRIPTION,
+
+    p_this->p_handlers = malloc( sizeof( vlc_dictionary_t ) );
+    vlc_dictionary_init( p_this->p_handlers, 1 );
+    vlc_dictionary_insert( p_this->p_handlers, "Browse", &handle_browse );
+    vlc_dictionary_insert( p_this->p_handlers, "GetSearchCapabilities",
+            &handle_get_search_capabilities );
+    vlc_dictionary_insert( p_this->p_handlers, "GetSortCapabilities",
+            &handle_get_sort_capabilities );
+    vlc_dictionary_insert( p_this->p_handlers, "GetSystemUpdateID",
+            &handle_get_system_update_id );
+
+    p_this->p_service = service_init( p_parent, p_webserver, p_this->p_handlers,
+            psz_upnp_base_url, "ContentDirectory", CDS_DESCRIPTION,
             CDS_SERVICE_TYPE, CDS_SERVICE_ID );
 
     return p_this;
@@ -45,5 +62,13 @@ content_directory_t* content_directory_init( vlc_object_t* p_parent,
 void content_directory_destroy( content_directory_t* p_this )
 {
     service_destroy( p_this->p_service );
+    vlc_dictionary_clear( p_this->p_handlers );
+    free( p_this->p_handlers );
     free( p_this );
+}
+
+static void handle_browse( void* ev, void* user_data )
+{
+    content_directory_t* p_this = (content_directory_t*) user_data;
+    msg_Dbg( p_this->p_service->p_parent, "Browse action not yet implemented" );
 }
