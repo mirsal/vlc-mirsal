@@ -30,8 +30,8 @@
 
 service_t* service_init( vlc_object_t* p_parent, webserver_t* p_webserver,
         vlc_dictionary_t* p_request_handlers,
-        char* psz_upnp_base_url, char* psz_service_name, char* psz_description,
-        char* psz_type, char* psz_id )
+        const char* psz_upnp_base_url, const char* psz_service_name,
+        const char* psz_description, const char* psz_type, const char* psz_id )
 {
     service_t* p_this = (service_t*) calloc( 1, sizeof( service_t ) );
 

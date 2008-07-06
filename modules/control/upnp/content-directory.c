@@ -104,6 +104,11 @@ static void handle_get_sort_capabilities( void* ev, void* user_data )
 static void handle_get_system_update_id( void* ev, void* user_data )
 {
     content_directory_t* p_this = (content_directory_t*) user_data;
-    msg_Dbg( p_this->p_service->p_parent,
-            "GetSystemUpdateID action not yet implemented" );
+    struct Upnp_Action_Request* p_ar = (struct Upnp_Action_Request*) ev;
+
+    UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
+            p_this->p_service->psz_type, "SystemUpdateID", "0" );
+
+    msg_Dbg( p_this->p_service->p_parent, "UPnP Action response: %s",
+            ixmlPrintDocument( p_ar->ActionResult ) );
 }
