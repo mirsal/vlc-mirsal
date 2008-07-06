@@ -23,6 +23,9 @@
 
 #include <vlc_common.h>
 
+#include <upnp/upnp.h>
+#include <upnp/upnptools.h>
+
 #include "content-directory.h"
 #include "service.h"
 
@@ -71,4 +74,36 @@ static void handle_browse( void* ev, void* user_data )
 {
     content_directory_t* p_this = (content_directory_t*) user_data;
     msg_Dbg( p_this->p_service->p_parent, "Browse action not yet implemented" );
+}
+
+static void handle_get_search_capabilities( void* ev, void* user_data )
+{
+    content_directory_t* p_this = (content_directory_t*) user_data;
+    struct Upnp_Action_Request* p_ar = (struct Upnp_Action_Request*) ev;
+
+    UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
+            p_this->p_service->psz_type, "SearchCapabilities", "" );
+
+    msg_Dbg( p_this->p_service->p_parent, "UPnP Action response: %s",
+            ixmlPrintDocument( p_ar->ActionResult ) );
+
+}
+
+static void handle_get_sort_capabilities( void* ev, void* user_data )
+{
+    content_directory_t* p_this = (content_directory_t*) user_data;
+    struct Upnp_Action_Request* p_ar = (struct Upnp_Action_Request*) ev;
+
+    UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
+            p_this->p_service->psz_type, "SortCapabilities", "" );
+
+    msg_Dbg( p_this->p_service->p_parent, "UPnP Action response: %s",
+            ixmlPrintDocument( p_ar->ActionResult ) );
+}
+
+static void handle_get_system_update_id( void* ev, void* user_data )
+{
+    content_directory_t* p_this = (content_directory_t*) user_data;
+    msg_Dbg( p_this->p_service->p_parent,
+            "GetSystemUpdateID action not yet implemented" );
 }
