@@ -108,8 +108,13 @@ static int Open( vlc_object_t* p_this )
         return VLC_EGENERIC;
     } 
 
-    asprintf( &p_sys->psz_upnp_base_url, "http://%s:%d",
-            UpnpGetServerIpAddress(), UpnpGetServerPort() );
+    if( asprintf( &p_sys->psz_upnp_base_url, "http://%s:%d",
+            UpnpGetServerIpAddress(), UpnpGetServerPort() ) == -1 )
+    {
+        webserver_destroy( p_sys->p_webserver );
+        free( p_sys );
+        return VLC_ENOMEM;
+    }
 
     p_sys->p_content_directory = content_directory_init( p_this,
             p_sys->p_webserver, p_sys->psz_upnp_base_url );
@@ -195,8 +200,10 @@ static void Run( intf_thread_t *p_intf )
     intf_sys_t* p_sys = p_intf->p_sys;
     char* psz_url;
     
-    asprintf( &psz_url, "%s%s", webserver_get_base_url( p_sys->p_webserver ),
-            MEDIASERVER_DESCRIPTION_URL );
+    if( asprintf( &psz_url,
+                "%s%s", webserver_get_base_url( p_sys->p_webserver ),
+                 MEDIASERVER_DESCRIPTION_URL ) == -1 )
+        return;
 
     if ((e = UpnpRegisterRootDevice(
             psz_url,
