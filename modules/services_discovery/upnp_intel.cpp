@@ -312,7 +312,6 @@ static void Close( vlc_object_t *p_this )
     services_discovery_t *p_sd = ( services_discovery_t* )p_this;
     services_discovery_sys_t *p_sys = p_sd->p_sys;
 
-    pl_Release( p_sd );
     free( p_sys );
 }
 
@@ -903,7 +902,7 @@ void MediaServer::fetchContents()
     _contents->setPlaylistNode( _playlistNode );
 
     _buildPlaylist( _contents );
-    pl_Release (p_playlist );
+    pl_Release ( _cookie->serviceDiscovery );
 }
 
 bool MediaServer::_fetchContents( Container* parent )
@@ -1061,7 +1060,7 @@ void MediaServer::_buildPlaylist( Container* parent )
         assert( p_node );
         item->setPlaylistNode( p_node );
     }
-    pl_Release( p_playlist );
+    pl_Release( _cookie->serviceDiscovery );
 }
 
 void MediaServer::setPlaylistNode( playlist_item_t* playlistNode )
@@ -1123,7 +1122,7 @@ bool MediaServerList::addServer( MediaServer* s )
             playlist_NodeCreate( p_playlist, name,
                     _cookie->serviceDiscovery->p_sys->p_node_cat,
                     0, NULL );
-    pl_Release( p_playlist );
+    pl_Release( _cookie->serviceDiscovery );
     free( name );
     s->setPlaylistNode( node );
 
