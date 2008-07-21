@@ -46,6 +46,8 @@ static void Close   ( vlc_object_t * );
 static void Run     ( intf_thread_t * );
 
 static int dispatch_event( Upnp_EventType event_type, void* ev, void* cookie );
+static void handle_subscription_request( intf_thread_t* p_intf,
+        struct Upnp_Subscription_Request* p_req );
 static void dispatch_action_request( intf_thread_t* p_intf,
         struct Upnp_Action_Request* ar );
 
@@ -164,8 +166,24 @@ static int dispatch_event( Upnp_EventType event_type, void* ev, void* cookie )
 
     if (event_type == UPNP_CONTROL_ACTION_REQUEST)
         dispatch_action_request( p_intf, (struct Upnp_Action_Request*) ev );
+    else if (event_type == UPNP_EVENT_SUBSCRIPTION_REQUEST)
+        handle_subscription_request( p_intf,
+                (struct Upnp_Subscription_Request*) ev );
 
     return 0; //The return value of this function is ignored by the SDK
+}
+
+static void handle_subscription_request( intf_thread_t* p_intf,
+        struct Upnp_Subscription_Request* p_req )
+{
+    intf_sys_t* p_sys = p_intf->p_sys;
+    service_t* p_cds = *(service_t**) p_sys->p_content_directory;
+    msg_Dbg( p_intf, "Handling subscription request to service %s",
+               p_req->ServiceId );
+    if (!strcmp( p_cds->psz_id, p_req->ServiceId ))
+        UpnpAcceptSubscription( p_sys->p_device_handle,
+                "urn:schemas-upnp-org:device:MediaServer:1", p_cds->psz_id,
+                NULL, NULL, 0, "12345" );
 }
 
 static void dispatch_action_request( intf_thread_t* p_intf,
