@@ -173,6 +173,7 @@ static int dispatch_event( Upnp_EventType event_type, void* ev, void* cookie )
     return 0; //The return value of this function is ignored by the SDK
 }
 
+//TODO: Finish that
 static void handle_subscription_request( intf_thread_t* p_intf,
         struct Upnp_Subscription_Request* p_req )
 {

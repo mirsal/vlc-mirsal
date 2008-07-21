@@ -33,6 +33,7 @@ struct _content_directory_t
 {
     service_t* p_service;
     vlc_dictionary_t* p_handlers;
+    int i_update_id;
 };
 
 static void handle_browse( void* ev, void* user_data );
@@ -58,6 +59,8 @@ content_directory_t* content_directory_init( vlc_object_t* p_parent,
     p_this->p_service = service_init( p_parent, p_webserver, p_this->p_handlers,
             psz_upnp_base_url, "ContentDirectory", CDS_DESCRIPTION,
             CDS_SERVICE_TYPE, CDS_SERVICE_ID );
+
+    p_this->i_update_id = 0;
 
     return p_this;
 }
@@ -105,9 +108,12 @@ static void handle_get_system_update_id( void* ev, void* user_data )
 {
     content_directory_t* p_this = (content_directory_t*) user_data;
     struct Upnp_Action_Request* p_ar = (struct Upnp_Action_Request*) ev;
+    char* psz_update_id = NULL;
+
+    asprintf( psz_update_id, "%s", p_this->i_update_id );
 
     UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
-            p_this->p_service->psz_type, "SystemUpdateID", "0" );
+            p_this->p_service->psz_type, "SystemUpdateID", psz_update_id );
 
     msg_Dbg( p_this->p_service->p_parent, "UPnP Action response: %s",
             ixmlPrintDocument( p_ar->ActionResult ) );
