@@ -1032,8 +1032,10 @@ void MediaServer::_buildPlaylist( Container* parent )
         playlist_item_t* parentNode = parent->getPlaylistNode();
 
         char* title = strdup( container->getTitle() );
+        PL_LOCK;
         playlist_item_t* node = playlist_NodeCreate( p_playlist,
                                                 title, parentNode, 0, NULL );
+        PL_UNLOCK;
         free( title );
 
         container->setPlaylistNode( node );
@@ -1118,10 +1120,12 @@ bool MediaServerList::addServer( MediaServer* s )
     _list.push_back( s );
     
     char* name = strdup( s->getFriendlyName() );
+    PL_LOCK;
     playlist_item_t* node =
             playlist_NodeCreate( p_playlist, name,
                     _cookie->serviceDiscovery->p_sys->p_node_cat,
                     0, NULL );
+    PL_UNLOCK;
     pl_Release( _cookie->serviceDiscovery );
     free( name );
     s->setPlaylistNode( node );
