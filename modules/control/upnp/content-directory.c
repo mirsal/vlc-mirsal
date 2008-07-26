@@ -76,7 +76,22 @@ void content_directory_destroy( content_directory_t* p_this )
 static void handle_browse( void* ev, void* user_data )
 {
     content_directory_t* p_this = (content_directory_t*) user_data;
-    msg_Dbg( p_this->p_service->p_parent, "Browse action not yet implemented" );
+    struct Upnp_Action_Request* p_ar = (struct Upnp_Action_Request*) ev;
+    IXML_Document* didl = ixmlDocument_createDocument();
+    IXML_Element* root = ixmlDocument_createElement( didl, "DIDL-Lite" );
+    
+    assert( ixmlNode_appendChild( (IXML_Node*) didl, (IXML_Node*) root ) ==
+            IXML_SUCCESS );
+
+    UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
+            p_this->p_service->psz_type, "Result", ixmlNodetoString( root ) );
+    UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
+            p_this->p_service->psz_type, "NumberReturned", "0" );
+    UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
+            p_this->p_service->psz_type, "TotalMatches", "0" );
+    
+    msg_Dbg( p_this->p_service->p_parent, "UPnP Action response: %s",
+            ixmlPrintDocument( p_ar->ActionResult ) );
 }
 
 static void handle_get_search_capabilities( void* ev, void* user_data )
