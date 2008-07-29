@@ -77,14 +77,9 @@ static void handle_browse( void* ev, void* user_data )
 {
     content_directory_t* p_this = (content_directory_t*) user_data;
     struct Upnp_Action_Request* p_ar = (struct Upnp_Action_Request*) ev;
-    IXML_Document* didl = ixmlDocument_createDocument();
-    IXML_Element* root = ixmlDocument_createElement( didl, "DIDL-Lite" );
-    
-    assert( ixmlNode_appendChild( (IXML_Node*) didl, (IXML_Node*) root ) ==
-            IXML_SUCCESS );
 
     UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
-            p_this->p_service->psz_type, "Result", ixmlNodetoString( root ) );
+            p_this->p_service->psz_type, "Result", DIDL_EMPTY_DOC );
     UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
             p_this->p_service->psz_type, "NumberReturned", "0" );
     UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,

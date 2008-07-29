@@ -394,7 +394,7 @@ IXML_Document* parseBrowseResult( IXML_Document* doc )
 
     IXML_NodeList* resultList = ixmlDocument_getElementsByTagName( doc,
                                                                    "Result" );
-    
+
     if ( !resultList ) return 0;
 
     IXML_Node* resultNode = ixmlNodeList_item( resultList, 0 );
@@ -408,6 +408,8 @@ IXML_Document* parseBrowseResult( IXML_Document* doc )
 
     const char* resultString = ixmlNode_getNodeValue( textNode );
     char* resultXML = strdup( resultString );
+
+    ixmlRelaxParser(1);
 
     IXML_Document* browseDoc = ixmlParseBuffer( resultXML );
 
