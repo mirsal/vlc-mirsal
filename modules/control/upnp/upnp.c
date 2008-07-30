@@ -155,6 +155,7 @@ static void Close( vlc_object_t *p_this )
     webserver_unregister_service( p_sys->p_device_description );
     webserver_destroy( p_sys->p_webserver ); 
     UpnpFinish();
+    dlna_uninit( p_sys->p_libdlna );
     free( p_sys->psz_upnp_base_url );
     free( p_sys );
 }
