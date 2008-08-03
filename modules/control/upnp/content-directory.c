@@ -42,7 +42,7 @@ static void handle_get_sort_capabilities( void* ev, void* user_data );
 static void handle_get_system_update_id( void* ev, void* user_data );
 
 content_directory_t* content_directory_init( vlc_object_t* p_parent,
-        webserver_t* p_webserver, char* psz_upnp_base_url )
+        webserver_t* p_webserver, dlna_t* p_libdlna, char* psz_upnp_base_url )
 {
     content_directory_t* p_this = malloc( sizeof( content_directory_t ) );
 
@@ -56,9 +56,9 @@ content_directory_t* content_directory_init( vlc_object_t* p_parent,
     vlc_dictionary_insert( p_this->p_handlers, "GetSystemUpdateID",
             &handle_get_system_update_id );
 
-    p_this->p_service = service_init( p_parent, p_webserver, p_this->p_handlers,
-            psz_upnp_base_url, "ContentDirectory", CDS_DESCRIPTION,
-            CDS_SERVICE_TYPE, CDS_SERVICE_ID );
+    p_this->p_service = service_init( p_parent, p_webserver, p_libdlna,
+            p_this->p_handlers, psz_upnp_base_url, "ContentDirectory",
+            CDS_DESCRIPTION, CDS_SERVICE_TYPE, CDS_SERVICE_ID );
 
     p_this->i_update_id = 0;
 

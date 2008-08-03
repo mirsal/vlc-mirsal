@@ -25,6 +25,7 @@
 #define _SERVICE_H
 
 #include <vlc_common.h>
+#include <dlna.h>
 #include "webserver.h"
 
 typedef void (*service_request_handler_t)(void* request, void* user_data);
@@ -42,11 +43,14 @@ typedef struct _service_t
     char* psz_id;
 
     webserver_service_t* p_webserver_service;
+    upnp_service_t*      p_dlna_service;
+
     vlc_dictionary_t* p_request_handlers;
 } service_t;
 
 service_t* service_init( vlc_object_t* p_parent,
                          webserver_t* p_webserver,
+                         dlna_t* p_libdlna,
                          vlc_dictionary_t* p_request_handlers,
                          const char* psz_upnp_base_url,
                          const char* psz_service_name,

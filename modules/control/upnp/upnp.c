@@ -118,24 +118,24 @@ static int Open( vlc_object_t* p_this )
         return VLC_ENOMEM;
     }
 
-    p_sys->p_content_directory = content_directory_init( p_this,
-            p_sys->p_webserver, p_sys->psz_upnp_base_url );
+    dlna_device_set_friendly_name( p_sys->p_libdlna, FRIENDLY_NAME );
+    dlna_device_set_manufacturer( p_sys->p_libdlna, MANUFACTURER );
+    dlna_device_set_manufacturer_url( p_sys->p_libdlna, MANUFACTURER_URL );
+    dlna_device_set_model_description( p_sys->p_libdlna, MODEL_DESCRIPTION );
+    dlna_device_set_model_name( p_sys->p_libdlna, MODEL_NAME );
+    dlna_device_set_model_number( p_sys->p_libdlna, MODEL_NUMBER );
+    dlna_device_set_model_url( p_sys->p_libdlna, MODEL_URL );
+    dlna_device_set_serial_number( p_sys->p_libdlna, SERIAL_NUMBER );
+    dlna_device_set_uuid( p_sys->p_libdlna, UUID ); //XXX: should be generated
+    dlna_device_set_presentation_url( p_sys->p_libdlna, PRESENTATION_URL );
 
-    //TODO: make this a bit more readable ^_^
+    p_sys->p_content_directory = content_directory_init( p_this,
+            p_sys->p_webserver, p_sys->p_libdlna, p_sys->psz_upnp_base_url );
+
     p_sys->p_device_description =
         webserver_register_service( p_sys->p_webserver,
                 MEDIASERVER_DESCRIPTION_URL,
-                dlna_dms_description_get( FRIENDLY_NAME, MANUFACTURER,
-                    MANUFACTURER_URL, MODEL_DESCRIPTION, MODEL_NAME,
-                    MODEL_NUMBER, MODEL_URL, SERIAL_NUMBER, UUID,
-                    PRESENTATION_URL,
-                    "/cms/scpd.xml", "/cms/control", "/cms/event",
-                    (*(service_t**) p_sys->p_content_directory)
-                        ->psz_description_url,
-                    (*(service_t**) p_sys->p_content_directory)
-                        ->psz_control_url,
-                    (*(service_t**) p_sys->p_content_directory)
-                        ->psz_event_url ) ); 
+                dlna_dms_description_get( p_sys->p_libdlna ) ); 
 
     p_sys->p_device_handle = malloc( sizeof( UpnpDevice_Handle ) );
 
