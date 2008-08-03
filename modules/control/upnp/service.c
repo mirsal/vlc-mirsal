@@ -22,6 +22,7 @@
  *****************************************************************************/
 
 #include <vlc_common.h>
+#include <dlna.h>
 #include "service.h"
 #include "webserver.h"
 
@@ -29,7 +30,7 @@
 #include <stdio.h>
 
 service_t* service_init( vlc_object_t* p_parent, webserver_t* p_webserver,
-        vlc_dictionary_t* p_request_handlers,
+        dlna_t* p_libdlna, vlc_dictionary_t* p_request_handlers,
         const char* psz_upnp_base_url, const char* psz_service_name,
         const char* psz_description, const char* psz_type, const char* psz_id )
 {
@@ -52,6 +53,12 @@ service_t* service_init( vlc_object_t* p_parent, webserver_t* p_webserver,
 
     p_this->p_webserver_service = webserver_register_service( p_webserver,
             p_this->psz_description_url, p_this->psz_description );
+
+    p_this->p_dlna_service = dlna_service_init ( p_this->psz_id,
+            p_this->psz_type, p_this->psz_description_url,
+            p_this->psz_control_url, p_this->psz_event_url );
+
+    dlna_service_register_external( p_libdlna, p_this->p_dlna_service );
 
     return p_this;
 }
