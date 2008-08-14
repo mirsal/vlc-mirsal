@@ -6,6 +6,7 @@
  *
  * Authors: Rémi Denis-Courmont <rem # videolan.org> (original plugin)
  *          Christian Henz <henz # c-lab.de>
+ *          Mirsal Ennaime <mirsal dot ennaime at gmail dot com>
  *
  * UPnP Plugin using the Intel SDK (libupnp) instead of CyberLink
  *
