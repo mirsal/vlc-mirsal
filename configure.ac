@@ -4736,7 +4736,7 @@ AC_ARG_ENABLE(upnp,
 if test "${enable-upnp}" != "no"
 then
   PKG_CHECK_MODULES(UPNP, [libupnp, libdlna])
-  VLC_ADD_CFLAGS([upnp upnp_intel],[${UPNP_CFLAGS}])
+  VLC_ADD_CFLAGS([upnp upnp_intel],[${UPNP_CFLAGS} -D_GNU_SOURCE])
   VLC_ADD_LIBS([upnp upnp_intel],[${UPNP_LIBS}])
   VLC_ADD_PLUGIN([upnp])
   VLC_ADD_PLUGIN([upnp_intel])
