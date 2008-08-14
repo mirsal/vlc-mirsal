@@ -21,13 +21,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 
+#ifdef _HAVE_CONFIG_H
+#    include "config.h"
+#endif
+
 #include <vlc_common.h>
 
 #include <upnp/upnp.h>
 #include <upnp/upnptools.h>
 
+#include <stdio.h>
+
 #include "content-directory.h"
 #include "service.h"
+#include "didl.h"
 
 struct _content_directory_t
 {
@@ -40,6 +47,10 @@ static void handle_browse( void* ev, void* user_data );
 static void handle_get_search_capabilities( void* ev, void* user_data );
 static void handle_get_sort_capabilities( void* ev, void* user_data );
 static void handle_get_system_update_id( void* ev, void* user_data );
+static int get_request_int_value( struct Upnp_Action_Request* p_ar,
+                                  const char* psz_key );
+static char* get_request_string_value( struct Upnp_Action_Request* p_ar,
+                                       const char* psz_key );
 
 content_directory_t* content_directory_init( vlc_object_t* p_parent,
         webserver_t* p_webserver, dlna_t* p_libdlna, char* psz_upnp_base_url )
@@ -60,7 +71,7 @@ content_directory_t* content_directory_init( vlc_object_t* p_parent,
             p_this->p_handlers, psz_upnp_base_url, "ContentDirectory",
             CDS_DESCRIPTION, CDS_SERVICE_TYPE, CDS_SERVICE_ID );
 
-    p_this->i_update_id = 0;
+    p_this->i_update_id = 1;
 
     return p_this;
 }
@@ -73,10 +84,51 @@ void content_directory_destroy( content_directory_t* p_this )
     free( p_this );
 }
 
+static int get_request_int_value( struct Upnp_Action_Request* p_ar,
+                                  const char* psz_key )
+{
+    int ret;
+    char* psz_object_id = get_request_string_value( p_ar, psz_key );
+ 
+    if( !psz_object_id )
+        return -1;
+ 
+    ret = atoi( psz_object_id );
+    free( psz_object_id );
+
+    return ret;
+}
+
+static char* get_request_string_value( struct Upnp_Action_Request* p_ar,
+                                       const char* psz_key )
+{
+    char* ret;
+    IXML_NodeList* p_nodes;
+    IXML_Node* p_node;
+    
+    if( !(p_nodes = ixmlDocument_getElementsByTagName(
+                    (IXML_Document*) p_ar->ActionRequest, psz_key )) )
+        return NULL;
+
+    p_node = ixmlNodeList_item( p_nodes, 0 );
+    ixmlNodeList_free( p_nodes );
+
+    if( !p_node )
+        return NULL;
+
+    ret = strdup( (char*) ixmlNode_getNodeValue( p_node ) );
+    ixmlNode_free( p_node );
+
+    return ret;
+}
+
 static void handle_browse( void* ev, void* user_data )
 {
+    didl_t* result;
     content_directory_t* p_this = (content_directory_t*) user_data;
+    service_t* p_cds = *(service_t**) p_this;
     struct Upnp_Action_Request* p_ar = (struct Upnp_Action_Request*) ev;
+
     IXML_Document* didl = ixmlDocument_createDocument();
     IXML_Element* root = ixmlDocument_createElement( didl, "DIDL-Lite" );
     
@@ -86,9 +138,9 @@ static void handle_browse( void* ev, void* user_data )
     UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
             p_this->p_service->psz_type, "Result", ixmlNodetoString( root ) );
     UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
-            p_this->p_service->psz_type, "NumberReturned", "0" );
+            p_this->p_service->psz_type, "NumberReturned", "1" );
     UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
-            p_this->p_service->psz_type, "TotalMatches", "0" );
+            p_this->p_service->psz_type, "TotalMatches", "1" );
     
     msg_Dbg( p_this->p_service->p_parent, "UPnP Action response: %s",
             ixmlPrintDocument( p_ar->ActionResult ) );
@@ -123,9 +175,9 @@ static void handle_get_system_update_id( void* ev, void* user_data )
 {
     content_directory_t* p_this = (content_directory_t*) user_data;
     struct Upnp_Action_Request* p_ar = (struct Upnp_Action_Request*) ev;
-    char* psz_update_id = NULL;
+    char* psz_update_id;
 
-    asprintf( psz_update_id, "%s", p_this->i_update_id );
+    asprintf( &psz_update_id, "%d", p_this->i_update_id );
 
     UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
             p_this->p_service->psz_type, "SystemUpdateID", psz_update_id );

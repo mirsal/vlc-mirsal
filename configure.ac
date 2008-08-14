@@ -139,16 +139,11 @@ AS_IF([test "${with_contrib}" != "no"],[
     if test -z "$with_mozilla_sdk_path"; then
        with_mozilla_sdk_path="${CONTRIB_DIR}/gecko-sdk"
     fi
-<<<<<<< HEAD
-    if test -z "$with_cyberlink_tree"; then
-       with_cyberlink_tree="${CONTRIB_DIR}/src/clinkcc"
-=======
     if test -z $with_libmpeg2_tree; then
        with_libmpeg2_tree=${topdir}/extras/contrib/src/mpeg2dec
     fi
     if test -z $with_a52_tree; then
        with_a52_tree=${topdir}/extras/contrib/src/a52dec
->>>>>>> Remove the unmaintained non-working CyberLink SDK based UPnP services
     fi
 
     if test "${SYS}" = "darwin"; then
@@ -3699,8 +3694,8 @@ PKG_ENABLE_MODULES_VLC([JACK], [jack access_jack], [jack], [JACK audio I/O modul
 dnl
 dnl UPnP Plugins (Intel SDK)
 dnl
-
 PKG_ENABLE_MODULES_VLC([UPNP], [upnp upnp_intel], [libupnp], [Intel UPnp SDK],[auto])
+
 
 dnl
 dnl  UPNP DLNA plugin (via libdlna)
