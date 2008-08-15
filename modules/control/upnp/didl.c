@@ -31,16 +31,16 @@
 
 #define DIDL_ROOT_OPEN \
 "<DIDL-Lite" \
-"    xmlns:dc=\"http://purl.org/dc/elements/1.1/\"" \
-"    xmlns:upnp=\"urn:schemas-upnp-org:metadata-1-0/upnp/\"" \
-"    xmlns=\"urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/\">"
+" xmlns:dc=\"http://purl.org/dc/elements/1.1/\"" \
+" xmlns:upnp=\"urn:schemas-upnp-org:metadata-1-0/upnp/\"" \
+" xmlns=\"urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/\">"
 
 #define DIDL_ROOT_CLOSE \
 "</DIDL-Lite>"
 
 #define DIDL_CONTAINER_FORMAT \
 "<container id=\"%d\" parentID=\"%d\" childCount=\"%d\"" \
-" restricted=\"false\" searchable=\"true\">" \
+" restricted=\"true\" searchable=\"true\">" \
 "    <dc:title>%s</dc:title>" \
 "    <upnp:class>object.container.storageFolder</upnp:class>" \
 "</container>"
@@ -184,7 +184,7 @@ void didl_add_container( didl_t* p_didl, int i_items )
         return;
 
     didl_appendf( p_didl, DIDL_CONTAINER_FORMAT,
-            0, -1, i_items, "VLC media player" );
+            0, 0, i_items, "VLC media player" );
     ++p_didl->i_items;
 }
 
