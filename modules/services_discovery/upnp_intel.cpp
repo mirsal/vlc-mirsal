@@ -391,6 +391,8 @@ const char* xml_getChildElementValue( IXML_Element* parent,
 // Extracts the result document from a SOAP response
 IXML_Document* parseBrowseResult( IXML_Document* doc )
 {
+    ixmlRelaxParser(1);
+
     if ( !doc ) return 0;
 
     IXML_NodeList* resultList = ixmlDocument_getElementsByTagName( doc,
@@ -409,8 +411,6 @@ IXML_Document* parseBrowseResult( IXML_Document* doc )
 
     const char* resultString = ixmlNode_getNodeValue( textNode );
     char* resultXML = strdup( resultString );
-
-    ixmlRelaxParser(1);
 
     IXML_Document* browseDoc = ixmlParseBuffer( resultXML );
 

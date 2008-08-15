@@ -177,21 +177,12 @@
 #define CDS_SERVICE_ID "urn:upnp-org:serviceId:ContentDirectory"
 #define CDS_SERVICE_TYPE "urn:schemas-upnp-org:service:ContentDirectory:1"
 
-
-#define DIDL_TEST_DOC \
+#define DIDL_EMPTY_DOC \
 "<DIDL-Lite" \
 "    xmlns:dc=\"http://purl.org/dc/elements/1.1/\"" \
 "    xmlns:upnp=\"urn:schemas-upnp-org:metadata-1-0/upnp/\"" \
 "    xmlns=\"urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/\">" \
 "</DIDL-Lite>"
-
-//"<DIDL-Lite" \
-//"    xmlns:dc=\"http://purl.org/dc/elements/1.1/\"" \
-//"    xmlns:upnp=\"urn:schemas-upnp-org:metadata-1-0/upnp/\"" \
-//"    xmlns=\"urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/\">" \
-//"</DIDL-Lite>"
-
-//"<DIDL-Lite xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:upnp=\"urn:schemas-upnp-org:metadata-1-0/upnp/\" xmlns=\"urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/\"><container id=\"0\" parentID=\"-1\" childCount=\"4\" restricted=\"false\" searchable=\"true\"><dc:title>Azureus</dc:title><upnp:class>object.container.storageFolder</upnp:class><upnp:storageUsed>11794724</upnp:storageUsed><upnp:writeStatus>WRITABLE</upnp:writeStatus></container></DIDL-Lite>"
 
 #include <vlc_common.h>
 #include <dlna.h>

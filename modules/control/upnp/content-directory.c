@@ -47,6 +47,8 @@ static void handle_browse( void* ev, void* user_data );
 static void handle_get_search_capabilities( void* ev, void* user_data );
 static void handle_get_sort_capabilities( void* ev, void* user_data );
 static void handle_get_system_update_id( void* ev, void* user_data );
+static didl_t* browse_metadata( vlc_object_t* p_this, int i_object_id );
+static didl_t* browse_direct_children( vlc_object_t* p_this, int i_object_id );
 static int get_request_int_value( struct Upnp_Action_Request* p_ar,
                                   const char* psz_key );
 static char* get_request_string_value( struct Upnp_Action_Request* p_ar,
@@ -125,12 +127,54 @@ static char* get_request_string_value( struct Upnp_Action_Request* p_ar,
     return strdup( psz_value );
 }
 
+static didl_t* browse_metadata( vlc_object_t* p_this, int i_object_id )
+{
+    didl_t* p_didl = didl_init( p_this );
+    
+    if( i_object_id == 0 )
+        didl_add_container( p_didl, 1 );
+
+    if( i_object_id == 1 )
+        didl_add_item( p_didl, 1, "object.item.audioItem.musicTrack",
+        "dummy", "http-get:*:audio/x-ms-wma:*", "http://toto.foo/dummy.mp3" );
+
+    didl_finalize( p_didl );
+
+    msg_Dbg( p_this, "DIDL: %s", didl_print( p_didl ) );
+    
+    return p_didl;
+}
+
+static didl_t* browse_direct_children( vlc_object_t* p_this, int i_object_id )
+{
+    didl_t* p_didl = didl_init( p_this );
+    
+    if( i_object_id == 0 )
+        didl_add_item( p_didl, 1, "object.item.audioItem.musicTrack",
+        "dummy", "http-get:*:audio/x-ms-wma:*", "http://toto.foo/dummy.mp3" );
+
+    didl_finalize( p_didl );
+
+    msg_Dbg( p_this, "Direct Children DIDL: %s", didl_print( p_didl ) );
+    
+    return p_didl;
+}
+
 static void handle_browse( void* ev, void* user_data )
 {
-    didl_t* result;
+    didl_t* p_result = NULL;
+    char* psz_didl, *psz_count;
     content_directory_t* p_this = (content_directory_t*) user_data;
     service_t* p_cds = *(service_t**) p_this;
     struct Upnp_Action_Request* p_ar = (struct Upnp_Action_Request*) ev;
+    char* psz_browse_flag = get_request_string_value( p_ar, "BrowseFlag" );
+    int i_object_id = get_request_int_value( p_ar, "ObjectID" );
+
+    if( !strcmp( psz_browse_flag, "BrowseMetadata" ) )
+        p_result = browse_metadata( p_cds->p_parent, i_object_id );
+    
+    if( !strcmp( psz_browse_flag, "BrowseDirectChildren" ) )
+        p_result = browse_direct_children( p_cds->p_parent, i_object_id );
     
     //TODO: Throw away these messages, as they leak memory.
     //XXX: DoS vulnerability... Yay.
@@ -145,12 +189,32 @@ static void handle_browse( void* ev, void* user_data )
     msg_Dbg( p_cds->p_parent, "RequestedCount: %d",
             get_request_int_value( p_ar, "RequestedCount" ) );
 
+    psz_didl = didl_print( p_result );
+    if( psz_didl )
+    {
+        if( asprintf( &psz_count, "%d", didl_count( p_result ) ) == -1 )
+            return;
+    }
+    else
+    {
+        psz_didl = DIDL_EMPTY_DOC;
+        psz_count = "0";
+    }
+
     UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
-            p_this->p_service->psz_type, "Result", DIDL_TEST_DOC );
+            p_this->p_service->psz_type, "Result", psz_didl );
+
+    free( psz_didl );
+
     UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
-            p_this->p_service->psz_type, "NumberReturned", "1" );
+            p_this->p_service->psz_type, "NumberReturned",
+            psz_count );
+
     UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
-            p_this->p_service->psz_type, "TotalMatches", "1" );
+            p_this->p_service->psz_type, "TotalMatches",
+            psz_count );
+    
+    didl_destroy( p_result );
     
     msg_Dbg( p_this->p_service->p_parent, "UPnP Action response: %s",
             ixmlPrintDocument( p_ar->ActionResult ) );
