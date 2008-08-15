@@ -203,6 +203,9 @@ static void handle_browse( void* ev, void* user_data )
     UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
             p_this->p_service->psz_type, "TotalMatches",
             psz_count );
+
+    UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
+            p_this->p_service->psz_type, "UpdateID", "0" );
     
     didl_destroy( p_result );
     
@@ -244,7 +247,7 @@ static void handle_get_system_update_id( void* ev, void* user_data )
     asprintf( &psz_update_id, "%d", p_this->i_update_id );
 
     UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
-            p_this->p_service->psz_type, "SystemUpdateID", psz_update_id );
+            p_this->p_service->psz_type, "Id", psz_update_id );
 
     msg_Dbg( p_this->p_service->p_parent, "UPnP Action response: %s",
             ixmlPrintDocument( p_ar->ActionResult ) );
