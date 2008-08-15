@@ -192,7 +192,6 @@ IXML_Document* parseBrowseResult( IXML_Document* p_doc )
     char* psz_result_xml = strdup( psz_result_string );
 
     IXML_Document* p_browse_doc = ixmlParseBuffer( psz_result_xml );
-
     free( psz_result_xml );
 
     return p_browse_doc;

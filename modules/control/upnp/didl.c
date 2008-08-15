@@ -26,6 +26,7 @@
 
 #include <vlc_common.h>
 #include <stdio.h>
+#include <assert.h>
 #include "didl.h"
 
 #define DIDL_ROOT_OPEN \
@@ -36,6 +37,13 @@
 
 #define DIDL_ROOT_CLOSE \
 "</DIDL-Lite>"
+
+#define DIDL_CONTAINER_FORMAT \
+"<container id=\"%d\" parentID=\"%d\" childCount=\"%d\"" \
+" restricted=\"false\" searchable=\"true\">" \
+"    <dc:title>%s</dc:title>" \
+"    <upnp:class>object.container.storageFolder</upnp:class>" \
+"</container>"
 
 struct _didl_t
 {
@@ -79,7 +87,7 @@ static char* didl_appendf( didl_t* p_didl, const char* psz_format, ... )
         return NULL;
 
     va_start( va_args, psz_format );
-    if( vasprintf( psz, psz_format, va_args ) == -1 )
+    if( vasprintf( &psz, psz_format, va_args ) == -1 )
         return NULL;
     
     ret = didl_append_string( p_didl, psz );
@@ -109,7 +117,7 @@ static char* didl_append_param( didl_t* p_didl, const char* psz_param,
 static char* didl_append_value( didl_t* p_didl, const char* psz_param,
         const int psz_value )
 {
-    if( !p_didl || p_didl->b_finalized || !psz_param || !psz_value )
+    if( !p_didl || p_didl->b_finalized || !psz_param )
         return NULL;
 
     return didl_appendf( p_didl, " %s=\"%d\"", psz_param, psz_value );
@@ -139,20 +147,47 @@ didl_t* didl_init( vlc_object_t* p_parent )
 
 void didl_destroy( didl_t* p_this )
 {
+    if( !p_this )
+        return;
     free( p_this->psz_xml );
     free( p_this );
 }
 
-char* didl_finalize( didl_t* p_didl )
+char* didl_print( didl_t* p_didl )
 {
-    if (!p_didl || p_didl->b_finalized || !p_didl->b_consistant )
+    if (!p_didl || !p_didl->b_finalized || !p_didl->b_consistant )
         return NULL;
 
-    p_didl->b_finalized = true;
- 
-    return didl_append_string( p_didl, DIDL_ROOT_CLOSE );
+    return strdup( p_didl->psz_xml );
 }
-    
+
+void didl_finalize( didl_t* p_didl )
+{
+    if (!p_didl || p_didl->b_finalized || !p_didl->b_consistant )
+        return;
+
+    didl_append_string( p_didl, DIDL_ROOT_CLOSE );
+    p_didl->b_finalized = true;
+}
+
+int didl_count( didl_t* p_didl )
+{
+    if( !p_didl || !p_didl->b_finalized )
+        return -1;
+
+    return p_didl->i_items;
+}
+
+void didl_add_container( didl_t* p_didl, int i_items )
+{
+    if( !p_didl || p_didl->b_finalized )
+        return;
+
+    didl_appendf( p_didl, DIDL_CONTAINER_FORMAT,
+            0, -1, i_items, "VLC media player" );
+    ++p_didl->i_items;
+}
+
 void didl_add_item( didl_t* p_didl, int i_id, char* psz_upnp_class, 
         char* psz_title, char* psz_protocol_info, char* psz_url )
 {
@@ -177,10 +212,11 @@ void didl_add_item( didl_t* p_didl, int i_id, char* psz_upnp_class,
         return;
 
     if( !didl_append_tag( p_didl, "upnp:class", psz_upnp_class ) )
-        return; 
+        return;
 
     if( !didl_append_string( p_didl, "</item>" ) )
         return;
 
+    ++p_didl->i_items;
     p_didl->b_consistant = true;
 }
