@@ -214,6 +214,21 @@ void didl_add_item( didl_t* p_didl, int i_id, char* psz_upnp_class,
     if( !didl_append_tag( p_didl, "upnp:class", psz_upnp_class ) )
         return;
 
+    if( !didl_append_string( p_didl, "<res " ) )
+        return;
+
+    if( !didl_append_param( p_didl, "protocolInfo", psz_protocol_info ) )
+        return;
+
+    if( !didl_append_string( p_didl, ">" ) )
+        return;
+
+    if( !didl_append_string( p_didl, psz_url ) )
+        return;
+
+    if( !didl_append_string( p_didl, "</res>" ) )
+        return;
+
     if( !didl_append_string( p_didl, "</item>" ) )
         return;
 
