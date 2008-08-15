@@ -233,6 +233,10 @@ static void Run( intf_thread_t *p_intf )
 
     free( psz_url );
 
+    if ((e = UpnpSendAdvertisement( *p_sys->p_device_handle, 1800 )) != 
+            UPNP_E_SUCCESS )
+        msg_Err( p_intf, "%s", UpnpGetErrorMessage( e ));
+
     while( !intf_ShouldDie( p_intf ) )
     {
         msleep( INTF_IDLE_SLEEP );
