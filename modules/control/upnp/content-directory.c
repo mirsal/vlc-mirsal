@@ -102,7 +102,7 @@ static int get_request_int_value( struct Upnp_Action_Request* p_ar,
 static char* get_request_string_value( struct Upnp_Action_Request* p_ar,
                                        const char* psz_key )
 {
-    char* ret;
+    char* psz_value;
     IXML_NodeList* p_nodes;
     IXML_Node* p_node;
     
@@ -116,10 +116,13 @@ static char* get_request_string_value( struct Upnp_Action_Request* p_ar,
     if( !p_node )
         return NULL;
 
-    ret = strdup( (char*) ixmlNode_getNodeValue( p_node ) );
-    ixmlNode_free( p_node );
+    p_node = ixmlNode_getFirstChild( p_node );
+    psz_value = (char*) ixmlNode_getNodeValue( p_node );
+     
+    if( !psz_value )
+        return NULL;
 
-    return ret;
+    return strdup( psz_value );
 }
 
 static void handle_browse( void* ev, void* user_data )
