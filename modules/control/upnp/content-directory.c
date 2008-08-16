@@ -26,6 +26,7 @@
 #endif
 
 #include <vlc_common.h>
+#include <vlc_playlist.h>
 
 #include <upnp/upnp.h>
 #include <upnp/upnptools.h>
@@ -48,7 +49,8 @@ static void handle_get_search_capabilities( void* ev, void* user_data );
 static void handle_get_sort_capabilities( void* ev, void* user_data );
 static void handle_get_system_update_id( void* ev, void* user_data );
 static didl_t* browse_metadata( vlc_object_t* p_this, int i_object_id );
-static didl_t* browse_direct_children( vlc_object_t* p_this, int i_object_id );
+static didl_t* browse_direct_children( vlc_object_t* p_this, int i_object_id,
+       int i_start_index, int i_requested_count );
 static int get_request_int_value( struct Upnp_Action_Request* p_ar,
                                   const char* psz_key );
 static char* get_request_string_value( struct Upnp_Action_Request* p_ar,
@@ -130,14 +132,29 @@ static char* get_request_string_value( struct Upnp_Action_Request* p_ar,
 static didl_t* browse_metadata( vlc_object_t* p_this, int i_object_id )
 {
     didl_t* p_didl = didl_init( p_this );
+    playlist_t* p_playlist = pl_Yield( p_this );
+    playlist_item_t* p_item;
     
     if( i_object_id == 0 )
-        didl_add_container( p_didl, 1 );
+    {
+        pl_Release( p_this );
+        didl_add_container( p_didl, p_playlist->current.i_size );
+        didl_finalize( p_didl );
+        return p_didl;
+    }
 
-    if( i_object_id == 1 )
-        didl_add_item( p_didl, 1, "object.item.audioItem.musicTrack",
-        "dummy", "http-get:*:audio/x-ms-wma:*", "http://toto.foo/dummy.mp3" );
+    if( !(p_item = playlist_ItemGetById( p_playlist, i_object_id, false )) )
+    {
+        pl_Release( p_this );
+        didl_finalize( p_didl );
+        return p_didl;
+    }
 
+    didl_add_item( p_didl, p_item->i_id, "object.item.audioItem.musicTrack",
+        p_item->p_input->psz_name, "http-get:*:audio/mpeg:*",
+        p_item->p_input->psz_uri );
+
+    pl_Release( p_this );
     didl_finalize( p_didl );
 
     msg_Dbg( p_this, "DIDL: %s", didl_print( p_didl ) );
@@ -145,14 +162,29 @@ static didl_t* browse_metadata( vlc_object_t* p_this, int i_object_id )
     return p_didl;
 }
 
-static didl_t* browse_direct_children( vlc_object_t* p_this, int i_object_id )
+static didl_t* browse_direct_children( vlc_object_t* p_this,
+        int i_object_id, int i_start_index, int i_requested_count )
 {
     didl_t* p_didl = didl_init( p_this );
+    playlist_t* p_playlist = NULL;
+    int i;
     
-    if( i_object_id == 0 )
-        didl_add_item( p_didl, 1, "object.item.audioItem.musicTrack",
-        "dummy", "http-get:*:audio/x-ms-wma:*", "http://toto.foo/dummy.mp3" );
+    if( i_object_id != 0 )
+    {
+        didl_finalize( p_didl );
+        return p_didl;
+    }
 
+    p_playlist = pl_Yield( p_this );
+    PL_LOCK;
+    for( i=0; (i < p_playlist->current.i_size && i < (i_start_index + i_requested_count)); ++i )
+        didl_add_item( p_didl, p_playlist->current.p_elems[i]->p_input->i_id,
+                "object.item.audioItem.musicTrack",
+                p_playlist->current.p_elems[i]->p_input->psz_name,
+                "http-get:*:audio/mpeg:*",
+                p_playlist->current.p_elems[i]->p_input->psz_uri );
+    PL_UNLOCK;
+    pl_Release( p_this );
     didl_finalize( p_didl );
 
     msg_Dbg( p_this, "Direct Children DIDL: %s", didl_print( p_didl ) );
@@ -169,12 +201,15 @@ static void handle_browse( void* ev, void* user_data )
     struct Upnp_Action_Request* p_ar = (struct Upnp_Action_Request*) ev;
     char* psz_browse_flag = get_request_string_value( p_ar, "BrowseFlag" );
     int i_object_id = get_request_int_value( p_ar, "ObjectID" );
+    int i_start_index = get_request_int_value( p_ar, "StartingIndex" );
+    int i_requested_count = get_request_int_value( p_ar, "RequestedCount" );
 
     if( !strcmp( psz_browse_flag, "BrowseMetadata" ) )
         p_result = browse_metadata( p_cds->p_parent, i_object_id );
     
     if( !strcmp( psz_browse_flag, "BrowseDirectChildren" ) )
-        p_result = browse_direct_children( p_cds->p_parent, i_object_id );
+        p_result = browse_direct_children( p_cds->p_parent, i_object_id,
+               i_start_index, i_requested_count );
     
     assert( ixmlNode_appendChild( (IXML_Node*) didl, (IXML_Node*) root ) ==
             IXML_SUCCESS );
