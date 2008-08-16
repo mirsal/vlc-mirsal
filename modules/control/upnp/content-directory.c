@@ -177,12 +177,17 @@ static didl_t* browse_direct_children( vlc_object_t* p_this,
 
     p_playlist = pl_Yield( p_this );
     PL_LOCK;
+
+    if( !i_start_index && !i_requested_count )
+        i_requested_count = p_playlist->current.i_size;
+
     for( i=0; (i < p_playlist->current.i_size && i < (i_start_index + i_requested_count)); ++i )
         didl_add_item( p_didl, p_playlist->current.p_elems[i]->p_input->i_id,
                 "object.item.audioItem.musicTrack",
                 p_playlist->current.p_elems[i]->p_input->psz_name,
                 "http-get:*:audio/mpeg:*",
                 p_playlist->current.p_elems[i]->p_input->psz_uri );
+
     PL_UNLOCK;
     pl_Release( p_this );
     didl_finalize( p_didl );
