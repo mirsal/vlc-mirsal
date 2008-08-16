@@ -6,6 +6,8 @@ SOURCES_upnp = \
         service.c \
         content-directory.h \
         content-directory.c \
+        connection-manager.h \
+        connection-manager.c \
         webserver.h \
         webserver.c \
 	upnp.c \
