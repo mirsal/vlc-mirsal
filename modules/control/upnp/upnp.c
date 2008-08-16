@@ -39,6 +39,7 @@
 #include "service.h"
 #include "webserver.h"
 #include "content-directory.h"
+#include "connection-manager.h"
 #include "device-description.h"
 
 static int  Open    ( vlc_object_t * );
@@ -57,6 +58,7 @@ struct intf_sys_t
     dlna_t*      p_libdlna;
     UpnpDevice_Handle* p_device_handle;
     content_directory_t* p_content_directory;
+    connection_manager_t* p_connection_manager;
     webserver_service_t* p_device_description;
     char* psz_upnp_base_url;
 };
@@ -131,6 +133,8 @@ static int Open( vlc_object_t* p_this )
 
     p_sys->p_content_directory = content_directory_init( p_this,
             p_sys->p_webserver, p_sys->p_libdlna, p_sys->psz_upnp_base_url );
+    p_sys->p_connection_manager = connection_manager_init( p_this,
+            p_sys->p_webserver, p_sys->p_libdlna, p_sys->psz_upnp_base_url );
 
     p_sys->p_device_description =
         webserver_register_service( p_sys->p_webserver,
@@ -152,6 +156,7 @@ static void Close( vlc_object_t *p_this )
     intf_sys_t      *p_sys      = p_intf->p_sys;     
 
     content_directory_destroy( p_sys->p_content_directory );
+    connection_manager_destroy( p_sys->p_connection_manager );
     webserver_unregister_service( p_sys->p_device_description );
     webserver_destroy( p_sys->p_webserver ); 
     UpnpFinish();
@@ -193,6 +198,7 @@ static void dispatch_action_request( intf_thread_t* p_intf,
 {
     intf_sys_t* p_sys = p_intf->p_sys;
     service_t* p_cds = *(service_t**) p_intf->p_sys->p_content_directory;
+    service_t* p_cms = *(service_t**) p_intf->p_sys->p_connection_manager;
     service_request_handler_t pf_request_handler = NULL;
 
     msg_Dbg( (vlc_object_t*) p_intf,
@@ -207,6 +213,15 @@ static void dispatch_action_request( intf_thread_t* p_intf,
         if( pf_request_handler )
                 pf_request_handler( (void*) ar,
                         (void*) p_sys->p_content_directory );
+    }
+    else if( !strcmp( p_cds->psz_id, ar->ServiceID ) )
+    {
+        pf_request_handler =
+            (service_request_handler_t) vlc_dictionary_value_for_key(
+                p_cds->p_request_handlers, ar->ActionName );
+        if( pf_request_handler )
+                pf_request_handler( (void*) ar,
+                        (void*) p_sys->p_connection_manager );
     }
 }
 
