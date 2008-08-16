@@ -150,8 +150,9 @@ static didl_t* browse_metadata( vlc_object_t* p_this, int i_object_id )
         return p_didl;
     }
 
-    didl_add_item( p_didl, p_item->i_id, "object.item.audioItem.musicTrack",
-        p_item->p_input->psz_name, "http-get:*:audio/mpeg:*",
+    didl_add_item( p_didl, p_item->i_id, "object.item.audioItem",
+        p_item->p_input->psz_name,
+        "http-get:*:audio/mpeg:DLNA.ORG_PN=MP3;DLNA.ORG_OP=01",
         p_item->p_input->psz_uri );
 
     pl_Release( p_this );
@@ -183,11 +184,10 @@ static didl_t* browse_direct_children( vlc_object_t* p_this,
 
     for( i=0; (i < p_playlist->current.i_size && i < (i_start_index + i_requested_count)); ++i )
         didl_add_item( p_didl, p_playlist->current.p_elems[i]->p_input->i_id,
-                "object.item.audioItem.musicTrack",
-                p_playlist->current.p_elems[i]->p_input->psz_name,
-                "http-get:*:audio/mpeg:*",
-                p_playlist->current.p_elems[i]->p_input->psz_uri );
-
+            "object.item.audioItem",
+            p_playlist->current.p_elems[i]->p_input->psz_name,
+            "http-get:*:audio/mpeg:DLNA.ORG_PN=MP3;DLNA.ORG_OP=01",
+            p_playlist->current.p_elems[i]->p_input->psz_uri );
     PL_UNLOCK;
     pl_Release( p_this );
     didl_finalize( p_didl );
