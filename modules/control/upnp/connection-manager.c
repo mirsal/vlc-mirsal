@@ -41,6 +41,10 @@ struct _connection_manager_t
     vlc_dictionary_t* p_handlers;
 };
 
+static void handle_get_protocol_info( void* ev, void* user_data );
+static void handle_get_connection_ids( void* ev, void* user_data );
+static void handle_get_connection_info( void* ev, void* user_data );
+
 connection_manager_t* connection_manager_init( vlc_object_t* p_parent,
         webserver_t* p_webserver, dlna_t* p_libdlna, char* psz_upnp_base_url )
 {
@@ -48,6 +52,12 @@ connection_manager_t* connection_manager_init( vlc_object_t* p_parent,
 
     p_this->p_handlers = malloc( sizeof( vlc_dictionary_t ) );
     vlc_dictionary_init( p_this->p_handlers, 1 );
+    vlc_dictionary_insert( p_this->p_handlers, "GetCurrentConnectionIDs",
+            &handle_get_connection_ids );
+    vlc_dictionary_insert( p_this->p_handlers, "GetCurrentConnectionInfo",
+            &handle_get_connection_info );
+    vlc_dictionary_insert( p_this->p_handlers, "GetProtocolInfo",
+            &handle_get_protocol_info );
 
     p_this->p_service = service_init( p_parent, p_webserver, p_libdlna,
             p_this->p_handlers, psz_upnp_base_url, "ConnectionManager",
@@ -62,4 +72,55 @@ void connection_manager_destroy( connection_manager_t* p_this )
     vlc_dictionary_clear( p_this->p_handlers );
     free( p_this->p_handlers );
     free( p_this );
+}
+
+static void handle_get_protocol_info( void* ev, void* user_data )
+{
+    connection_manager_t* p_this = (connection_manager_t*) user_data;
+    struct Upnp_Action_Request* p_ar = (struct Upnp_Action_Request*) ev;
+
+    UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
+            p_this->p_service->psz_type, "Source", "http-get:*:*:*" );
+
+    msg_Dbg( p_this->p_service->p_parent, "UPnP Action response: %s",
+            ixmlPrintDocument( p_ar->ActionResult ) );
+
+}
+
+static void handle_get_connection_ids( void* ev, void* user_data )
+{
+    connection_manager_t* p_this = (connection_manager_t*) user_data;
+    struct Upnp_Action_Request* p_ar = (struct Upnp_Action_Request*) ev;
+
+    UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
+            p_this->p_service->psz_type, "ConnectionIDs", "0" );
+
+    msg_Dbg( p_this->p_service->p_parent, "UPnP Action response: %s",
+            ixmlPrintDocument( p_ar->ActionResult ) );
+
+}
+
+static void handle_get_connection_info( void* ev, void* user_data )
+{
+    connection_manager_t* p_this = (connection_manager_t*) user_data;
+    struct Upnp_Action_Request* p_ar = (struct Upnp_Action_Request*) ev;
+
+    UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
+            p_this->p_service->psz_type, "RcsID", "0" );
+    UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
+            p_this->p_service->psz_type, "AVTransportID", "0" );
+    UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
+            p_this->p_service->psz_type, "ProtocolInfo", "" );
+    UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
+            p_this->p_service->psz_type, "PeerConnectionManager", "" );
+    UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
+            p_this->p_service->psz_type, "PeerConnectionID", "-1" );
+    UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
+            p_this->p_service->psz_type, "Direction", "Output" );
+    UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
+            p_this->p_service->psz_type, "Status", "Unknown" );
+
+    msg_Dbg( p_this->p_service->p_parent, "UPnP Action response: %s",
+            ixmlPrintDocument( p_ar->ActionResult ) );
+
 }
