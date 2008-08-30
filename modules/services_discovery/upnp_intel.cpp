@@ -29,8 +29,6 @@
   \TODO: Debug messages: "__FILE__, __LINE__" ok ???, Wrn/Err ???
   \TODO: Change names to VLC standard ???
   \TODO: Rewrite this using the new service discovery API (see sap.c, shout.c).
-  \TODO: Fix the code formating
-  \TODO: And damn, make it work !
 */
 
 
