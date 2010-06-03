@@ -243,9 +243,8 @@ static char *SDPGenerate( const vod_media_t *, httpd_client_t *cl );
 static void sprintf_hexa( char *s, uint8_t *p_data, int i_data )
 {
     static const char hex[16] = "0123456789abcdef";
-    int i;
 
-    for( i = 0; i < i_data; i++ )
+    for( int i = 0; i < i_data; i++ )
     {
         s[2*i+0] = hex[(p_data[i]>>4)&0xf];
         s[2*i+1] = hex[(p_data[i]   )&0xf];
@@ -334,8 +333,6 @@ static void Close( vlc_object_t * p_this )
 {
     vod_t *p_vod = (vod_t *)p_this;
     vod_sys_t *p_sys = p_vod->p_sys;
-    block_t *p_block_cmd;
-    rtsp_cmd_t cmd;
 
     /* Stop command thread */
     vlc_object_kill( p_vod );
@@ -344,13 +341,14 @@ static void Close( vlc_object_t * p_this )
 
     while( block_FifoCount( p_sys->p_fifo_cmd ) > 0 )
     {
-         p_block_cmd = block_FifoGet( p_sys->p_fifo_cmd );
-         memcpy( &cmd, p_block_cmd->p_buffer, sizeof(cmd) );
-         block_Release( p_block_cmd );
-         if ( cmd.i_type == RTSP_CMD_TYPE_DEL )
-             MediaDel(p_vod, cmd.p_media);
-         free( cmd.psz_session );
-         free( cmd.psz_arg );
+        rtsp_cmd_t cmd;
+        block_t *p_block_cmd = block_FifoGet( p_sys->p_fifo_cmd );
+        memcpy( &cmd, p_block_cmd->p_buffer, sizeof(cmd) );
+        block_Release( p_block_cmd );
+        if ( cmd.i_type == RTSP_CMD_TYPE_DEL )
+            MediaDel(p_vod, cmd.p_media);
+        free( cmd.psz_session );
+        free( cmd.psz_arg );
     }
     block_FifoRelease( p_sys->p_fifo_cmd );
 
@@ -375,7 +373,6 @@ static void Close( vlc_object_t * p_this )
 static vod_media_t *MediaNew( vod_t *p_vod, const char *psz_name,
                               input_item_t *p_item )
 {
-    int i;
     vod_sys_t *p_sys = p_vod->p_sys;
 
     vod_media_t *p_media = calloc( 1, sizeof(vod_media_t) );
@@ -447,7 +444,7 @@ static vod_media_t *MediaNew( vod_t *p_vod, const char *psz_name,
 
     vlc_mutex_lock( &p_item->lock );
     msg_Dbg( p_vod, "media has %i declared ES", p_item->i_es );
-    for( i = 0; i < p_item->i_es; i++ )
+    for( int i = 0; i < p_item->i_es; i++ )
     {
         MediaAddES( p_vod, p_media, p_item->es[i] );
     }
@@ -726,10 +723,9 @@ static int MediaAddES( vod_t *p_vod, vod_media_t *p_media, es_format_t *p_fmt )
 static void MediaDelES( vod_t *p_vod, vod_media_t *p_media, es_format_t *p_fmt)
 {
     media_es_t *p_es = NULL;
-    int i;
 
     /* Find the ES */
-    for( i = 0; i < p_media->i_es; i++ )
+    for( int i = 0; i < p_media->i_es; i++ )
     {
         if( p_media->es[i]->fmt.i_cat == p_fmt->i_cat &&
             p_media->es[i]->fmt.i_codec == p_fmt->i_codec &&
@@ -888,9 +884,7 @@ static rtsp_client_t *RtspClientNew( vod_media_t *p_media, char *psz_session )
 
 static rtsp_client_t *RtspClientGet( vod_media_t *p_media, const char *psz_session )
 {
-    int i;
-
-    for( i = 0; psz_session && i < p_media->i_rtsp; i++ )
+    for( int i = 0; psz_session && i < p_media->i_rtsp; i++ )
     {
         if( !strcmp( p_media->rtsp[i]->psz_session, psz_session ) )
             return p_media->rtsp[i];
@@ -921,23 +915,23 @@ static void RtspClientDel( vod_media_t *p_media, rtsp_client_t *p_rtsp )
 
 static float ParseNPT (const char *str)
 {
-     locale_t loc = newlocale (LC_NUMERIC_MASK, "C", NULL);
-     locale_t oldloc = uselocale (loc);
-     unsigned hour, min;
-     float sec;
+    locale_t loc = newlocale (LC_NUMERIC_MASK, "C", NULL);
+    locale_t oldloc = uselocale (loc);
+    unsigned hour, min;
+    float sec;
 
-     if (sscanf (str, "%u:%u:%f", &hour, &min, &sec) == 3)
-         sec += ((hour * 60) + min) * 60;
-     else
-     if (sscanf (str, "%f", &sec) != 1)
-         sec = 0.;
+    if (sscanf (str, "%u:%u:%f", &hour, &min, &sec) == 3)
+        sec += ((hour * 60) + min) * 60;
+    else
+    if (sscanf (str, "%f", &sec) != 1)
+        sec = 0.;
 
-     if (loc != (locale_t)0)
-     {
-         uselocale (oldloc);
-         freelocale (loc);
-     }
-     return sec;
+    if (loc != (locale_t)0)
+    {
+        uselocale (oldloc);
+        freelocale (loc);
+    }
+    return sec;
 }
 
 
@@ -1080,7 +1074,7 @@ static int RtspCallback( httpd_callback_sys_t *p_args, httpd_client_t *cl,
         case HTTPD_MSG_PLAY:
         {
             char *psz_output, ip[NI_MAXNUMERICHOST];
-            int i, i_port_audio = 0, i_port_video = 0;
+            int i_port_audio = 0, i_port_video = 0;
 
             /* for now only multicast so easy */
             if( !psz_playnow )
@@ -1165,7 +1159,7 @@ static int RtspCallback( httpd_callback_sys_t *p_args, httpd_client_t *cl,
             p_rtsp->b_playing = true;
 
             /* FIXME for != 1 video and 1 audio */
-            for( i = 0; i < p_rtsp->i_es; i++ )
+            for( int i = 0; i < p_rtsp->i_es; i++ )
             {
                 if( p_rtsp->es[i]->p_media_es->fmt.i_cat == AUDIO_ES )
                     i_port_audio = p_rtsp->es[i]->i_port;
@@ -1306,7 +1300,6 @@ static int RtspCallbackES( httpd_callback_sys_t *p_args, httpd_client_t *cl,
     const char *psz_position = NULL;
     const char *psz_cseq = NULL;
     int i_cseq = 0;
-    int i;
 
     if( answer == NULL || query == NULL ) return VLC_SUCCESS;
 
@@ -1471,7 +1464,7 @@ static int RtspCallbackES( httpd_callback_sys_t *p_args, httpd_client_t *cl,
             p_rtsp = RtspClientGet( p_media, psz_session );
             if( !p_rtsp ) break;
 
-            for( i = 0; i < p_rtsp->i_es; i++ )
+            for( int i = 0; i < p_rtsp->i_es; i++ )
             {
                 if( p_rtsp->es[i]->p_media_es == p_es )
                 {

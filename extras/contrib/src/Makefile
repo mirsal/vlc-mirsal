@@ -376,9 +376,6 @@ gettext-$(GETTEXT_VERSION).tar.gz:
 
 gettext: gettext-$(GETTEXT_VERSION).tar.gz
 	$(EXTRACT_GZ)
-ifdef HAVE_WIN32
-	patch -p0 < Patches/gettext-win32.patch
-endif
 ifdef HAVE_DARWIN_OS
 	patch -p0 < Patches/gettext-macosx.patch
 endif
@@ -392,18 +389,18 @@ endif
 ifneq ($(HOST),$(BUILD))
   ifndef HAVE_CYGWIN
     # We'll use the installed gettext and only need to cross-compile libintl, also build autopoint and gettextsize tools need for VLC bootstrap
-	( cd $< && make -C gettext-runtime/intl && patch -p1 < ../Patches/libintl.patch && make -C gettext-runtime/intl install && make -C gettext-tools/misc install )
+	( cd $< && make -C gettext-runtime/intl && make -C gettext-runtime/intl install && make -C gettext-tools/misc install )
   else
     # We are compiling for MinGW on Cygwin -- build the full current gettext
-	( cd $< && make && patch -p1 < ../Patches/libintl.patch && make install )
+	( cd $< && make && make install )
   endif
 else
 # Build and install the whole gettext
-	( cd $< && make && patch -p1 < ../Patches/libintl.patch && make install )
+	( cd $< && make && make install )
 endif
 # Work around another non-sense of autoconf.
 ifdef HAVE_WIN32
-	(cd $(PREFIX)/include; sed -i.orig '311 c #if 0' libintl.h)
+	(cd $(PREFIX)/include; sed -i.orig '314 c #if 0' libintl.h)
 endif
 	$(INSTALL_NAME)
 	touch $@
@@ -693,7 +690,7 @@ libogg-$(OGG_VERSION).tar.gz:
 
 libogg: libogg-$(OGG_VERSION).tar.gz
 	$(EXTRACT_GZ)
-	patch -p0 < Patches/ogg.patch
+	patch -p0 < Patches/libogg-inttypes.patch
 	patch -p0 < Patches/libogg-1.1.patch
 ifdef HAVE_WINCE
 	patch -p0 < Patches/libogg-wince.patch
@@ -1206,7 +1203,6 @@ ifdef SVN
 libdvdnav:
 	$(SVN) co $(LIBDVDNAV_SVN)  libdvdnav
 	patch -d libdvdnav -p0 < Patches/libdvdnav.patch
-	patch -d libdvdnav -p0 < Patches/libdvdnav-resolution.patch
 	(cd $@; ./autogen.sh noconfig)
 else
 libdvdnav-$(LIBDVDNAV_VERSION).tar.gz:
@@ -1406,19 +1402,11 @@ x264:
 ifdef HAVE_WIN32
 	(cd x264; patch -p0 < ../Patches/x264-svn-win32.patch )
 endif
-
 else
+x264:
+	echo "x264 snapshot is too old, you MUST use Git !"
+	exit -1
 
-x264: x264-$(X264_VERSION).tar.gz
-	$(EXTRACT_GZ)
-ifdef HAVE_WIN32
-  ifndef HAVE_CYGWIN
-	(cd x264;patch -p0 <../Patches/x264-20050624-win32.patch)
-  endif
-else
-	patch -p0 < Patches/x264.patch
-	rm x264/x264.c
-endif
 endif
 
 ifdef HAVE_WIN32
@@ -2272,7 +2260,7 @@ ifdef HAVE_CYGWIN
 endif
 
 .tag: taglib
-	(cd $<; $(HOSTCC)  ./configure $(HOSTCONF) --prefix=$(PREFIX) && make && make install)
+	(cd $<; $(HOSTCC)  ./configure $(HOSTCONF) --enable-mp4 --enable-asf --prefix=$(PREFIX) && make && make install)
 	$(INSTALL_NAME)
 	touch $@
 

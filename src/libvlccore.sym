@@ -234,6 +234,7 @@ libvlc_InternalDestroy
 libvlc_InternalInit
 libvlc_InternalWait
 libvlc_Quit
+libvlc_SetExitHandler
 LocaleFree
 make_URI
 make_path
@@ -416,6 +417,7 @@ str_format_time
 subpicture_Delete
 subpicture_New
 subpicture_NewFromPicture
+subpicture_Update
 subpicture_region_ChainDelete
 subpicture_region_Delete
 subpicture_region_New
@@ -472,7 +474,6 @@ video_format_Setup
 video_format_Print
 video_splitter_Delete
 video_splitter_New
-vlc_avcodec_mutex
 vlc_b64_decode
 vlc_b64_decode_binary
 vlc_b64_decode_binary_to_buffer
@@ -550,6 +551,7 @@ vlc_mutex_init_recursive
 vlc_mutex_lock
 vlc_mutex_trylock
 vlc_mutex_unlock
+vlc_global_mutex
 vlc_object_attach
 vlc_object_create
 vlc_object_find

@@ -227,6 +227,12 @@ void VideoWidget::SetFullScreen( bool b_fs )
         }
         reparentable->setParent( NULL, newflags );
         reparentable->setWindowState( newstate );
+
+        /* FIXME: inherit from the vout window, not the interface */
+        char *title = var_InheritString( p_intf, "video-title" );
+        reparentable->setWindowTitle( qfu(title ? title : _("Video")) );
+        free( title );
+
         reparentable->show();
     }
     else
@@ -262,6 +268,12 @@ bool VideoWidget::eventFilter(QObject *obj, QEvent *event)
         else if( event->type() == QEvent::KeyPress )
         {
             emit keyPressed( static_cast<QKeyEvent *>(event) );
+            return true;
+        }
+        else if( event->type() == QEvent::Wheel )
+        {
+            int i_vlckey = qtWheelEventToVLCKey( static_cast<QWheelEvent *>(event) );
+            var_SetInteger( p_intf->p_libvlc, "key-pressed", i_vlckey );
             return true;
         }
     }
@@ -581,7 +593,8 @@ void CoverArtLabel::showArtUpdate( const QString& url )
     if( !url.isEmpty() && pix.load( url ) )
     {
         pix = pix.scaled( maximumWidth(), maximumHeight(),
-                          Qt::KeepAspectRatioByExpanding );
+                          Qt::KeepAspectRatioByExpanding,
+                          Qt::SmoothTransformation );
     }
     else
     {

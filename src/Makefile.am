@@ -107,6 +107,7 @@ pluginsinclude_HEADERS = \
 	../include/vlc_vout_osd.h \
 	../include/vlc_vout_window.h \
 	../include/vlc_xml.h \
+	../include/vlc_xlib.h \
 	$(NULL)
 
 noinst_HEADERS = \
@@ -428,6 +429,7 @@ SOURCES_libvlc_common = \
 	misc/cpu.c \
 	misc/action.c \
 	misc/epg.c \
+	misc/exit.c \
 	config/configuration.h \
 	config/core.c \
 	config/chain.c \
@@ -456,6 +458,8 @@ SOURCES_libvlc_common = \
 	misc/http_auth.c \
 	misc/sql.c \
 	misc/text_style.c \
+	misc/subpicture.c \
+	misc/subpicture.h \
 	$(NULL)
 
 SOURCES_libvlc_httpd = \

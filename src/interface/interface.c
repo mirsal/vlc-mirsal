@@ -129,11 +129,6 @@ int intf_Create( vlc_object_t *p_this, const char *psz_module )
     }
 
     vlc_mutex_lock( &lock );
-    if( !vlc_object_alive( p_libvlc ) )
-    {
-        vlc_mutex_unlock( &lock );
-        goto error; /* Too late! */
-    }
 #if defined( __APPLE__ ) || defined( WIN32 )
     /* Hack to get Mac OS X Cocoa runtime running
      * (it needs access to the main thread) */
@@ -187,8 +182,6 @@ error:
 void intf_DestroyAll( libvlc_int_t *p_libvlc )
 {
     intf_thread_t *p_first;
-
-    assert( !vlc_object_alive( p_libvlc ) );
 
     vlc_mutex_lock( &lock );
     p_first = libvlc_priv( p_libvlc )->p_intf;
