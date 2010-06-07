@@ -110,7 +110,7 @@ MainInterface::MainInterface( intf_thread_t *_p_intf ) : QVLCMW( _p_intf )
     b_autoresize = var_InheritBool( p_intf, "qt-video-autoresize" );
 
     /* Are we in the enhanced always-video mode or not ? */
-    i_visualmode = var_InheritInteger( p_intf, "qt-minimal-view" );
+    i_visualmode = var_InheritBool( p_intf, "qt-minimal-view" );
 
     /* Do we want anoying popups or not */
     b_notificationEnabled = var_InheritBool( p_intf, "qt-notification" );
@@ -603,7 +603,7 @@ void MainInterface::setVideoFullScreen( bool fs )
     b_videoFullScreen = fs;
     /* refresh main interface on-top status if needed */
     setVideoOnTop( b_videoOnTop );
-    videoWidget->SetFullScreen( fs );
+    videoWidget->SetFullScreen( fs, b_videoOnTop );
 }
 
 /* Slot to change the video always-on-top flag.

@@ -28,7 +28,6 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <X11/Xlib.h>
-#include <vlc_xlib.h>
 
 #include "x11_factory.hpp"
 #include "x11_display.hpp"
@@ -40,6 +39,9 @@
 #include "x11_tooltip.hpp"
 
 #include "../src/generic_window.hpp"
+
+#include <vlc_common.h>
+#include <vlc_xlib.h>
 
 X11Factory::X11Factory( intf_thread_t *pIntf ): OSFactory( pIntf ),
     m_pDisplay( NULL ), m_pTimerLoop( NULL ), m_dirSep( "/" )
@@ -58,7 +60,7 @@ X11Factory::~X11Factory()
 bool X11Factory::init()
 {
     // make sure xlib is safe-thread
-    if( !vlc_xlib_init( getIntf() ) )
+    if( !vlc_xlib_init( VLC_OBJECT( getIntf() ) ) )
     {
         msg_Err( getIntf(), "initializing xlib for multi-threading failed" );
         return false;
