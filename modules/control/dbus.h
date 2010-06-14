@@ -23,7 +23,7 @@
  *****************************************************************************/
 
 /* MPRIS VERSION */
-#define VLC_MPRIS_VERSION_MAJOR     1
+#define VLC_MPRIS_VERSION_MAJOR     2
 #define VLC_MPRIS_VERSION_MINOR     0
 
 /* DBUS IDENTIFIERS */
@@ -31,9 +31,9 @@
 /* name registered on the session bus */
 #define VLC_MPRIS_DBUS_SERVICE         "org.mpris.vlc"
 
-#define MPRIS_DBUS_ROOT_INTERFACE      "org.freedesktop.MediaPlayer"
-#define MPRIS_DBUS_PLAYER_INTERFACE    "org.freedesktop.MediaPlayer"
-#define MPRIS_DBUS_TRACKLIST_INTERFACE "org.freedesktop.MediaPlayer"
+#define MPRIS_DBUS_ROOT_INTERFACE      "org.mpris.MediaPlayer"
+#define MPRIS_DBUS_PLAYER_INTERFACE    "org.mpris.MediaPlayer.Player"
+#define MPRIS_DBUS_TRACKLIST_INTERFACE "org.mpris.MediaPlayer.TrackList"
 
 #define MPRIS_DBUS_ROOT_PATH        "/"
 #define MPRIS_DBUS_PLAYER_PATH      "/Player"
@@ -98,7 +98,7 @@ const char* psz_introspection_xml_data_root =
 "      <arg name=\"data\" direction=\"out\" type=\"s\"/>\n"
 "    </method>\n"
 "  </interface>\n"
-"  <interface name=\"org.freedesktop.MediaPlayer\">\n"
+"  <interface name=\"org.mpris.MediaPlayer\">\n"
 "    <method name=\"Identity\">\n"
 "      <arg type=\"s\" direction=\"out\" />\n"
 "    </method>\n"
@@ -120,7 +120,7 @@ const char* psz_introspection_xml_data_player =
 "      <arg name=\"data\" direction=\"out\" type=\"s\"/>\n"
 "    </method>\n"
 "  </interface>\n"
-"  <interface name=\"org.freedesktop.MediaPlayer\">\n"
+"  <interface name=\"org.mpris.MediaPlayer.Player\">\n"
 "    <method name=\"GetStatus\">\n"
 "      <arg type=\"(iiii)\" direction=\"out\" />\n"
 "    </method>\n"
@@ -177,7 +177,7 @@ const char* psz_introspection_xml_data_tracklist =
 "      <arg name=\"data\" direction=\"out\" type=\"s\"/>\n"
 "    </method>\n"
 "  </interface>\n"
-"  <interface name=\"org.freedesktop.MediaPlayer\">\n"
+"  <interface name=\"org.mpris.MediaPlayer.TrackList\">\n"
 "    <method name=\"AddTrack\">\n"
 "      <arg type=\"s\" direction=\"in\" />\n"
 "      <arg type=\"b\" direction=\"in\" />\n"
