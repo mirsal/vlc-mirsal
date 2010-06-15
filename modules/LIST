@@ -56,6 +56,7 @@ $Id$
  * avcodec: FFmpeg audio/video decoder
  * avformat: FFmpeg demuxer
  * avi: AVI File stream demuxer
+ * ayatana: Ayatana sound-indicator support
  * ball: Augmented reality ball video filter module
  * bandlimited_resampler: Bandlimited interpolation audio resampler
  * bda: DVB support for Windows BDA drivers

@@ -23,6 +23,8 @@ SOURCES_xscreensaver = inhibit/xscreensaver.c
 SOURCES_xdg_screensaver = inhibit/xdg.c
 SOURCES_osso_screensaver = inhibit/osso.c
 
+SOURCES_ayatana = ayatana.c
+
 libvlc_LTLIBRARIES += \
 	libaudioscrobbler_plugin.la \
 	liblogger_plugin.la

@@ -906,6 +906,16 @@ then
 fi
 AM_CONDITIONAL(HAVE_MINIZIP, [ test "${have_minizip}" = "yes" ])
 
+dnl libindicate & ayatana registration module
+AC_ARG_ENABLE(ayatana,
+  [  --enable-ayatana        Ubuntu ayatana sound-indicator support (default disabled)])
+if test "${enable_ayatana}" = "yes"
+then
+    PKG_CHECK_MODULES([INDICATE], [indicate], [], [AC_MSG_ERROR([libindicate not found])])
+    VLC_ADD_CFLAGS([ayatana], [$INDICATE_CFLAGS])
+    VLC_ADD_LIBS([ayatana], [$INDICATE_LIBS])
+    VLC_ADD_PLUGIN([ayatana])
+fi
 
 dnl Check for dbus
 AC_ARG_ENABLE(dbus,
