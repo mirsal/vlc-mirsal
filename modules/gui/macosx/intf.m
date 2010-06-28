@@ -33,6 +33,7 @@
 #include <vlc_common.h>
 #include <vlc_keys.h>
 #include <vlc_dialog.h>
+#include <vlc_url.h>
 #include <unistd.h> /* execl() */
 
 #import "intf.h"
@@ -698,6 +699,8 @@ static VLCMain *_o_sharedMainInstance = nil;
     [o_mi_addSub setTitle: _NS("Open File...")];
     [o_mi_deinterlace setTitle: _NS("Deinterlace")];
     [o_mu_deinterlace setTitle: _NS("Deinterlace")];
+    [o_mi_deinterlace_mode setTitle: _NS("Deinterlace mode")];
+    [o_mu_deinterlace_mode setTitle: _NS("Deinterlace mode")];
     [o_mi_ffmpeg_pp setTitle: _NS("Post processing")];
     [o_mu_ffmpeg_pp setTitle: _NS("Post processing")];
     [o_mi_teletext setTitle: _NS("Teletext")];
@@ -1044,7 +1047,14 @@ static NSString * VLCToolbarMediaControl     = @"VLCToolbarMediaControl";
 - (BOOL)application:(NSApplication *)o_app openFile:(NSString *)o_filename
 {
     BOOL b_autoplay = config_GetInt( VLCIntf, "macosx-autoplay" );
-    NSDictionary *o_dic = [NSDictionary dictionaryWithObjectsAndKeys: o_filename, @"ITEM_URL", nil];
+    char *psz_uri = make_URI([o_filename UTF8String]);
+    if( !psz_uri )
+        return( FALSE );
+
+    NSDictionary *o_dic = [NSDictionary dictionaryWithObject:[NSString stringWithCString:psz_uri encoding:NSUTF8StringEncoding] forKey:@"ITEM_URL"];
+
+    free( psz_uri );
+
     if( b_autoplay )
         [o_playlist appendArray: [NSArray arrayWithObject: o_dic] atPos: -1 enqueue: NO];
     else
@@ -1919,6 +1929,9 @@ end:
                 var: "video-device" selector: @selector(toggleVar:)];
 
             [o_controls setupVarMenuItem: o_mi_deinterlace target: (vlc_object_t *)p_vout
+                var: "deinterlace" selector: @selector(toggleVar:)];
+
+            [o_controls setupVarMenuItem: o_mi_deinterlace_mode target: (vlc_object_t *)p_vout
                 var: "deinterlace-mode" selector: @selector(toggleVar:)];
 
 #if 1
@@ -2027,6 +2040,7 @@ end:
     [o_mi_subtitle setEnabled: b_enabled];
     [o_mi_channels setEnabled: b_enabled];
     [o_mi_deinterlace setEnabled: b_enabled];
+    [o_mi_deinterlace_mode setEnabled: b_enabled];
     [o_mi_ffmpeg_pp setEnabled: b_enabled];
     [o_mi_device setEnabled: b_enabled];
     [o_mi_screen setEnabled: b_enabled];

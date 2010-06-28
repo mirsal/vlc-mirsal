@@ -46,6 +46,7 @@ pluginsinclude_HEADERS = \
 	../include/vlc_aout_mixer.h \
 	../include/vlc_arrays.h \
 	../include/vlc_art_finder.h \
+	../include/vlc_atomic.h \
 	../include/vlc_avcodec.h \
 	../include/vlc_bits.h \
 	../include/vlc_block.h \
@@ -77,6 +78,7 @@ pluginsinclude_HEADERS = \
 	../include/vlc_md5.h \
 	../include/vlc_messages.h \
 	../include/vlc_meta.h \
+	../include/vlc_media_library.h \
 	../include/vlc_modules.h \
 	../include/vlc_mouse.h \
 	../include/vlc_mtime.h \
@@ -215,7 +217,7 @@ libvlc_la_LIBADD = `$(VLC_CONFIG) -libs libvlc` \
 	libvlccore.la ../compat/libcompat.la
 libvlc_la_CFLAGS = `$(VLC_CONFIG) --cflags libvlc`
 libvlc_la_LDFLAGS = $(AM_LDFLAGS) `$(VLC_CONFIG) --ldflags libvlc` \
-	-version-info 5:0:0 \
+	-version-info 6:0:1 \
 	-export-symbols $(srcdir)/libvlc.sym
 libvlc_la_DEPENDENCIES = libvlc.sym libvlccore.la
 if HAVE_WIN32
@@ -270,17 +272,20 @@ endif
 endif
 
 SOURCES_libvlc_beos = \
+	misc/atomic.c \
 	misc/pthread.c \
 	$(NULL)
 
 SOURCES_libvlc_darwin = \
 	config/dirs_macos.c \
+	misc/atomic.c \
 	misc/pthread.c \
 	misc/darwin_specific.c \
 	$(NULL)
 
 SOURCES_libvlc_linux = \
 	config/dirs_xdg.c \
+	misc/atomic.c \
 	misc/pthread.c \
 	misc/linux_specific.c \
 	$(NULL)
@@ -288,12 +293,14 @@ SOURCES_libvlc_linux = \
 SOURCES_libvlc_win32 = \
 	win32/dirs.c \
 	win32/specific.c \
+	win32/atomic.c \
 	win32/thread.c \
 	win32/winsock.c \
 	$(NULL)
 
 SOURCES_libvlc_other = \
 	config/dirs_xdg.c \
+	misc/atomic.c \
 	misc/pthread.c \
 	misc/not_specific.c
 
@@ -452,6 +459,7 @@ SOURCES_libvlc_common = \
 	misc/update.c \
 	misc/update_crypto.c \
 	misc/xml.c \
+	misc/media_library.c \
 	extras/libc.c \
 	extras/tdestroy.c \
 	misc/filter.c \

@@ -84,6 +84,7 @@ static const char *const ppsz_language[] =
     "ro",
     "ru",
     "zh_CN",
+    "si",
     "sr",
     "sk",
     "sl",
@@ -136,6 +137,7 @@ static const char *const ppsz_language_text[] =
     "Română",
     "Русский",
     "简体中文",
+    "සිංහල",
     "српски",
     "Slovensky",
     "slovenščina",
@@ -344,7 +346,7 @@ static const char *const ppsz_force_dolby_descriptions[] = {
     "Protect against sound clipping" )
 
 #define AUDIO_TIME_STRETCH_TEXT N_( \
-    "Enable time streching audio" )
+    "Enable time stretching audio" )
 #define AUDIO_TIME_STRETCH_LONGTEXT N_( \
     "This allows to play audio at lower or higher speed without " \
     "affecting the audio pitch" )
@@ -1257,6 +1259,10 @@ static const char *const ppsz_albumart_descriptions[] =
     "The media library is automatically saved and reloaded each time you " \
     "start VLC." )
 
+#define LOAD_ML_TEXT N_( "Load Media Library" )
+#define LOAD_ML_LONGTEXT N_( \
+    "Enable this option to load the SQL-based Media Library at VLC startup" )
+
 #define PLTREE_TEXT N_("Display playlist tree")
 #define PLTREE_LONGTEXT N_( \
     "The playlist can use a tree to categorize some items, like the " \
@@ -2055,7 +2061,7 @@ vlc_module_begin ()
                    DATA_PATH_LONGTEXT, true )
         change_need_restart ()
 
-    add_string( "user-agent", "(LibVLC "VERSION")", NULL, "", "", true )
+    add_string( "user-agent", "(LibVLC "VERSION")", NULL, NULL, NULL, true )
         change_safe ()
         change_private ()
 
@@ -2121,6 +2127,10 @@ vlc_module_begin ()
     add_bool( "play-and-pause", 0, NULL, PAP_TEXT, PAP_LONGTEXT, true )
         change_safe()
     add_bool( "media-library", 1, NULL, ML_TEXT, ML_LONGTEXT, false )
+#if defined( MEDIA_LIBRARY )
+    add_bool( "load-media-library-on-startup", 1, NULL, LOAD_ML_TEXT,
+            LOAD_ML_LONGTEXT, false )
+#endif
     add_bool( "playlist-tree", 0, NULL, PLTREE_TEXT, PLTREE_LONGTEXT, false )
 
     add_string( "open", "", NULL, OPEN_TEXT, OPEN_LONGTEXT, false )

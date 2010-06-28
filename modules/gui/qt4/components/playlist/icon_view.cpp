@@ -164,12 +164,17 @@ void PlIconViewItemDelegate::paint( QPainter * painter, const QStyleOptionViewIt
     //Draw children indicator
     if( !index.data( PLModel::IsLeafNodeRole ).toBool() )
     {
-        painter->setOpacity( 0.75 );
         QRect r( option.rect );
         r.setSize( QSize( 25, 25 ) );
         r.translate( 5, 5 );
-        painter->fillRect( r, option.palette.color( QPalette::Mid ) );
-        painter->setOpacity( 1.0 );
+        if( index.data( PLModel::IsCurrentsParentNodeRole ).toBool() )
+        {
+            painter->setOpacity( 0.75 );
+            QPainterPath nodeRectPath;
+            nodeRectPath.addRoundedRect( r, 4, 4 );
+            painter->fillPath( nodeRectPath, option.palette.color( QPalette::Highlight ) );
+            painter->setOpacity( 1.0 );
+        }
         QPixmap dirPix( ":/type/node" );
         QRect r2( dirPix.rect() );
         r2.moveCenter( r.center() );

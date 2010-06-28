@@ -160,7 +160,7 @@ static inline void vlc_input_title_Delete( input_title_t *t )
     free( t );
 }
 
-static inline input_title_t *vlc_input_title_Duplicate( input_title_t *t )
+static inline input_title_t *vlc_input_title_Duplicate( const input_title_t *t )
 {
     input_title_t *dup = vlc_input_title_New( );
     int i;
@@ -663,13 +663,18 @@ VLC_EXPORT( char *, input_CreateFilename, ( vlc_object_t *, const char *psz_path
 VLC_EXPORT( input_resource_t *, input_resource_New, ( vlc_object_t * ) );
 
 /**
- * It deletes an input resource.
+ * It releases an input resource.
  */
-VLC_EXPORT(void, input_resource_Delete, ( input_resource_t * ) );
+VLC_EXPORT(void, input_resource_Release, ( input_resource_t * ) );
 
 /**
  * Forcefully destroys the video output (e.g. when the playlist is stopped).
  */
 VLC_EXPORT(void, input_resource_TerminateVout, ( input_resource_t * ) );
+
+/**
+ * This function releases all resources (object).
+ */
+VLC_EXPORT( void, input_resource_Terminate, ( input_resource_t * ) );
 
 #endif

@@ -4,6 +4,9 @@ Changes between 1.1.0 and 1.2.0-git:
 Codecs
  * You can now use ffmpeg-mt in conjunction with vlc
 
+Interfaces
+ * The telnet interface has been removed in the favour of the lua one
+
 Video Filter:
  * New gradfun filter for debanding videos using dithering
 
@@ -16,7 +19,7 @@ Stream output:
     dst=public_html/iphonestreamfile-###.ts}"
 
 
-Changes between 1.0.5 and 1.1.0:
+Changes between 1.0.6 and 1.1.0:
 --------------------------------
 Important changes for users:
  * On Linux, known bugs in the ALSA library might prevent audio output.
@@ -62,7 +65,7 @@ Decoders:
  * Improvements on the FLAC format (7.1 channels and 88.2/176.4/192 kHz support)
  * Direct rendering is used more often with H.264 in avcodec module
  * Support for MPEG-4 ALS lossless audio codec
- * Support for VP8 codec (source code version only)
+ * Support for VP8 codec
 
 Demuxers:
  * Support for .aob files from DVD-Audio (MLP and LPCM) (Full disc support is NOT present yet)
@@ -131,6 +134,7 @@ Interfaces:
  * Renamed the legacy rc, telnet and http interfaces to oldrc, oldtelnet
    and oldhttp.
  * rc, telnet and http are now implemented using the lua interface system.
+ * qt4 interface contains new iconview and listview mode for playlist
 
 Mac OS X Port:
  * Vastly improved VLCKit framework
@@ -154,6 +158,7 @@ Misc:
  * new sqlite module
  * --save-config command line option not supported anymore.
  * Fixed and reenabled netsync module.
+ * Improved Solaris port
 
 Bindings:
  * new C++ wrapper around libVLC: libVLCpp

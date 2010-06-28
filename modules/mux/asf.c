@@ -76,8 +76,7 @@ vlc_module_begin ()
     set_shortname( "ASF" )
 
     set_capability( "sout mux", 5 )
-    add_shortcut( "asf" )
-    add_shortcut( "asfh" )
+    add_shortcut( "asf", "asfh" )
     set_callbacks( Open, Close )
 
     add_string( SOUT_CFG_PREFIX "title", "", NULL, TITLE_TEXT, TITLE_LONGTEXT,
@@ -538,6 +537,7 @@ static int AddStream( sout_mux_t *p_mux, sout_input_t *p_input )
             {
                 tk->psz_name = "Windows Media Video 9";
                 tk->i_fourcc = VLC_FOURCC( 'W', 'M', 'V', '3' );
+                tk->b_extended = true;
             }
             else if( p_input->p_fmt->i_codec == VLC_CODEC_VC1 )
             {

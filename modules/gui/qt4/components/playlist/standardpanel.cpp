@@ -159,6 +159,8 @@ void StandardPLPanel::gotoPlayingItem()
 void StandardPLPanel::handleExpansion( const QModelIndex& index )
 {
     assert( currentView );
+    if( currentRootIndexId != -1 && currentRootIndexId != model->itemId( index.parent() ) )
+        browseInto( index.parent() );
     currentView->scrollTo( index );
 }
 
@@ -223,7 +225,7 @@ void StandardPLPanel::browseInto( const QModelIndex &index )
 {
     if( currentView == iconView || currentView == listView )
     {
-        currentRootIndexId = model->itemId( index );;
+        currentRootIndexId = model->itemId( index );
         currentView->setRootIndex( index );
     }
 

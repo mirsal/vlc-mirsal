@@ -66,7 +66,7 @@ VideonLAN 1.1.x
 "Serial Device / Port":
 The COM-Port you are using for the hardware. E.G.: COM6 (This setting must be done if you are using a device
 other than "AtmoWin Software") 
-in the case of the device "Quattro AtmoLight" you may specify up to four ports/devices seperated by
+in the case of the device "Quattro AtmoLight" you may specify up to four ports/devices separated by
 , or ; for example if you are useing two physical devices write
 COM6;COM7 or on linux /dev/ttyUSB1;/dev/ttyUSB2
 
@@ -200,7 +200,7 @@ AtmoLight Channel 4: gets zone 0 (top)
 Also the settings for Gradient images change for the new devices, its no longer
 sufficient to speficy only 5 image name - because the number of zones is no longer
 fixed to five.
-So its prefered to set a path ("Gradient Bitmap searchpath"), where files 
+So its preferred to set a path ("Gradient Bitmap searchpath"), where files 
 like "zone_0.bmp" "zone_1.bmp" etc. exists. (with the same rules as defined for 
 the old zone bitmaps.)
 --> I think in most cases its no longer required to use this option,
@@ -258,7 +258,7 @@ devices that AtmoWin supports.
 
 - Quattro AtmoLight - is nothing else as that you have connected up to 4 "classic AtmoLight" devices
   to your computer creating a up 16 channel Atmo Light - each devices needs its own serial port.
-  you have to write the ports seperated by , or ; to [Serial Port/device] f.e. COM3,COM4,COM5 or on 
+  you have to write the ports separated by , or ; to [Serial Port/device] f.e. COM3,COM4,COM5 or on 
   Linux /dev/ttyUSB01,/dev/ttyUSB02,/dev/ttyUSB03
 
 - DMX - stands for a simple DMX controller which can control up to 255 DMX devices (lights)

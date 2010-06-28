@@ -255,7 +255,7 @@ void vout_display_PlacePicture(vout_display_place_t *place,
         place->x = cfg->display.width - place->width;
         break;
     default:
-        place->x = (cfg->display.width - place->width) / 2;
+        place->x = ((int)cfg->display.width - (int)place->width) / 2;
         break;
     }
 
@@ -267,7 +267,7 @@ void vout_display_PlacePicture(vout_display_place_t *place,
         place->y = cfg->display.height - place->height;
         break;
     default:
-        place->y = (cfg->display.height - place->height) / 2;
+        place->y = ((int)cfg->display.height - (int)place->height) / 2;
         break;
     }
 }
@@ -681,12 +681,29 @@ static vout_window_t *VoutDisplayNewWindow(vout_display_t *vd, const vout_window
 {
     vout_display_owner_sys_t *osys = vd->owner.sys;
 
+#ifdef ALLOW_DUMMY_VOUT
+    if (!osys->vout->p) {
+        vout_window_cfg_t cfg_override = *cfg;
+
+        if (!var_InheritBool(osys->vout, "embedded-video"))
+            cfg_override.is_standalone = true;
+
+        return vout_window_New(VLC_OBJECT(osys->vout), NULL, &cfg_override);
+    }
+#endif
     return vout_NewDisplayWindow(osys->vout, vd, cfg);
 }
 static void VoutDisplayDelWindow(vout_display_t *vd, vout_window_t *window)
 {
     vout_display_owner_sys_t *osys = vd->owner.sys;
 
+#ifdef ALLOW_DUMMY_VOUT
+    if (!osys->vout->p) {
+        if( window)
+            vout_window_Delete(window);
+        return;
+    }
+#endif
     vout_DeleteDisplayWindow(osys->vout, vd, window);
 }
 

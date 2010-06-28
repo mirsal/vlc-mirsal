@@ -601,6 +601,18 @@ char *str_format_time( const char *tformat )
     assert (0);
 }
 
+static void format_duration (char *buf, size_t len, int64_t duration)
+{
+    lldiv_t d;
+    int sec;
+
+    duration /= CLOCK_FREQ;
+    d = lldiv (duration, 60);
+    sec = d.rem;
+    d = lldiv (d.quot, 60);
+    snprintf (buf, len, "%02lld:%02d:%02d", d.quot, (int)d.rem, sec);
+}
+
 #define INSERT_STRING( string )                                     \
                     if( string != NULL )                            \
                     {                                               \
@@ -688,9 +700,7 @@ char *str_format_meta( vlc_object_t *p_object, const char *string )
                         vlc_mutex_unlock( &p_item->p_stats->lock );
                     }
                     else
-                    {
-                        sprintf( buf, b_empty_if_na ? "" : "-" );
-                    }
+                        strcpy( buf, b_empty_if_na ? "" : "-" );
                     INSERT_STRING_NO_FREE( buf );
                     break;
                 case 'g':
@@ -758,9 +768,7 @@ char *str_format_meta( vlc_object_t *p_object, const char *string )
                                   var_GetInteger( p_input, "bit-rate" )/1000 );
                     }
                     else
-                    {
-                        sprintf( buf, b_empty_if_na ? "" : "-" );
-                    }
+                        strcpy( buf, b_empty_if_na ? "" : "-" );
                     INSERT_STRING_NO_FREE( buf );
                     break;
                 case 'C':
@@ -770,24 +778,17 @@ char *str_format_meta( vlc_object_t *p_object, const char *string )
                                   var_GetInteger( p_input, "chapter" ) );
                     }
                     else
-                    {
-                        sprintf( buf, b_empty_if_na ? "" : "-" );
-                    }
+                        strcpy( buf, b_empty_if_na ? "" : "-" );
                     INSERT_STRING_NO_FREE( buf );
                     break;
                 case 'D':
                     if( p_item )
                     {
                         mtime_t i_duration = input_item_GetDuration( p_item );
-                        snprintf( buf, 10, "%02d:%02d:%02d",
-                                 (int)(i_duration/(3600000000)),
-                                 (int)((i_duration/(60000000))%60),
-                                 (int)((i_duration/1000000)%60) );
+                        format_duration (buf, sizeof (buf), i_duration);
                     }
                     else
-                    {
-                        snprintf( buf, 10, b_empty_if_na ? "" : "--:--:--" );
-                    }
+                        strcpy( buf, b_empty_if_na ? "" : "--:--:--" );
                     INSERT_STRING_NO_FREE( buf );
                     break;
                 case 'F':
@@ -803,9 +804,7 @@ char *str_format_meta( vlc_object_t *p_object, const char *string )
                                   var_GetInteger( p_input, "title" ) );
                     }
                     else
-                    {
-                        sprintf( buf, b_empty_if_na ? "" : "-" );
-                    }
+                        strcpy( buf, b_empty_if_na ? "" : "-" );
                     INSERT_STRING_NO_FREE( buf );
                     break;
                 case 'L':
@@ -813,15 +812,11 @@ char *str_format_meta( vlc_object_t *p_object, const char *string )
                     {
                         mtime_t i_duration = input_item_GetDuration( p_item );
                         int64_t i_time = var_GetTime( p_input, "time" );
-                        snprintf( buf, 10, "%02d:%02d:%02d",
-                     (int)( ( i_duration - i_time ) / 3600000000 ),
-                     (int)( ( ( i_duration - i_time ) / 60000000 ) % 60 ),
-                     (int)( ( ( i_duration - i_time ) / 1000000 ) % 60 ) );
+                        format_duration( buf, sizeof(buf),
+                                         i_duration - i_time );
                     }
                     else
-                    {
-                        snprintf( buf, 10, b_empty_if_na ? "" : "--:--:--" );
-                    }
+                        strcpy( buf, b_empty_if_na ? "" : "--:--:--" );
                     INSERT_STRING_NO_FREE( buf );
                     break;
                 case 'N':
@@ -860,9 +855,7 @@ char *str_format_meta( vlc_object_t *p_object, const char *string )
                         snprintf( buf, 10, "%.3f", f );
                     }
                     else
-                    {
-                        sprintf( buf, b_empty_if_na ? "" : "-" );
-                    }
+                        strcpy( buf, b_empty_if_na ? "" : "-" );
                     INSERT_STRING_NO_FREE( buf );
                     break;
                 case 'S':
@@ -872,24 +865,17 @@ char *str_format_meta( vlc_object_t *p_object, const char *string )
                         snprintf( buf, 10, "%d.%d", r/1000, (r/100)%10 );
                     }
                     else
-                    {
-                        sprintf( buf, b_empty_if_na ? "" : "-" );
-                    }
+                        strcpy( buf, b_empty_if_na ? "" : "-" );
                     INSERT_STRING_NO_FREE( buf );
                     break;
                 case 'T':
                     if( p_input )
                     {
                         int64_t i_time = var_GetTime( p_input, "time" );
-                        snprintf( buf, 10, "%02d:%02d:%02d",
-                            (int)( i_time / ( 3600000000 ) ),
-                            (int)( ( i_time / ( 60000000 ) ) % 60 ),
-                            (int)( ( i_time / 1000000 ) % 60 ) );
+                        format_duration( buf, sizeof(buf), i_time );
                     }
                     else
-                    {
-                        snprintf( buf, 10, b_empty_if_na ? "" :  "--:--:--" );
-                    }
+                        strcpy( buf, b_empty_if_na ? "" :  "--:--:--" );
                     INSERT_STRING_NO_FREE( buf );
                     break;
                 case 'U':

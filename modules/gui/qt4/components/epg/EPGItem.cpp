@@ -59,44 +59,47 @@ void EPGItem::paint( QPainter *painter, const QStyleOptionGraphicsItem*, QWidget
     QTransform viewPortTransform = m_view->viewportTransform();
     QRectF mapped = deviceTransform( viewPortTransform ).mapRect( boundingRect() );
 
-    painter->setPen( QPen( Qt::black ) );
-
     if ( m_current )
-        painter->setBrush( QBrush( Qt::red ) );
+    {
+        painter->setBrush( QBrush( QColor( 244, 102, 146 ) ) );
+        painter->setPen( QPen( QColor( 244, 102, 146 ) ) );
+    }
     else
-        painter->setBrush( QBrush( Qt::blue ) );
+    {
+        painter->setBrush( QBrush( QColor( 201, 217, 242 ) ) );
+        painter->setPen( QPen( QColor( 201, 217, 242 ) ) );
+    }
 
-    painter->drawRect( mapped );
-
+    mapped.adjust( 1, 2, -1, -2 );
+    painter->drawRoundedRect( mapped, 10, 10 );
 
     /* Draw text */
 
     // Setup the font
     QFont f = painter->font();
-    f.setBold( true );
-    painter->setFont( f );
 
     // Get the font metrics
     QFontMetrics fm = painter->fontMetrics();
 
     // Adjust the drawing rect
-    mapped.adjust( 2, 2, -2, -2 );
+    mapped.adjust( 6, 6, -6, -6 );
 
-    painter->setPen( Qt::white );
+    painter->setPen( Qt::black );
+    /* Draw the title. */
     painter->drawText( mapped, Qt::AlignTop | Qt::AlignLeft, fm.elidedText( m_name, Qt::ElideRight, mapped.width() ) );
 
+    mapped.adjust( 0, 20, 0, 0 );
 
-    f.setBold( false );
+    QDateTime m_end = m_start.addSecs( m_duration );
+    f.setPixelSize( 10 );
     f.setItalic( true );
     painter->setFont( f );
 
-    QTextOption textoption;
-    textoption.setWrapMode( QTextOption::WordWrap );
-    textoption.setAlignment( Qt::AlignTop | Qt::AlignLeft );
-
-    painter->drawText( mapped.adjusted( 0, 20, 0, 0 ),
-                       m_shortDescription,
-                       textoption );
+    /* Draw the hours. */
+    painter->drawText( mapped, Qt::AlignTop | Qt::AlignLeft,
+                       fm.elidedText( m_start.toString( "hh:mm" ) + " - " +
+                                      m_end.toString( "hh:mm" ),
+                                      Qt::ElideRight, mapped.width() ) );
 }
 
 const QDateTime& EPGItem::start() const
@@ -113,14 +116,13 @@ void EPGItem::setChannel( int channelNb )
 {
     //qDebug() << "Channel" << channelNb;
     m_channelNb = channelNb;
-    setPos( pos().x(), m_channelNb * TRACKS_HEIGHT );
+    updatePos();
 }
 
 void EPGItem::setStart( const QDateTime& start )
 {
     m_start = start;
-    int x = m_view->startTime().secsTo( start );
-    setPos( x, pos().y() );
+    updatePos();
 }
 
 void EPGItem::setDuration( int duration )
@@ -149,10 +151,18 @@ void EPGItem::setCurrent( bool current )
     m_current = current;
 }
 
+void EPGItem::updatePos()
+{
+    int x = m_view->startTime().secsTo( m_start );
+    setPos( x, m_channelNb * TRACKS_HEIGHT );
+}
+
 void EPGItem::focusInEvent( QFocusEvent * event )
 {
     EPGEvent *evEPG = new EPGEvent( m_name );
     evEPG->description = m_description;
     evEPG->shortDescription = m_shortDescription;
+    evEPG->start = m_start;
+    evEPG->duration = m_duration;
     m_view->eventFocused( evEPG );
 }

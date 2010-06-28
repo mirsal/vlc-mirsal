@@ -34,6 +34,7 @@
 #include <vlc_common.h>
 #include <vlc_plugin.h>
 #include <vlc_filter.h>
+#include <vlc_url.h>
 
 #include <vlc_image.h>
 
@@ -93,8 +94,8 @@ vlc_module_begin ()
     add_shortcut( "logo" )
 
     add_file( CFG_PREFIX "file", NULL, NULL, FILE_TEXT, FILE_LONGTEXT, false )
-    add_integer( CFG_PREFIX "x", 0, NULL, POSX_TEXT, POSX_LONGTEXT, true )
-    add_integer( CFG_PREFIX "y", 0, NULL, POSY_TEXT, POSY_LONGTEXT, true )
+    add_integer( CFG_PREFIX "x", -1, NULL, POSX_TEXT, POSX_LONGTEXT, true )
+    add_integer( CFG_PREFIX "y", -1, NULL, POSY_TEXT, POSY_LONGTEXT, true )
     /* default to 1000 ms per image, continuously cycle through them */
     add_integer( CFG_PREFIX "delay", 1000, NULL, DELAY_TEXT, DELAY_LONGTEXT, true )
     add_integer( CFG_PREFIX "repeat", -1, NULL, REPEAT_TEXT, REPEAT_LONGTEXT, true )
@@ -614,7 +615,9 @@ static picture_t *LoadImage( vlc_object_t *p_this, const char *psz_filename )
     if( !p_image )
         return NULL;
 
-    picture_t *p_pic = image_ReadUrl( p_image, psz_filename, &fmt_in, &fmt_out );
+    char *psz_url = make_URI( psz_filename );
+    picture_t *p_pic = image_ReadUrl( p_image, psz_url, &fmt_in, &fmt_out );
+    free( psz_url );
     image_HandlerDelete( p_image );
 
     return p_pic;

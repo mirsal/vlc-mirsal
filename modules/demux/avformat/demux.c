@@ -272,6 +272,10 @@ int OpenDemux( vlc_object_t *p_this )
                 else
                     fmt.i_codec = fmt.video.i_chroma;
             }
+            /* We need this for the h264 packetizer */
+            else if( cc->codec_id == CODEC_ID_H264 && ( !strcmp( p_sys->fmt->name, "flv" ) ||
+                !strcmp( p_sys->fmt->name, "matroska" ) || !strcmp( p_sys->fmt->name, "mp4" ) ) )
+                fmt.i_original_fourcc = VLC_FOURCC( 'a', 'v', 'c', '1' );
 
             fmt.video.i_width = cc->width;
             fmt.video.i_height = cc->height;
@@ -281,6 +285,8 @@ int OpenDemux( vlc_object_t *p_this )
                 *fmt.video.p_palette = *(video_palette_t *)cc->palctrl;
             }
             psz_type = "video";
+            fmt.video.i_frame_rate = cc->time_base.den;
+            fmt.video.i_frame_rate_base = cc->time_base.num;
             break;
 
         case CODEC_TYPE_SUBTITLE:

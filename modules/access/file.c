@@ -39,20 +39,19 @@
 #ifdef HAVE_SYS_STAT_H
 #   include <sys/stat.h>
 #endif
-#if defined(HAVE_FSTATFS) && defined(__SunOS)
-#   undef HAVE_FSTATFS
-#endif
 #ifdef HAVE_FCNTL_H
 #   include <fcntl.h>
 #endif
-#if defined (__linux__)
-#   include <sys/vfs.h>
-#ifdef HAVE_LINUX_MAGIC_H
-#   include <linux/magic.h>
+#ifdef HAVE_FSTATVFS
+#   include <sys/statvfs.h>
+#   if defined (HAVE_SYS_MOUNT_H)
+#      include <sys/param.h>
+#      include <sys/mount.h>
+#   endif
 #endif
-#elif defined (HAVE_SYS_MOUNT_H)
-#   include <sys/param.h>
-#   include <sys/mount.h>
+#ifdef HAVE_LINUX_MAGIC_H
+#   include <sys/vfs.h>
+#   include <linux/magic.h>
 #endif
 
 #if defined( WIN32 )
@@ -91,17 +90,20 @@ struct access_sys_t
 #ifndef WIN32
 static bool IsRemote (int fd)
 {
-#ifdef HAVE_FSTATFS
+#if defined (HAVE_FSTATVFS) && defined (MNT_LOCAL)
+    struct statvfs stf;
+
+    if (fstatvfs (fd, &stf))
+        return false;
+    /* fstatvfs() is in POSIX, but MNT_LOCAL is not */
+    return !(stf.f_flag & MNT_LOCAL);
+
+#elif defined (HAVE_LINUX_MAGIC_H)
     struct statfs stf;
 
     if (fstatfs (fd, &stf))
         return false;
 
-#if defined(MNT_LOCAL)
-    return !(stf.f_flags & MNT_LOCAL);
-
-#else
-#   ifdef HAVE_LINUX_MAGIC_H
     switch (stf.f_type)
     {
         case AFS_SUPER_MAGIC:
@@ -113,9 +115,8 @@ static bool IsRemote (int fd)
             return true;
     }
     return false;
-#   endif
-#endif
-#else /* !HAVE_FSTATFS */
+
+#else
     (void)fd;
     return false;
 
@@ -133,7 +134,6 @@ static bool IsRemote (int fd)
 int Open( vlc_object_t *p_this )
 {
     access_t     *p_access = (access_t*)p_this;
-    const char   *path = p_access->psz_filepath;
 #ifdef WIN32
     bool is_remote = false;
 #endif
@@ -144,11 +144,11 @@ int Open( vlc_object_t *p_this )
     if (!strcasecmp (p_access->psz_access, "fd"))
     {
         char *end;
-        int oldfd = strtol (path, &end, 10);
+        int oldfd = strtol (p_access->psz_location, &end, 10);
 
         if (*end == '\0')
             fd = vlc_dup (oldfd);
-        else if (*end == '/' && end > path)
+        else if (*end == '/' && end > p_access->psz_location)
         {
             char *name = decode_URI_duplicate (end - 1);
             if (name != NULL)
@@ -161,6 +161,8 @@ int Open( vlc_object_t *p_this )
     }
     else
     {
+        const char *path = p_access->psz_filepath;
+
         msg_Dbg (p_access, "opening file `%s'", path);
         fd = vlc_open (path, O_RDONLY | O_NONBLOCK);
         if (fd == -1)

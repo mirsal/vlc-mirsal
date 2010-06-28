@@ -98,7 +98,7 @@ static void ChangeFiltersString( intf_thread_t *p_intf,
          }
     }
 
-    aout_EnableFilter( p_object, psz_string, false);
+    aout_EnableFilter( pl_Get( p_intf ), psz_string, b_add);
 
     if( (BOOL)config_GetInt( p_object, "macosx-eq-keep" ) == YES )
     {
@@ -113,7 +113,7 @@ static void ChangeFiltersString( intf_thread_t *p_intf,
 static bool GetFiltersStatus( intf_thread_t *p_intf,
                                  char *psz_name )
 {
-    char *psz_parser, *psz_string;
+    char *psz_parser, *psz_string = NULL;
     vlc_object_t *p_object = VLC_OBJECT(getAout());
     if( p_object == NULL )
         p_object = vlc_object_hold(pl_Get( p_intf ));
@@ -296,7 +296,9 @@ static bool GetFiltersStatus( intf_thread_t *p_intf,
 
 - (IBAction)enable:(id)sender
 {
-    ChangeFiltersString( VLCIntf, (char *)"equalizer", [sender state] );
+//    ChangeFiltersString( VLCIntf, (char *)"equalizer", [sender state] );
+    // to fix #3718
+    aout_EnableFilter( pl_Get( VLCIntf ), (char *)"equalizer", [sender state]);
 }
 
 - (IBAction)preampSliderUpdated:(id)sender

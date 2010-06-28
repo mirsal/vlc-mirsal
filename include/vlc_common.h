@@ -558,10 +558,10 @@ typedef int ( * vlc_callback_t ) ( vlc_object_t *,      /* variable's object */
 # define VLC_OBJECT( x ) ((vlc_object_t *)(x))
 #endif
 
+#include <vlc_atomic.h>
 typedef struct gc_object_t
 {
-    vlc_spinlock_t spin;
-    uintptr_t      refs;
+    vlc_atomic_t    refs;
     void          (*pf_destructor) (struct gc_object_t *);
 } gc_object_t;
 
@@ -854,10 +854,13 @@ VLC_EXPORT( void *, vlc_memset, ( void *, int, size_t ) );
  *****************************************************************************/
 VLC_EXPORT( char *, vlc_gettext, ( const char *msgid ) LIBVLC_FORMAT_ARG(1) );
 
+#define vlc_pgettext( ctx, id ) \
+        vlc_pgettext_aux( ctx "\004" id, id )
+
 LIBVLC_FORMAT_ARG(2)
-static inline const char *vlc_pgettext( const char *ctx, const char *id )
+static inline const char *vlc_pgettext_aux( const char *ctx, const char *id )
 {
-    const char *tr = vlc_gettext( id );
+    const char *tr = vlc_gettext( ctx );
     return (tr == ctx) ? id : tr;
 }
 

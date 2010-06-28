@@ -29,7 +29,7 @@
 #include <QGraphicsView>
 #include <QList>
 
-#define TRACKS_HEIGHT 75
+#define TRACKS_HEIGHT 60
 
 class QDateTime;
 class EPGView : public QGraphicsView
@@ -41,34 +41,28 @@ public:
 
     void            setScale( double scaleFactor );
 
-    void            setStartTime( const QDateTime& startTime );
+    void            updateStartTime();
     const QDateTime& startTime();
 
     void            addEvent( EPGEvent* event );
-    void            updateEvent( EPGEvent* event );
     void            delEvent( EPGEvent* event );
     void            updateDuration();
+
+    QList<QString>  getChannelList();
 
 signals:
     void            startTimeChanged( const QDateTime& startTime );
     void            durationChanged( int seconds );
     void            eventFocusedChanged( EPGEvent * );
 protected:
-    virtual void    drawBackground( QPainter *painter, const QRectF &rect );
 
     QList<QString>  m_channels;
     QDateTime       m_startTime;
     int             m_scaleFactor;
     int             m_duration;
 
-private:
-    QGraphicsRectItem* m_overlay;
-
 public slots:
     void eventFocused( EPGEvent * );
-private slots:
-    void updateOverlayPosition( int value );
-    void sceneRectChanged( const QRectF& rect );
 };
 
 #endif // EPGVIEW_H

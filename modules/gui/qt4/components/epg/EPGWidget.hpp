@@ -27,6 +27,7 @@
 #include "EPGView.hpp"
 #include "EPGEvent.hpp"
 #include "EPGRuler.hpp"
+#include "EPGChannels.hpp"
 
 #include <vlc_common.h>
 #include <vlc_epg.h>
@@ -49,6 +50,7 @@ public slots:
 private:
     EPGRuler* m_rulerWidget;
     EPGView* m_epgView;
+    EPGChannels *m_channelsWidget;
 
     QMultiMap<QString, EPGEvent*> m_events;
 

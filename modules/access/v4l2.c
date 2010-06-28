@@ -51,7 +51,13 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 
-#include <linux/videodev2.h>
+#if defined(HAVE_LINUX_VIDEODEV2_H)
+#   include <linux/videodev2.h>
+#elif defined(HAVE_SYS_VIDEOIO_H)
+#   include <sys/videoio.h>
+#else
+#   error "No Video4Linux2 headers found."
+#endif
 
 #include <poll.h>
 
@@ -375,8 +381,7 @@ vlc_module_begin ()
     set_callbacks( DemuxOpen, DemuxClose )
 
     add_submodule ()
-    add_shortcut( "v4l2" )
-    add_shortcut( "v4l2c" )
+    add_shortcut( "v4l2", "v4l2c" )
     set_description( N_("Video4Linux2 Compressed A/V") )
     set_capability( "access", 0 )
     /* use these when open as access_demux fails; VLC will use another demux */

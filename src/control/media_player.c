@@ -411,6 +411,12 @@ libvlc_media_player_new( libvlc_instance_t *instance )
     var_Create (mp, "logo-opacity", VLC_VAR_INTEGER | VLC_VAR_DOINHERIT);
     var_Create (mp, "logo-position", VLC_VAR_INTEGER | VLC_VAR_DOINHERIT);
 
+    var_Create (mp, "contrast", VLC_VAR_FLOAT | VLC_VAR_DOINHERIT);
+    var_Create (mp, "brightness", VLC_VAR_FLOAT | VLC_VAR_DOINHERIT);
+    var_Create (mp, "hue", VLC_VAR_INTEGER | VLC_VAR_DOINHERIT);
+    var_Create (mp, "saturation", VLC_VAR_FLOAT | VLC_VAR_DOINHERIT);
+    var_Create (mp, "gamma", VLC_VAR_FLOAT | VLC_VAR_DOINHERIT);
+
      /* Audio */
     var_Create (mp, "aout", VLC_VAR_STRING | VLC_VAR_DOINHERIT);
     var_Create (mp, "volume-muted", VLC_VAR_BOOL);
@@ -506,7 +512,8 @@ static void libvlc_media_player_destroy( libvlc_media_player_t *p_mi )
         release_input_thread(p_mi, true);
     if( p_mi->input.p_resource )
     {
-        input_resource_Delete( p_mi->input.p_resource );
+        input_resource_Terminate( p_mi->input.p_resource );
+        input_resource_Release( p_mi->input.p_resource );
         p_mi->input.p_resource = NULL;
     }
     vlc_mutex_destroy( &p_mi->input.lock );
@@ -683,10 +690,7 @@ int libvlc_media_player_play( libvlc_media_player_t *p_mi )
     return 0;
 }
 
-/**************************************************************************
- * Pause.
- **************************************************************************/
-void libvlc_media_player_pause( libvlc_media_player_t *p_mi )
+void libvlc_media_player_set_pause( libvlc_media_player_t *p_mi, int paused )
 {
     input_thread_t * p_input_thread = libvlc_get_input_thread( p_mi );
     if( !p_input_thread )
@@ -695,15 +699,32 @@ void libvlc_media_player_pause( libvlc_media_player_t *p_mi )
     libvlc_state_t state = libvlc_media_player_get_state( p_mi );
     if( state == libvlc_Playing || state == libvlc_Buffering )
     {
-        if( libvlc_media_player_can_pause( p_mi ) )
-            input_Control( p_input_thread, INPUT_SET_STATE, PAUSE_S );
-        else
-            libvlc_media_player_stop( p_mi );
+        if( paused )
+        {
+            if( libvlc_media_player_can_pause( p_mi ) )
+                input_Control( p_input_thread, INPUT_SET_STATE, PAUSE_S );
+            else
+                libvlc_media_player_stop( p_mi );
+        }
     }
     else
-        input_Control( p_input_thread, INPUT_SET_STATE, PLAYING_S );
+    {
+        if( !paused )
+            input_Control( p_input_thread, INPUT_SET_STATE, PLAYING_S );
+    }
 
     vlc_object_release( p_input_thread );
+}
+
+/**************************************************************************
+ * Toggle pause.
+ **************************************************************************/
+void libvlc_media_player_pause( libvlc_media_player_t *p_mi )
+{
+    libvlc_state_t state = libvlc_media_player_get_state( p_mi );
+    bool playing = (state == libvlc_Playing || state == libvlc_Buffering);
+
+    libvlc_media_player_set_pause( p_mi, playing );
 }
 
 /**************************************************************************

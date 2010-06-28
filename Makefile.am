@@ -55,6 +55,7 @@ EXTRA_DIST = \
 	extras/package/win32/languages/brazilian_portuguese.nsh \
 	extras/package/win32/languages/bulgarian.nsh \
 	extras/package/win32/languages/catalan.nsh \
+	extras/package/win32/languages/danish.nsh \
 	extras/package/win32/languages/dutch.nsh \
 	extras/package/win32/languages/english.nsh \
 	extras/package/win32/languages/estonian.nsh \
@@ -97,7 +98,8 @@ DISTCHECK_CONFIGURE_FLAGS = \
 	--disable-mad --disable-libmpeg2 \
 	--disable-faad --disable-skins2 \
 	--disable-live555 \
-	--disable-fribidi --disable-glx
+	--disable-fribidi --disable-glx \
+	--with-kde-solid='$${datadir}/kde4/apps'
 
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = \
@@ -735,7 +737,7 @@ package-win-common:
 	$(U2D) "$(win32_destdir)/"*.txt || echo "WARNING: this shouldn't happen"
 
 # Necessary icons
-	cp $(srcdir)/share/vlc.ico $(win32_destdir)/
+	cp $(srcdir)/share/icons/vlc.ico $(win32_destdir)/
 
 # Copy the locales
 	mkdir -p $(win32_destdir)/locale

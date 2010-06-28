@@ -68,6 +68,8 @@
 #   include <dbus/dbus.h>
 #endif
 
+
+#include <vlc_media_library.h>
 #include <vlc_playlist.h>
 #include <vlc_interface.h>
 
@@ -78,6 +80,7 @@
 #include <vlc_fs.h>
 #include <vlc_cpu.h>
 #include <vlc_url.h>
+#include <vlc_atomic.h>
 
 #include "libvlc.h"
 
@@ -116,18 +119,7 @@ void *vlc_gc_init (gc_object_t *p_gc, void (*pf_destruct) (gc_object_t *))
     assert (pf_destruct);
     p_gc->pf_destructor = pf_destruct;
 
-    p_gc->refs = 1;
-#if defined (__GCC_HAVE_SYNC_COMPARE_AND_SWAP_4)
-    __sync_synchronize ();
-#elif defined (WIN32) && defined (__GNUC__)
-#elif defined(__APPLE__)
-    OSMemoryBarrier ();
-#else
-    /* Nobody else can possibly lock the spin - it's there as a barrier */
-    vlc_spin_init (&p_gc->spin);
-    vlc_spin_lock (&p_gc->spin);
-    vlc_spin_unlock (&p_gc->spin);
-#endif
+    vlc_atomic_set (&p_gc->refs, 1);
     return p_gc;
 }
 
@@ -139,22 +131,9 @@ void *vlc_gc_init (gc_object_t *p_gc, void (*pf_destruct) (gc_object_t *))
 void *vlc_hold (gc_object_t * p_gc)
 {
     uintptr_t refs;
-    assert( p_gc );
-    assert ((((uintptr_t)&p_gc->refs) & (sizeof (void *) - 1)) == 0); /* alignment */
 
-#if defined (__GCC_HAVE_SYNC_COMPARE_AND_SWAP_4)
-    refs = __sync_add_and_fetch (&p_gc->refs, 1);
-#elif defined (WIN64)
-    refs = InterlockedIncrement64 (&p_gc->refs);
-#elif defined (WIN32)
-    refs = InterlockedIncrement (&p_gc->refs);
-#elif defined(__APPLE__)
-    refs = OSAtomicIncrement32Barrier((int*)&p_gc->refs);
-#else
-    vlc_spin_lock (&p_gc->spin);
-    refs = ++p_gc->refs;
-    vlc_spin_unlock (&p_gc->spin);
-#endif
+    assert( p_gc );
+    refs = vlc_atomic_inc (&p_gc->refs);
     assert (refs != 1); /* there had to be a reference already */
     return p_gc;
 }
@@ -168,33 +147,10 @@ void vlc_release (gc_object_t *p_gc)
     unsigned refs;
 
     assert( p_gc );
-    assert ((((uintptr_t)&p_gc->refs) & (sizeof (void *) - 1)) == 0); /* alignment */
-
-#if defined (__GCC_HAVE_SYNC_COMPARE_AND_SWAP_4)
-    refs = __sync_sub_and_fetch (&p_gc->refs, 1);
-#elif defined (WIN64)
-    refs = InterlockedDecrement64 (&p_gc->refs);
-#elif defined (WIN32)
-    refs = InterlockedDecrement (&p_gc->refs);
-#elif defined(__APPLE__)
-    refs = OSAtomicDecrement32Barrier((int*)&p_gc->refs);
-#else
-    vlc_spin_lock (&p_gc->spin);
-    refs = --p_gc->refs;
-    vlc_spin_unlock (&p_gc->spin);
-#endif
-
+    refs = vlc_atomic_dec (&p_gc->refs);
     assert (refs != (uintptr_t)(-1)); /* reference underflow?! */
     if (refs == 0)
-    {
-#if defined (__GCC_HAVE_SYNC_COMPARE_AND_SWAP_4)
-#elif defined (WIN32) && defined (__GNUC__)
-#elif defined(__APPLE__)
-#else
-        vlc_spin_destroy (&p_gc->spin);
-#endif
         p_gc->pf_destructor (p_gc);
-    }
 }
 
 /*****************************************************************************
@@ -251,6 +207,7 @@ libvlc_int_t * libvlc_InternalCreate( void )
 
     priv = libvlc_priv (p_libvlc);
     priv->p_playlist = NULL;
+    priv->p_ml = NULL;
     priv->p_dialog_provider = NULL;
     priv->p_vlm = NULL;
 
@@ -819,6 +776,23 @@ int libvlc_InternalInit( libvlc_int_t *p_libvlc, int i_argc,
     /* System specific configuration */
     system_Configure( p_libvlc, i_argc - vlc_optind, ppsz_argv + vlc_optind );
 
+#if defined(MEDIA_LIBRARY)
+    /* Get the ML */
+    if( var_GetBool( p_libvlc, "load-media-library-on-startup" ) == true )
+    {
+        priv->p_ml = __ml_Create( VLC_OBJECT( p_libvlc ), NULL );
+        if( !priv->p_ml )
+        {
+            msg_Err( p_libvlc, "ML initialization failed" );
+            return VLC_EGENERIC;
+        }
+    }
+    else
+    {
+        priv->p_ml = NULL;
+    }
+#endif
+
     /* Add service discovery modules */
     psz_modules = var_InheritString( p_libvlc, "services-discovery" );
     if( psz_modules )
@@ -1013,6 +987,16 @@ void libvlc_InternalCleanup( libvlc_int_t *p_libvlc )
 
     /* Free playlist now, all threads are gone */
     playlist_Destroy( p_playlist );
+
+#if defined(MEDIA_LIBRARY)
+    media_library_t* p_ml = priv->p_ml;
+    if( p_ml )
+    {
+        __ml_Destroy( VLC_OBJECT( p_ml ) );
+        vlc_object_release( p_ml );
+        libvlc_priv(p_playlist->p_libvlc)->p_ml = NULL;
+    }
+#endif
 
     stats_TimersDumpAll( p_libvlc );
     stats_TimersCleanAll( p_libvlc );

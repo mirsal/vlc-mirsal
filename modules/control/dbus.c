@@ -113,6 +113,7 @@ struct intf_sys_t
     vlc_array_t    *p_events;
     vlc_mutex_t     lock;
     input_thread_t *p_input;
+    bool            b_unique;
 };
 
 typedef struct
@@ -129,6 +130,10 @@ typedef struct
 /*****************************************************************************
  * Module descriptor
  *****************************************************************************/
+#define DBUS_UNIQUE_TEXT N_("Unique DBUS service id (org.mpris.vlc-<pid>)")
+#define DBUS_UNIQUE_LONGTEXT N_( \
+    "Use a unique dbus service id to identify this VLC instance on the DBUS bus. " \
+    "The process identifier (PID) is added to the service name: org.mpris.vlc-<pid>" )
 
 vlc_module_begin ()
     set_shortname( N_("dbus"))
@@ -137,6 +142,8 @@ vlc_module_begin ()
     set_description( N_("D-Bus control interface") )
     set_capability( "interface", 0 )
     set_callbacks( Open, Close )
+    add_bool( "dbus-unique-service-id", false, NULL,
+              DBUS_UNIQUE_TEXT, DBUS_UNIQUE_LONGTEXT, true )
 vlc_module_end ()
 
 /*****************************************************************************
@@ -622,8 +629,8 @@ DBUS_METHOD( handle_introspect_tracklist )
  * handle_*: answer to incoming messages
  *****************************************************************************/
 
-#define METHOD_FUNC( method, function ) \
-    else if( dbus_message_is_method_call( p_from, MPRIS_DBUS_INTERFACE, method ) )\
+#define METHOD_FUNC( interface, method, function ) \
+    else if( dbus_message_is_method_call( p_from, interface, method ) )\
         return function( p_conn, p_from, p_this )
 
 DBUS_METHOD( handle_root )
@@ -635,9 +642,9 @@ DBUS_METHOD( handle_root )
 
     /* here D-Bus method's names are associated to an handler */
 
-    METHOD_FUNC( "Identity",                Identity );
-    METHOD_FUNC( "MprisVersion",            MprisVersion );
-    METHOD_FUNC( "Quit",                    Quit );
+    METHOD_FUNC( MPRIS_DBUS_ROOT_INTERFACE, "Identity",      Identity );
+    METHOD_FUNC( MPRIS_DBUS_ROOT_INTERFACE, "MprisVersion",  MprisVersion );
+    METHOD_FUNC( MPRIS_DBUS_ROOT_INTERFACE, "Quit",          Quit );
 
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 }
@@ -651,19 +658,19 @@ DBUS_METHOD( handle_player )
 
     /* here D-Bus method's names are associated to an handler */
 
-    METHOD_FUNC( "Prev",                    Prev );
-    METHOD_FUNC( "Next",                    Next );
-    METHOD_FUNC( "Stop",                    Stop );
-    METHOD_FUNC( "Play",                    Play );
-    METHOD_FUNC( "Pause",                   Pause );
-    METHOD_FUNC( "Repeat",                  Repeat );
-    METHOD_FUNC( "VolumeSet",               VolumeSet );
-    METHOD_FUNC( "VolumeGet",               VolumeGet );
-    METHOD_FUNC( "PositionSet",             PositionSet );
-    METHOD_FUNC( "PositionGet",             PositionGet );
-    METHOD_FUNC( "GetStatus",               GetStatus );
-    METHOD_FUNC( "GetMetadata",             GetCurrentMetadata );
-    METHOD_FUNC( "GetCaps",                 GetCaps );
+    METHOD_FUNC( MPRIS_DBUS_PLAYER_INTERFACE, "Prev",        Prev );
+    METHOD_FUNC( MPRIS_DBUS_PLAYER_INTERFACE, "Next",        Next );
+    METHOD_FUNC( MPRIS_DBUS_PLAYER_INTERFACE, "Stop",        Stop );
+    METHOD_FUNC( MPRIS_DBUS_PLAYER_INTERFACE, "Play",        Play );
+    METHOD_FUNC( MPRIS_DBUS_PLAYER_INTERFACE, "Pause",       Pause );
+    METHOD_FUNC( MPRIS_DBUS_PLAYER_INTERFACE, "Repeat",      Repeat );
+    METHOD_FUNC( MPRIS_DBUS_PLAYER_INTERFACE, "VolumeSet",   VolumeSet );
+    METHOD_FUNC( MPRIS_DBUS_PLAYER_INTERFACE, "VolumeGet",   VolumeGet );
+    METHOD_FUNC( MPRIS_DBUS_PLAYER_INTERFACE, "PositionSet", PositionSet );
+    METHOD_FUNC( MPRIS_DBUS_PLAYER_INTERFACE, "PositionGet", PositionGet );
+    METHOD_FUNC( MPRIS_DBUS_PLAYER_INTERFACE, "GetStatus",   GetStatus );
+    METHOD_FUNC( MPRIS_DBUS_PLAYER_INTERFACE, "GetMetadata", GetCurrentMetadata );
+    METHOD_FUNC( MPRIS_DBUS_PLAYER_INTERFACE, "GetCaps",     GetCaps );
 
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 }
@@ -676,13 +683,13 @@ DBUS_METHOD( handle_tracklist )
 
     /* here D-Bus method's names are associated to an handler */
 
-    METHOD_FUNC( "GetMetadata",             GetMetadata );
-    METHOD_FUNC( "GetCurrentTrack",         GetCurrentTrack );
-    METHOD_FUNC( "GetLength",               GetLength );
-    METHOD_FUNC( "AddTrack",                AddTrack );
-    METHOD_FUNC( "DelTrack",                DelTrack );
-    METHOD_FUNC( "SetLoop",                 SetLoop );
-    METHOD_FUNC( "SetRandom",               SetRandom );
+    METHOD_FUNC( MPRIS_DBUS_TRACKLIST_INTERFACE, "GetMetadata",     GetMetadata );
+    METHOD_FUNC( MPRIS_DBUS_TRACKLIST_INTERFACE, "GetCurrentTrack", GetCurrentTrack );
+    METHOD_FUNC( MPRIS_DBUS_TRACKLIST_INTERFACE, "GetLength",       GetLength );
+    METHOD_FUNC( MPRIS_DBUS_TRACKLIST_INTERFACE, "AddTrack",        AddTrack );
+    METHOD_FUNC( MPRIS_DBUS_TRACKLIST_INTERFACE, "DelTrack",        DelTrack );
+    METHOD_FUNC( MPRIS_DBUS_TRACKLIST_INTERFACE, "SetLoop",         SetLoop );
+    METHOD_FUNC( MPRIS_DBUS_TRACKLIST_INTERFACE, "SetRandom",       SetRandom );
 
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 }
@@ -698,6 +705,7 @@ static int Open( vlc_object_t *p_this )
     playlist_t      *p_playlist;
     DBusConnection  *p_conn;
     DBusError       error;
+    char            *psz_service_name = NULL;
 
     if( !p_sys )
         return VLC_ENOMEM;
@@ -706,6 +714,21 @@ static int Open( vlc_object_t *p_this )
     p_sys->i_caps = CAPS_NONE;
     p_sys->b_dead = false;
     p_sys->p_input = NULL;
+
+    p_sys->b_unique = var_CreateGetBool( p_intf, "dbus-unique-service-id" );
+    if( p_sys->b_unique )
+    {
+        if( asprintf( &psz_service_name, "%s-%d",
+            VLC_MPRIS_DBUS_SERVICE, getpid() ) < 0 )
+        {
+            free( p_sys );
+            return VLC_ENOMEM;
+        }
+    }
+    else
+    {
+        psz_service_name = strdup(VLC_MPRIS_DBUS_SERVICE);
+    }
 
     dbus_error_init( &error );
 
@@ -721,15 +744,18 @@ static int Open( vlc_object_t *p_this )
     }
 
     /* register a well-known name on the bus */
-    dbus_bus_request_name( p_conn, VLC_MPRIS_DBUS_SERVICE, 0, &error );
+    dbus_bus_request_name( p_conn, psz_service_name, 0, &error );
     if( dbus_error_is_set( &error ) )
     {
-        msg_Err( p_this, "Error requesting service " VLC_MPRIS_DBUS_SERVICE
-                 ": %s", error.message );
+        msg_Err( p_this, "Error requesting service %s: %s",
+                 psz_service_name, error.message );
         dbus_error_free( &error );
+        free( psz_service_name );
         free( p_sys );
         return VLC_EGENERIC;
     }
+    msg_Info( p_intf, "listening on dbus as: %s", psz_service_name );
+    free( psz_service_name );
 
     /* we register the objects */
     dbus_connection_register_object_path( p_conn, MPRIS_DBUS_ROOT_PATH,
@@ -913,7 +939,10 @@ static int AllCallback( vlc_object_t *p_this, const char *psz_var,
  *****************************************************************************/
 DBUS_SIGNAL( CapsChangeSignal )
 {
-    SIGNAL_INIT( MPRIS_DBUS_PLAYER_PATH, "CapsChange" );
+    SIGNAL_INIT( MPRIS_DBUS_PLAYER_INTERFACE,
+                 MPRIS_DBUS_PLAYER_PATH,
+                 "CapsChange" );
+
     OUT_ARGUMENTS;
 
     ADD_INT32( &((intf_thread_t*)p_data)->p_sys->i_caps );
@@ -925,11 +954,16 @@ DBUS_SIGNAL( CapsChangeSignal )
  *****************************************************************************/
 DBUS_SIGNAL( TrackListChangeSignal )
 { /* emit the new tracklist lengh */
-    SIGNAL_INIT( MPRIS_DBUS_TRACKLIST_PATH, "TrackListChange");
+    SIGNAL_INIT( MPRIS_DBUS_TRACKLIST_INTERFACE,
+                 MPRIS_DBUS_TRACKLIST_PATH,
+                 "TrackListChange");
+
     OUT_ARGUMENTS;
 
-    /* XXX: locking */
-    dbus_int32_t i_elements = ((intf_thread_t*)p_data)->p_sys->p_playlist->current.i_size;
+    playlist_t *p_playlist = ((intf_thread_t*)p_data)->p_sys->p_playlist;
+    PL_LOCK;
+    dbus_int32_t i_elements = p_playlist->current.i_size;
+    PL_UNLOCK;
 
     ADD_INT32( &i_elements );
     SIGNAL_SEND;
@@ -972,7 +1006,10 @@ static int TrackListChangeEmit( intf_thread_t *p_intf, int signal, int i_node )
 
 DBUS_SIGNAL( TrackChangeSignal )
 { /* emit the metadata of the new item */
-    SIGNAL_INIT( MPRIS_DBUS_PLAYER_PATH, "TrackChange" );
+    SIGNAL_INIT( MPRIS_DBUS_PLAYER_INTERFACE,
+                 MPRIS_DBUS_PLAYER_PATH,
+                 "TrackChange" );
+
     OUT_ARGUMENTS;
 
     input_item_t *p_item = (input_item_t*) p_data;
@@ -987,7 +1024,10 @@ DBUS_SIGNAL( TrackChangeSignal )
 
 DBUS_SIGNAL( StatusChangeSignal )
 { /* send the updated status info on the bus */
-    SIGNAL_INIT( MPRIS_DBUS_PLAYER_PATH, "StatusChange" );
+    SIGNAL_INIT( MPRIS_DBUS_PLAYER_INTERFACE,
+                 MPRIS_DBUS_PLAYER_PATH,
+                 "StatusChange" );
+
     OUT_ARGUMENTS;
 
     /* we're called from a callback of input_thread_t, so it can not be

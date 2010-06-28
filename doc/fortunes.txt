@@ -916,3 +916,9 @@ VLC development is NOT about being a sed god.
 < Dark_Shikari> lol
  -- #videolan
 %
+< pk> vlc should be recorded in guiness book of world records for command line options
+ -- #videolan
+%
+<xxcv> (wrong == right is still wrong right ?)
+ -- #videolan, Raffarin-attitude
+%

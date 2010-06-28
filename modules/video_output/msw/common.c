@@ -84,9 +84,6 @@ int CommonInit(vout_display_t *vd)
     var_Create(vd, "video-title", VLC_VAR_STRING | VLC_VAR_DOINHERIT);
     var_Create(vd, "video-deco", VLC_VAR_BOOL | VLC_VAR_DOINHERIT);
 
-    /* FIXME remove mouse hide from msw */
-    var_Create(vd, "mouse-hide-timeout", VLC_VAR_INTEGER | VLC_VAR_DOINHERIT);
-
     /* */
     sys->event = EventThreadCreate(vd);
     if (!sys->event)
@@ -161,6 +158,7 @@ void CommonManage(vout_display_t *vd)
         RECT rect_parent;
         POINT point;
 
+        /* Check if the parent window has resized or moved */
         GetClientRect(sys->hparent, &rect_parent);
         point.x = point.y = 0;
         ClientToScreen(sys->hparent, &point);
@@ -169,35 +167,27 @@ void CommonManage(vout_display_t *vd)
         if (!EqualRect(&rect_parent, &sys->rect_parent)) {
             sys->rect_parent = rect_parent;
 
-            /* FIXME I find such #ifdef quite weirds. Are they really needed ? */
-
-#if defined(MODULE_NAME_IS_direct3d) || defined(MODULE_NAME_IS_wingdi) || defined(MODULE_NAME_IS_wingapi)
+            /* This code deals with both resize and move
+             *
+             * For most drivers(direct3d, gdi, opengl), move is never
+             * an issue. The surface automatically gets moved together
+             * with the associated window (hvideownd)
+             *
+             * For directx, it is still important to call UpdateRects
+             * on a move of the parent window, even if no resize occured
+             */
             SetWindowPos(sys->hwnd, 0, 0, 0,
                          rect_parent.right - rect_parent.left,
                          rect_parent.bottom - rect_parent.top,
                          SWP_NOZORDER);
+
             UpdateRects(vd, NULL, NULL, true);
-#else
-            /* This one is to force the update even if only
-             * the position has changed */
-            SetWindowPos(sys->hwnd, 0, 1, 1,
-                         rect_parent.right - rect_parent.left,
-                         rect_parent.bottom - rect_parent.top, 0);
-
-            SetWindowPos(sys->hwnd, 0, 0, 0,
-                         rect_parent.right - rect_parent.left,
-                         rect_parent.bottom - rect_parent.top, 0);
-
-#endif
         }
     }
 
-    /* */
+    /* HasMoved means here resize or move */
     if (EventThreadGetAndResetHasMoved(sys->event))
         UpdateRects(vd, NULL, NULL, false);
-
-    /* Pointer change */
-    EventThreadMouseAutoHide(sys->event);
 }
 
 /**
@@ -326,7 +316,7 @@ void UpdateRects(vout_display_t *vd,
     place_cfg.display.height = rect.bottom;
 
     vout_display_place_t place;
-    vout_display_PlacePicture(&place, source, &place_cfg, true);
+    vout_display_PlacePicture(&place, source, &place_cfg, false);
 
     EventThreadUpdateSourceAndPlace(sys->event, source, &place);
 #if defined(MODULE_NAME_IS_wingapi)
@@ -555,9 +545,6 @@ static int CommonControlSetFullscreen(vout_display_t *vd, bool is_fullscreen)
             SetWindowPlacement(hwnd, &window_placement);
             ShowWindow(hwnd, SW_SHOWNORMAL);
         }
-
-        /* Make sure the mouse cursor is displayed */
-        EventThreadMouseShow(sys->event);
     }
     return VLC_SUCCESS;
 }
@@ -631,11 +618,16 @@ int CommonControl(vout_display_t *vd, int query, va_list args)
     }
     case VOUT_DISPLAY_CHANGE_FULLSCREEN: {   /* const vout_display_cfg_t *p_cfg */
         const vout_display_cfg_t *cfg = va_arg(args, const vout_display_cfg_t *);
-        return CommonControlSetFullscreen(vd, cfg->is_fullscreen);
+        if (CommonControlSetFullscreen(vd, cfg->is_fullscreen))
+            return VLC_EGENERIC;
+        UpdateRects(vd, NULL, NULL, false);
+        return VLC_SUCCESS;
     }
 
-    case VOUT_DISPLAY_RESET_PICTURES:
     case VOUT_DISPLAY_HIDE_MOUSE:
+        EventThreadMouseHide(sys->event);
+        return VLC_SUCCESS;
+    case VOUT_DISPLAY_RESET_PICTURES:
         assert(0);
     default:
         return VLC_EGENERIC;

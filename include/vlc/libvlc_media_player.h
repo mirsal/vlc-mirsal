@@ -177,6 +177,16 @@ VLC_PUBLIC_API int libvlc_media_player_is_playing ( libvlc_media_player_t *p_mi 
 VLC_PUBLIC_API int libvlc_media_player_play ( libvlc_media_player_t *p_mi );
 
 /**
+ * Pause or resume (no effect if there is no media)
+ *
+ * \param mp the Media Player
+ * \param do_pause play/resume if zero, pause if non-zero
+ * \version LibVLC 1.1.1 or later
+ */
+VLC_PUBLIC_API void libvlc_media_player_set_pause ( libvlc_media_player_t *mp,
+                                                    int do_pause );
+
+/**
  * Toggle pause (no effect if there is no media)
  *
  * \param p_mi the Media Player
@@ -924,6 +934,62 @@ VLC_PUBLIC_API void libvlc_video_set_logo_int( libvlc_media_player_t *p_mi,
 VLC_PUBLIC_API void libvlc_video_set_logo_string( libvlc_media_player_t *p_mi,
                                       unsigned option, const char *psz_value );
 
+
+/** option values for libvlc_video_{get,set}_adjust_{int,float,bool} */
+enum libvlc_video_adjust_option_t {
+    libvlc_adjust_Enable = 0,
+    libvlc_adjust_Contrast,
+    libvlc_adjust_Brightness,
+    libvlc_adjust_Hue,
+    libvlc_adjust_Saturation,
+    libvlc_adjust_Gamma,
+};
+
+/**
+ * Get integer adjust option.
+ *
+ * \param p_mi libvlc media player instance
+ * \param option adjust option to get, values of libvlc_video_adjust_option_t
+ * \version LibVLC 1.1.1 and later.
+ */
+VLC_PUBLIC_API int libvlc_video_get_adjust_int( libvlc_media_player_t *p_mi,
+                                                unsigned option );
+
+/**
+ * Set adjust option as integer. Options that take a different type value
+ * are ignored.
+ * Passing libvlc_adjust_enable as option value has the side effect of
+ * starting (arg !0) or stopping (arg 0) the adjust filter.
+ *
+ * \param p_mi libvlc media player instance
+ * \param option adust option to set, values of libvlc_video_adjust_option_t
+ * \param value adjust option value
+ * \version LibVLC 1.1.1 and later.
+ */
+VLC_PUBLIC_API void libvlc_video_set_adjust_int( libvlc_media_player_t *p_mi,
+                                                 unsigned option, int value );
+
+/**
+ * Get float adjust option.
+ *
+ * \param p_mi libvlc media player instance
+ * \param option adjust option to get, values of libvlc_video_adjust_option_t
+ * \version LibVLC 1.1.1 and later.
+ */
+VLC_PUBLIC_API float libvlc_video_get_adjust_float( libvlc_media_player_t *p_mi,
+                                                    unsigned option );
+
+/**
+ * Set adjust option as float. Options that take a different type value
+ * are ignored.
+ *
+ * \param p_mi libvlc media player instance
+ * \param option adust option to set, values of libvlc_video_adjust_option_t
+ * \param value adjust option value
+ * \version LibVLC 1.1.1 and later.
+ */
+VLC_PUBLIC_API void libvlc_video_set_adjust_float( libvlc_media_player_t *p_mi,
+                                                   unsigned option, float value );
 
 /** @} video */
 

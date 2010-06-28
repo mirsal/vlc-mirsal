@@ -64,9 +64,7 @@ vlc_module_begin ()
               FASTSTART_TEXT, FASTSTART_LONGTEXT,
               true )
     set_capability( "sout mux", 5 )
-    add_shortcut( "mp4" )
-    add_shortcut( "mov" )
-    add_shortcut( "3gp" )
+    add_shortcut( "mp4", "mov", "3gp" )
     set_callbacks( Open, Close )
 vlc_module_end ()
 
@@ -206,11 +204,13 @@ static int Open( vlc_object_t *p_this )
     {
         /* Now add ftyp header */
         box = box_new( "ftyp" );
-        if( p_sys->b_3gp ) bo_add_fourcc( box, "3gp4" );
+        if( p_sys->b_3gp ) bo_add_fourcc( box, "3gp6" );
         else bo_add_fourcc( box, "isom" );
         bo_add_32be  ( box, 0 );
         if( p_sys->b_3gp ) bo_add_fourcc( box, "3gp4" );
         else bo_add_fourcc( box, "mp41" );
+        bo_add_fourcc( box, "avc1" );
+        bo_add_fourcc( box, "qt  " );
         box_fix( box );
 
         p_sys->i_pos += box->i_buffer;
@@ -564,7 +564,7 @@ again:
         }
 
         /* update */
-        p_stream->i_duration += p_data->i_length;
+        p_stream->i_duration = p_stream->i_last_dts - p_stream->i_dts_start + p_data->i_length;
         p_sys->i_pos += p_data->i_buffer;
 
         /* Save the DTS */
@@ -875,37 +875,44 @@ static bo_t *GetAvcCTag( mp4_stream_t *p_stream )
         uint8_t *p_buffer = p_stream->fmt.p_extra;
         int     i_buffer = p_stream->fmt.i_extra;
 
-        while( i_buffer > 4 &&
-            p_buffer[0] == 0 && p_buffer[1] == 0 &&
-            p_buffer[2] == 0 && p_buffer[3] == 1 )
+        while( i_buffer > 3 )
         {
-            const int i_nal_type = p_buffer[4]&0x1f;
+            /* seek startcode */
+            while( p_buffer[0] != 0 || p_buffer[1] != 0 ||
+                   p_buffer[2] != 1 )
+            {
+                 i_buffer--;
+                 p_buffer++;
+            }
+            const int i_nal_type = p_buffer[3]&0x1f;
             int i_offset    = 1;
             int i_size      = 0;
             int i_startcode = 0;
  
-            //msg_Dbg( p_stream, "we found a startcode for NAL with TYPE:%d", i_nal_type );
  
-            for( i_offset = 1; i_offset+3 < i_buffer ; i_offset++)
+            for( i_offset = 1; i_offset+2 < i_buffer ; i_offset++)
             {
                 if( p_buffer[i_offset] == 0 && p_buffer[i_offset+1] == 0 &&
-                    p_buffer[i_offset+2] == 0 && p_buffer[i_offset+3] == 1 )
+                    p_buffer[i_offset+2] == 1 )
                 {
                     /* we found another startcode */
                     i_startcode = i_offset;
+                    while( p_buffer[i_startcode-1] == 0 && i_startcode > 0 )
+                        i_startcode--;
                     break;
                 }
             }
             i_size = i_startcode ? i_startcode : i_buffer;
+
             if( i_nal_type == 7 )
             {
-                p_sps = &p_buffer[4];
-                i_sps_size = i_size - 4;
+                p_sps = &p_buffer[3];
+                i_sps_size = i_size - 3;
             }
             if( i_nal_type == 8 )
             {
-                p_pps = &p_buffer[4];
-                i_pps_size = i_size - 4;
+                p_pps = &p_buffer[3];
+                i_pps_size = i_size - 3;
             }
             i_buffer -= i_size;
             p_buffer += i_size;
@@ -1508,6 +1515,7 @@ static bo_t *GetMoovBox( sout_mux_t *p_mux )
 
     uint32_t        i_movie_timescale = 90000;
     int64_t         i_movie_duration  = 0;
+    int64_t         i_timestamp = get_timestamp();
 
     moov = box_new( "moov" );
 
@@ -1526,16 +1534,16 @@ static bo_t *GetMoovBox( sout_mux_t *p_mux )
     if( !p_sys->b_64_ext )
     {
         mvhd = box_full_new( "mvhd", 0, 0 );
-        bo_add_32be( mvhd, get_timestamp() );   // creation time
-        bo_add_32be( mvhd, get_timestamp() );   // modification time
+        bo_add_32be( mvhd, i_timestamp );   // creation time
+        bo_add_32be( mvhd, i_timestamp );   // modification time
         bo_add_32be( mvhd, i_movie_timescale);  // timescale
         bo_add_32be( mvhd, i_movie_duration );  // duration
     }
     else
     {
         mvhd = box_full_new( "mvhd", 1, 0 );
-        bo_add_64be( mvhd, get_timestamp() );   // creation time
-        bo_add_64be( mvhd, get_timestamp() );   // modification time
+        bo_add_64be( mvhd, i_timestamp );   // creation time
+        bo_add_64be( mvhd, i_timestamp );   // modification time
         bo_add_32be( mvhd, i_movie_timescale);  // timescale
         bo_add_64be( mvhd, i_movie_duration );  // duration
     }
@@ -1587,8 +1595,8 @@ static bo_t *GetMoovBox( sout_mux_t *p_mux )
             else
                 tkhd = box_full_new( "tkhd", 0, 1 );
 
-            bo_add_32be( tkhd, get_timestamp() );       // creation time
-            bo_add_32be( tkhd, get_timestamp() );       // modification time
+            bo_add_32be( tkhd, i_timestamp );       // creation time
+            bo_add_32be( tkhd, i_timestamp );       // modification time
             bo_add_32be( tkhd, p_stream->i_track_id );
             bo_add_32be( tkhd, 0 );                     // reserved 0
             bo_add_32be( tkhd, p_stream->i_duration *
@@ -1602,8 +1610,8 @@ static bo_t *GetMoovBox( sout_mux_t *p_mux )
             else
                 tkhd = box_full_new( "tkhd", 1, 1 );
 
-            bo_add_64be( tkhd, get_timestamp() );       // creation time
-            bo_add_64be( tkhd, get_timestamp() );       // modification time
+            bo_add_64be( tkhd, i_timestamp );       // creation time
+            bo_add_64be( tkhd, i_timestamp );       // modification time
             bo_add_32be( tkhd, p_stream->i_track_id );
             bo_add_32be( tkhd, 0 );                     // reserved 0
             bo_add_64be( tkhd, p_stream->i_duration *
@@ -1725,8 +1733,8 @@ static bo_t *GetMoovBox( sout_mux_t *p_mux )
         if( !p_sys->b_64_ext )
         {
             mdhd = box_full_new( "mdhd", 0, 0 );
-            bo_add_32be( mdhd, get_timestamp() );   // creation time
-            bo_add_32be( mdhd, get_timestamp() );   // modification time
+            bo_add_32be( mdhd, i_timestamp );   // creation time
+            bo_add_32be( mdhd, i_timestamp );   // modification time
             bo_add_32be( mdhd, i_timescale);        // timescale
             bo_add_32be( mdhd, p_stream->i_duration * (int64_t)i_timescale /
                                (mtime_t)1000000 );  // duration
@@ -1734,8 +1742,8 @@ static bo_t *GetMoovBox( sout_mux_t *p_mux )
         else
         {
             mdhd = box_full_new( "mdhd", 1, 0 );
-            bo_add_64be( mdhd, get_timestamp() );   // creation time
-            bo_add_64be( mdhd, get_timestamp() );   // modification time
+            bo_add_64be( mdhd, i_timestamp );   // creation time
+            bo_add_64be( mdhd, i_timestamp );   // modification time
             bo_add_32be( mdhd, i_timescale);        // timescale
             bo_add_64be( mdhd, p_stream->i_duration * (int64_t)i_timescale /
                                (mtime_t)1000000 );  // duration

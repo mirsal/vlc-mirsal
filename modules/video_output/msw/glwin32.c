@@ -54,22 +54,9 @@ vlc_module_begin()
     set_shortname("OpenGL")
     set_description(N_("OpenGL video output"))
     set_capability("vout display", 20)
-    add_shortcut("glwin32")
-    add_shortcut("opengl")
+    add_shortcut("glwin32", "opengl")
     set_callbacks(Open, Close)
-
-    /* FIXME: Hack to avoid unregistering our window class */
-    cannot_unload_broken_library ()
 vlc_module_end()
-
-#if 0 /* FIXME */
-    /* check if we registered a window class because we need to
-     * unregister it */
-    WNDCLASS wndclass;
-    if(GetClassInfo(GetModuleHandle(NULL), "VLC DirectX", &wndclass))
-        UnregisterClass("VLC DirectX", GetModuleHandle(NULL));
-#endif
-
 
 /*****************************************************************************
  * Local prototypes.
@@ -133,7 +120,7 @@ static int Open(vlc_object_t *object)
 
     vout_display_info_t info = vd->info;
     info.has_double_click = true;
-    info.has_hide_mouse = true;
+    info.has_hide_mouse = false;
     info.has_pictures_invalid = true;
     info.has_event_thread = true;
 
