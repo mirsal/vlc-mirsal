@@ -349,6 +349,13 @@
            </property>
           </widget>
          </item>
+         <item row="9" column="0">
+          <widget class="QCheckBox" name="treePlaylist">
+           <property name="text">
+            <string>Display playlist tree</string>
+           </property>
+          </widget>
+         </item>
          <item row="8" column="1">
           <widget class="QComboBox" name="stylesCombo"/>
          </item>
@@ -379,7 +386,7 @@
          <item row="5" column="1">
           <widget class="QCheckBox" name="sysPop">
            <property name="text">
-            <string> Systray popup when minimized</string>
+            <string>Systray popup when minimized</string>
            </property>
           </widget>
          </item>

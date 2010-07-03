@@ -23,6 +23,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 
+#define __STDC_FORMAT_MACROS 1
+
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
@@ -417,11 +419,11 @@ void InputManager::UpdateNavigation()
     if( val.i_int > 0 )
     {
         emit titleChanged( true );
-        msg_Dbg( p_intf, "Title %i", val.i_int );
+        msg_Dbg( p_intf, "Title %"PRId64, val.i_int );
         /* p_input != NULL since val.i_int != 0 */
         var_Change( p_input, "chapter", VLC_VAR_CHOICESCOUNT, &val2, NULL );
         emit chapterChanged( (val2.i_int > 1) || ( val2.i_int > 0 && val.i_int > 1 ) );
-        msg_Dbg( p_intf, "Chapter: %i", val2.i_int );
+        msg_Dbg( p_intf, "Chapter: %"PRId64, val2.i_int );
     }
     else
         emit titleChanged( false );

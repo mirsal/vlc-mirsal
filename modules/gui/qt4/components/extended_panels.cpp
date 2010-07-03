@@ -22,6 +22,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 
+#define __STDC_FORMAT_MACROS 1
+
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
@@ -480,7 +482,7 @@ void ExtVideo::setWidgetValue( QObject *widget )
         else if( lineedit )
         {
             char str[30];
-            snprintf( str, sizeof(str), "%06X", val.i_int );
+            snprintf( str, sizeof(str), "%06"PRIX64, val.i_int );
             lineedit->setText( str );
         }
         else if( combobox ) combobox->setCurrentIndex(
@@ -685,7 +687,7 @@ void ExtV4l2::Refresh( void )
             const char *psz_var = text.p_list->p_values[i].psz_string;
             var_Change( p_obj, psz_var, VLC_VAR_GETTEXT, &name, NULL );
             const char *psz_label = name.psz_string;
-            msg_Dbg( p_intf, "v4l2 control \"%x\": %s (%s)",
+            msg_Dbg( p_intf, "v4l2 control \"%"PRIx64"\": %s (%s)",
                      val.p_list->p_values[i].i_int, psz_var, name.psz_string );
 
             int i_type = var_Type( p_obj, psz_var );
@@ -1297,8 +1299,8 @@ SyncControls::SyncControls( intf_thread_t *_p_intf, QWidget *_parent ) :
     AVSpin = new QDoubleSpinBox;
     AVSpin->setAlignment( Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter );
     AVSpin->setDecimals( 3 );
-    AVSpin->setMinimum( -100.0 );
-    AVSpin->setMaximum( 100.0 );
+    AVSpin->setMinimum( -600.0 );
+    AVSpin->setMaximum( 600.0 );
     AVSpin->setSingleStep( 0.1 );
     AVSpin->setToolTip( qtr( "A positive value means that\n"
                              "the audio is ahead of the video" ) );
@@ -1330,8 +1332,8 @@ SyncControls::SyncControls( intf_thread_t *_p_intf, QWidget *_parent ) :
     subsSpin = new QDoubleSpinBox;
     subsSpin->setAlignment( Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter );
     subsSpin->setDecimals( 3 );
-    subsSpin->setMinimum( -100.0 );
-    subsSpin->setMaximum( 100.0 );
+    subsSpin->setMinimum( -600.0 );
+    subsSpin->setMaximum( 600.0 );
     subsSpin->setSingleStep( 0.1 );
     subsSpin->setToolTip( qtr( "A positive value means that\n"
                              "the subtitles are ahead of the video" ) );

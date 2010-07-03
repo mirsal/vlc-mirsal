@@ -409,7 +409,7 @@ struct stat;
  */
 typedef union
 {
-    int             i_int;
+    int64_t         i_int;
     bool            b_bool;
     float           f_float;
     char *          psz_string;
@@ -418,9 +418,6 @@ typedef union
     vlc_list_t *    p_list;
     mtime_t         i_time;
     struct { int32_t x; int32_t y; } coords;
-
-    /* Make sure the structure is at least 64bits */
-    uint8_t padding[8];
 
 } vlc_value_t;
 
@@ -516,6 +513,15 @@ typedef int ( * vlc_callback_t ) ( vlc_object_t *,      /* variable's object */
 #include "vlc_mtime.h"
 #include "vlc_threads.h"
 
+/**
+ * Memory storage space for an atom. Never access it directly.
+ */
+typedef union
+{
+    volatile uintptr_t u;
+    volatile intptr_t  s;
+} vlc_atomic_t;
+
 /*****************************************************************************
  * Common structure members
  *****************************************************************************/
@@ -558,7 +564,6 @@ typedef int ( * vlc_callback_t ) ( vlc_object_t *,      /* variable's object */
 # define VLC_OBJECT( x ) ((vlc_object_t *)(x))
 #endif
 
-#include <vlc_atomic.h>
 typedef struct gc_object_t
 {
     vlc_atomic_t    refs;

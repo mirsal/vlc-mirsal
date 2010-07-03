@@ -41,7 +41,7 @@ CtrlRadialSlider::CtrlRadialSlider( intf_thread_t *pIntf,
     CtrlGeneric( pIntf, rHelp, pVisible ), m_fsm( pIntf ), m_numImg( numImg ),
     m_rVariable( rVariable ), m_minAngle( minAngle ), m_maxAngle( maxAngle ),
     m_cmdUpDown( this ), m_cmdDownUp( this ),
-    m_cmdMove( this )
+    m_cmdMove( this ), m_position( 0 )
 {
     // Build the images of the sequence
     m_pImgSeq = OSFactory::instance( getIntf() )->createOSGraphics(
@@ -100,7 +100,7 @@ void CtrlRadialSlider::draw( OSGraphics &rImage, int xDest, int yDest )
 void CtrlRadialSlider::onUpdate( Subject<VarPercent> &rVariable,
                                  void *arg  )
 {
-    m_position = (int)( m_rVariable.get() * m_numImg );
+    m_position = (int)( m_rVariable.get() * ( m_numImg - 1 ) );
     notifyLayout( m_width, m_height );
 }
 
@@ -142,7 +142,7 @@ void CtrlRadialSlider::setCursor( int posX, int posY, bool blocking )
 
     // Compute the position relative to the center
     int x = posX - pPos->getLeft() - m_width / 2;
-    int y = posY - pPos->getTop() - m_width / 2;
+    int y = posY - pPos->getTop() - m_height / 2;
 
     // Compute the polar coordinates. angle is -(-j,OM)
     float r = sqrt((float)(x*x + y*y));

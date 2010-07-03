@@ -1,7 +1,10 @@
 /*****************************************************************************
- * vlc_atomic.h:
+ * rar.h: uncompressed RAR parser
  *****************************************************************************
- * Copyright (C) 2010 Rémi Denis-Courmont
+ * Copyright (C) 2008-2010 Laurent Aimar
+ * $Id$
+ *
+ * Author: Laurent Aimar <fenrir _AT_ videolan _DOT_ org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,33 +21,23 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 
-#ifndef VLC_ATOMIC_H
-# define VLC_ATOMIC_H
+typedef struct {
+    uint64_t offset;
+    uint64_t size;
+    uint64_t cummulated_size;
+} rar_file_chunk_t;
 
-/**
- * \file
- * Atomic operations do not require locking, but they are not very powerful.
- */
+typedef struct {
+    char     *name;
+    uint64_t size;
+    bool     is_complete;
 
-/* All functions return the atom value _after_ the operation. */
+    int              chunk_count;
+    rar_file_chunk_t **chunk;
+    uint64_t         real_size;  /* Gathered size */
+} rar_file_t;
 
-VLC_EXPORT(uintptr_t, vlc_atomic_get, (const vlc_atomic_t *));
-VLC_EXPORT(uintptr_t, vlc_atomic_set, (vlc_atomic_t *, uintptr_t));
-VLC_EXPORT(uintptr_t, vlc_atomic_add, (vlc_atomic_t *, uintptr_t));
+int  RarProbe(stream_t *);
+void RarFileDelete(rar_file_t *);
+int  RarParse(stream_t *, int *, rar_file_t ***);
 
-static inline uintptr_t vlc_atomic_sub (vlc_atomic_t *atom, uintptr_t v)
-{
-    return vlc_atomic_add (atom, -v);
-}
-
-static inline uintptr_t vlc_atomic_inc (vlc_atomic_t *atom)
-{
-    return vlc_atomic_add (atom, 1);
-}
-
-static inline uintptr_t vlc_atomic_dec (vlc_atomic_t *atom)
-{
-    return vlc_atomic_sub (atom, 1);
-}
-
-#endif

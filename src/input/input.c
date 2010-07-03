@@ -1193,7 +1193,7 @@ static void InitPrograms( input_thread_t * p_input )
     else
     {
         demux_Control( p_input->p->input.p_demux, DEMUX_SET_GROUP,
-                       (int) var_GetInteger( p_input, "program" ), NULL );
+                       es_out_GetGroupForced( p_input->p->p_es_out ), NULL );
     }
 }
 
@@ -2135,7 +2135,7 @@ static bool Control( input_thread_t *p_input,
 
             if( bookmark.i_time_offset < 0 && bookmark.i_byte_offset < 0 )
             {
-                msg_Err( p_input, "invalid bookmark %d", val.i_int );
+                msg_Err( p_input, "invalid bookmark %"PRId64, val.i_int );
                 break;
             }
 
