@@ -705,53 +705,54 @@ bool MediaServer::_fetchContents( Container* p_parent )
         return false;
     }
 
-    IXML_NodeList* containerNodeList =
+    IXML_NodeList* p_container_node_list =
                 ixmlDocument_getElementsByTagName( p_result, "container" );
 
-    if ( containerNodeList )
+    if ( p_container_node_list )
     {
+	// Loop through and parse the containers children
         for ( unsigned int i = 0;
-                i < ixmlNodeList_length( containerNodeList ); i++ )
+                i < ixmlNodeList_length( p_container_node_list ); i++ )
         {
-            IXML_Element* containerElement =
-                  ( IXML_Element* )ixmlNodeList_item( containerNodeList, i );
+            IXML_Element* p_container_element =
+                  ( IXML_Element* )ixmlNodeList_item( p_container_node_list, i );
 
-            const char* objectID = ixmlElement_getAttribute( containerElement,
+            const char* psz_object_id = ixmlElement_getAttribute( p_container_element,
                                                              "id" );
-            if ( !objectID )
+            if ( !psz_object_id )
                 continue;
 
-            const char* childCountStr =
-                    ixmlElement_getAttribute( containerElement, "childCount" );
+            const char* psz_child_count =
+                    ixmlElement_getAttribute( p_container_element, "childCount" );
 
-            if ( !childCountStr )
+            if ( !psz_child_count )
                 continue;
 
-            int childCount = atoi( childCountStr );
-            const char* title = xml_getChildElementValue( containerElement,
+            int i_child_count = atoi( psz_child_count );
+            const char* psz_title = xml_getChildElementValue( p_container_element,
                                                           "dc:title" );
 
-            if ( !title )
+            if ( !psz_title )
                 continue;
 
-            const char* resource = xml_getChildElementValue( containerElement,
+            const char* psz_resource = xml_getChildElementValue( p_container_element,
                                                              "res" );
 
-            if ( resource && childCount < 1 )
+            if ( psz_resource && i_child_count < 1 )
             {
-                Item* item = new Item( p_parent, objectID, title, resource );
-                p_parent->addItem( item );
+                Item* p_item = new Item( p_parent, psz_object_id, psz_title, psz_resource );
+                p_parent->addItem( p_item );
             }
             else
             {
-                Container* container = new Container( p_parent, objectID, title );
-                p_parent->addContainer( container );
+                Container* p_container = new Container( p_parent, psz_object_id, psz_title );
+                p_parent->addContainer( p_container );
 
-                if ( childCount > 0 )
-                    _fetchContents( container );
+                if ( i_child_count > 0 )
+                    _fetchContents( p_container );
             }
         }
-        ixmlNodeList_free( containerNodeList );
+        ixmlNodeList_free( p_container_node_list );
     }
 
     IXML_NodeList* itemNodeList = ixmlDocument_getElementsByTagName( p_result,
@@ -763,26 +764,26 @@ bool MediaServer::_fetchContents( Container* p_parent )
             IXML_Element* itemElement =
                         ( IXML_Element* )ixmlNodeList_item( itemNodeList, i );
 
-            const char* objectID =
+            const char* psz_object_id =
                         ixmlElement_getAttribute( itemElement, "id" );
 
-            if ( !objectID )
+            if ( !psz_object_id )
                 continue;
 
-            const char* title =
+            const char* psz_title =
                         xml_getChildElementValue( itemElement, "dc:title" );
 
-            if ( !title )
+            if ( !psz_title )
                 continue;
 
-            const char* resource =
+            const char* psz_resource =
                         xml_getChildElementValue( itemElement, "res" );
 
-            if ( !resource )
+            if ( !psz_resource )
                 continue;
 
-            Item* item = new Item( p_parent, objectID, title, resource );
-            p_parent->addItem( item );
+            Item* p_item = new Item( p_parent, psz_object_id, psz_title, psz_resource );
+            p_parent->addItem( p_item );
         }
         ixmlNodeList_free( itemNodeList );
     }
@@ -1012,9 +1013,9 @@ Container::~Container()
         vlc_gc_decref( _p_input_item );
 }
 
-void Container::addItem( Item* item )
+void Container::addItem( Item* p_item )
 {
-    _items.push_back( item );
+    _items.push_back( p_item );
 }
 
 void Container::addContainer( Container* p_container )
