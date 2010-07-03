@@ -486,7 +486,7 @@ void ExtVideo::setWidgetValue( QObject *widget )
             lineedit->setText( str );
         }
         else if( combobox ) combobox->setCurrentIndex(
-                            combobox->findData( val.i_int ) );
+                            combobox->findData( qlonglong(val.i_int) ) );
         else msg_Warn( p_intf, "Oops %s %s %d", __FILE__, __func__, __LINE__ );
     }
     else if( i_type == VLC_VAR_FLOAT )
@@ -711,7 +711,7 @@ void ExtV4l2::Refresh( void )
                         {
                             combobox->addItem(
                                        text2.p_list->p_values[j].psz_string,
-                                       val2.p_list->p_values[j].i_int );
+                                       qlonglong( val2.p_list->p_values[j].i_int) );
                             if( i_val == val2.p_list->p_values[j].i_int )
                                 combobox->setCurrentIndex( j );
                         }

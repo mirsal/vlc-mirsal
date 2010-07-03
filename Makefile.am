@@ -553,7 +553,7 @@ VLC-release.app: vlc
 	for i in $(srcdir)/share/lua/http/requests/*.* ; do \
 	  $(INSTALL) -m 644 $${i} $(top_builddir)/VLC-release.app/Contents/MacOS/share/lua/http/requests/`basename $${i}` ; \
 	done
-	$(INSTALL) -m 644 $(srcdir)/share/lua/http/requests/readme $(top_builddir)/VLC-release.app/Contents/MacOS/share/lua/http/requests/readme.txt
+	$(INSTALL) -m 644 $(srcdir)/share/lua/http/requests/README.txt $(top_builddir)/VLC-release.app/Contents/MacOS/share/lua/http/requests/README.txt
 	$(INSTALL) -d $(top_builddir)/VLC-release.app/Contents/MacOS/share/http/dialogs
 	$(INSTALL) -d $(top_builddir)/VLC-release.app/Contents/MacOS/share/http/js
 	$(INSTALL) -d $(top_builddir)/VLC-release.app/Contents/MacOS/share/http/images
@@ -574,7 +574,7 @@ VLC-release.app: vlc
 	for i in $(srcdir)/share/http/requests/*.* ; do \
 	  $(INSTALL) -m 644 $${i} $(top_builddir)/VLC-release.app/Contents/MacOS/share/http/requests/`basename $${i}` ; \
 	done
-	$(INSTALL) -m 644 $(srcdir)/share/http/requests/readme $(top_builddir)/VLC-release.app/Contents/MacOS/share/http/requests/readme.txt
+	$(INSTALL) -m 644 $(srcdir)/share/http/requests/README.txt $(top_builddir)/VLC-release.app/Contents/MacOS/share/http/requests/README.txt
 	$(INSTALL) -d $(top_builddir)/VLC-release.app/Contents/MacOS/share/locale
 	cat $(top_srcdir)/po/LINGUAS | while read i; do \
 	  $(INSTALL) -d $(top_builddir)/VLC-release.app/Contents/MacOS/share/locale/$${i}/LC_MESSAGES ; \
@@ -702,158 +702,49 @@ npvlc=vlc-$(VERSION)/mozilla/npvlc$(LIBEXT)
 axvlc=vlc-$(VERSION)/activex/axvlc$(LIBEXT)
 win32_lua_destdir=$(win32_destdir)/lua
 win32_http_destdir=$(win32_destdir)/http
+destdir=_win32
 
-#Win-common if for win32 and wince
-package-win-common:
+#Win-common is for win32 and wince
+package-win-common: install
 # Check that tmp isn't in the way
 	@if test -e "$(win32_destdir)"; then \
-	  echo "Error: please remove $(win32_destdir), it is in the way"; \
-	  false; \
+	    echo "Error: please remove $(win32_destdir), it is in the way"; \
+	    false; \
+	elif test -e "$(win32_debugdir)"; then \
+	    echo "Error: please remove $(win32_debugdir), it is in the way"; \
+	    false; \
 	else \
-	  echo "OK."; mkdir -p "$(win32_destdir)"; \
-	fi
-# Same for debug symbols dir
-	@if test -e "$(win32_debugdir)"; then \
-	  echo "Error: please remove $(win32_debugdir), it is in the way"; \
-	  false; \
-	else \
-	  echo "OK."; mkdir -p "$(win32_debugdir)"; \
+	    echo "OK."; mkdir -p "$(win32_debugdir)"; \
+	    echo "OK."; mkdir -p "$(win32_destdir)"; \
 	fi
 
-# Copy relevant files
-# Copy executables, major libs+manifests
-	cp "$(top_builddir)/bin/.libs/vlc$(EXEEXT)" "$(win32_destdir)/"
-	cp "$(top_builddir)/bin/.libs/vlc-cache-gen$(EXEEXT)" "$(win32_destdir)/"
-	cp "$(top_srcdir)/extras/package/win32/vlc.exe.manifest" "$(win32_destdir)/"
-	cp "$(top_srcdir)/extras/package/win32/libvlc.dll.manifest" "$(win32_destdir)/"
-	cp "$(top_builddir)/src/.libs/libvlccore$(LIBEXT)" "$(win32_destdir)/"
-	cp "$(top_builddir)/src/.libs/libvlc$(LIBEXT)" "$(win32_destdir)/"
+# Executables, major libs+manifests
+	find $(destdir) -maxdepth 4 -name "*$(LIBEXT)" -o -name "*$(EXEEXT)" -exec cp {} "$(win32_destdir)/" \;
+	for file in $(top_srcdir)/extras/package/win32/vlc$(EXEEXT).manifest \
+                $(top_srcdir)/extras/package/win32/libvlc$(LIBEXT).manifest; \
+	    do cp $$file "$(win32_destdir)/" ; done;
 
-# Copy Text files
+# Text files and clean them
 	for file in AUTHORS THANKS ; \
 	  do sed 's/@/_AT_/' < "$(srcdir)/$$file" > "$(win32_destdir)/$${file}.txt" ; done;
 	for file in NEWS COPYING README; \
 	  do cp "$(srcdir)/$$file" "$(win32_destdir)/$${file}.txt"; done
-	$(U2D) "$(win32_destdir)/"*.txt || echo "WARNING: this shouldn't happen"
 
-# Necessary icons
+# Necessary icon
 	cp $(srcdir)/share/icons/vlc.ico $(win32_destdir)/
 
-# Copy the locales
-	mkdir -p $(win32_destdir)/locale
-	cat $(top_srcdir)/po/LINGUAS | while read i; do \
-	  mkdir -p "$(win32_destdir)/locale/$${i}/LC_MESSAGES" ; \
-	  cp "$(srcdir)/po/$${i}.gmo" \
-	    "$(win32_destdir)/locale/$${i}/LC_MESSAGES/vlc.mo" || true ; \
-	done
-	mkdir -p $(win32_destdir)/locale/qt4/
-	cp $(QT4LOCALEDIR)/*.qm $(win32_destdir)/locale/qt4/ || true
-
-#  Mozilla plugin
-if BUILD_MOZILLA
-	mkdir -p "$(win32_destdir)/mozilla"
-	cp $(top_builddir)/projects/mozilla/.libs/npvlc$(LIBEXT) $(win32_destdir)/mozilla/
-	cp $(top_srcdir)/projects/mozilla/npvlc.dll.manifest $(win32_destdir)/mozilla/
-endif
-
-# ActiveX plugin
-if BUILD_ACTIVEX
-	mkdir -p "$(win32_destdir)/activex"
-	cp $(srcdir)/projects/activex/README.TXT  $(win32_destdir)/activex/
-	cp $(srcdir)/projects/activex/test.html  $(win32_destdir)/activex/
-	$(U2D) $(win32_destdir)/activex/*
-	cp $(top_builddir)/projects/activex/.libs/axvlc$(LIBEXT) $(win32_destdir)/activex/
-	cp $(top_srcdir)/projects/activex/axvlc.dll.manifest $(win32_destdir)/activex/
-endif
-
-# Rebase all those DLLs to speed up loading (need cygwin rebase)
-	if rebase -b 0x42 /dev/null >/dev/null 2>&1; then \
-		find $(win32_destdir) -type f -name '*.dll' -print | rebase -b 0x70000000 -T -; \
-	fi
-
-# Copy the UAC NSIS plugin
-	mkdir -p "$(win32_destdir)/NSIS"
-	cp "$(top_srcdir)/extras/package/win32/UAC.nsh" "$(win32_destdir)/NSIS"
-	cp "$(top_srcdir)/extras/package/win32/UAC.dll" "$(win32_destdir)/NSIS"
-
-prepare-win32-web-plugin: package-win-common-strip
-	mkdir -p "$(win32_xpi_destdir)/plugins"
-	cp $(win32_destdir)/mozilla/npvlc$(LIBEXT) \
-		"$(win32_xpi_destdir)/plugins"
-	cp $(top_srcdir)/projects/mozilla/npvlc.dll.manifest \
-		"$(win32_xpi_destdir)/plugins"
-	cp "$(top_srcdir)/extras/package/win32/libvlc.dll.manifest" \
-		"$(win32_xpi_destdir)/plugins"
-	cp "$(win32_destdir)/libvlccore$(LIBEXT)" \
-		"$(win32_xpi_destdir)/plugins"
-	cp "$(win32_destdir)/libvlc$(LIBEXT)" \
-		"$(win32_xpi_destdir)/plugins"
-	mkdir -p "$(win32_xpi_destdir)/plugins/plugins"
-	cp $(win32_destdir)/plugins/*$(LIBEXT) \
-		"$(win32_xpi_destdir)/plugins/plugins"
-	rm -rf "$(win32_xpi_destdir)/plugins/plugins/*qt*"
-	rm -rf "$(win32_xpi_destdir)/plugins/plugins/*skins*"
-package-win32-xpi: prepare-win32-web-plugin
-	cp $(top_builddir)/projects/mozilla/install.rdf "$(win32_xpi_destdir)"
-	cd $(win32_xpi_destdir) && zip -r "../vlc-$(VERSION).xpi" \
-					install.rdf plugins
-
-package-win32-crx: prepare-win32-web-plugin
-	cp $(top_builddir)/projects/mozilla/manifest.json "$(win32_xpi_destdir)"
-	crxmake --pack-extension "$(win32_xpi_destdir)" \
-		--extension-output "$(win32_destdir)/vlc-$(VERSION).crx" \
-		--ignore-file install.rdf
-
-package-win32-base-debug: package-win-common
-# Copy relevant files
-# Script installer
-	cp "$(top_builddir)/extras/package/win32/vlc.win32.nsi" "$(win32_destdir)/"
-	cp "$(top_builddir)/extras/package/win32/spad.nsi" "$(win32_destdir)/"
-	mkdir "$(win32_destdir)/languages"
-	cp $(srcdir)/extras/package/win32/languages/*.nsh "$(win32_destdir)/languages/"
+# Locales
+	cp -r $(destdir)/share/locale $(win32_destdir)
 
 # Plugins
-	mkdir -p "$(win32_destdir)/plugins"
-	find modules/ -name '*_plugin$(LIBEXT)' | while read i; do \
-	  if test -n "$$i" ; then \
-	    $(INSTALL) "$$i" "vlc-$(VERSION)/plugins/" ; \
-	  fi ; done
-
-#Enable DEP and ASLR for all the binaries
-if USE_PEFLAGS
-	find $(win32_destdir) -type f -name '*.dll' -print -o -name '*.exe' -print | while read i; do \
-	$(PEFLAGS) --dynamicbase=true --nxcompat=true "$$i" ; \
-	done
-endif
+	cp -r $(destdir)/lib/vlc/plugins $(win32_destdir)
 
 if BUILD_LUA
 # Copy the lua scripts (HTTP)
-	mkdir -p "$(win32_lua_destdir)/http/images"
-	mkdir -p "$(win32_lua_destdir)/http/requests"
-	mkdir -p "$(win32_lua_destdir)/http/js"
-	mkdir -p "$(win32_lua_destdir)/http/dialogs"
-	cp $(srcdir)/share/lua/http/*.html $(win32_lua_destdir)/http/
-	$(U2D) $(win32_lua_destdir)/http/*.html
-	cp $(srcdir)/share/lua/http/.hosts $(win32_lua_destdir)/http/
-	$(U2D) $(win32_lua_destdir)/http/.hosts
-	cp $(srcdir)/share/lua/http/*.css $(win32_lua_destdir)/http/
-	$(U2D) $(win32_lua_destdir)/http/*.css
-	cp $(srcdir)/share/lua/http/js/*.js $(win32_lua_destdir)/http/js/
-	$(U2D) $(win32_lua_destdir)/http/js/*.js
-	cp $(srcdir)/share/lua/http/*.lua $(win32_lua_destdir)/http/
-	$(U2D) $(win32_lua_destdir)/http/*.lua
-	cp $(srcdir)/share/lua/http/dialogs/* $(win32_lua_destdir)/http/dialogs/
-	$(U2D) $(win32_lua_destdir)/http/dialogs/*
-	cp $(srcdir)/share/lua/http/dialogs/.hosts $(win32_lua_destdir)/http/dialogs/
-	$(U2D) $(win32_lua_destdir)/http/dialogs/.hosts
-	cp $(srcdir)/share/lua/http/*.ico $(win32_lua_destdir)/http/
-	cp $(srcdir)/share/lua/http/images/*.png $(win32_lua_destdir)/http/images/
-	cp $(srcdir)/share/lua/http/requests/*.xml $(win32_lua_destdir)/http/requests/
-	$(U2D) $(win32_lua_destdir)/http/requests/*.xml
-	cp $(srcdir)/share/lua/http/requests/readme $(win32_lua_destdir)/http/requests/readme.txt
-	$(U2D) $(win32_lua_destdir)/http/requests/readme.txt
+	mkdir -p $(win32_lua_destdir)
+	cp -r $(destdir)/share/vlc/lua/http "$(win32_lua_destdir)/http"
 
-#Lua Scripts
+# Lua Scripts - cannot be simplified yet, because make install doesn't install READMEs
 	$(INSTALL) -d $(win32_lua_destdir)
 	for i in $(srcdir)/share/lua/*.* ; do \
 	  $(INSTALL) -m 644 -- "$${i}" $(win32_lua_destdir)/`basename $${i}` ; \
@@ -894,94 +785,55 @@ if BUILD_LUA
 	for i in $(srcdir)/share/lua/sd/*.* ; do \
 	  $(INSTALL) -m 644 -- "$${i}" $(win32_lua_destdir)/sd/`basename $${i}` ; \
 	done
-
-	$(U2D) $(win32_lua_destdir)/README.txt
-	$(U2D) $(win32_lua_destdir)/extensions/README.txt
-	$(U2D) $(win32_lua_destdir)/intf/README.txt
-	$(U2D) $(win32_lua_destdir)/meta/art/README.txt
-	$(U2D) $(win32_lua_destdir)/meta/fetcher/README.txt
-	$(U2D) $(win32_lua_destdir)/meta/reader/README.txt
-	$(U2D) $(win32_lua_destdir)/playlist/README.txt
-	$(U2D) $(win32_lua_destdir)/sd/README.txt
 endif
 
-# Copy the http files
 if BUILD_HTTPD
-	mkdir -p "$(win32_http_destdir)/images"
-	mkdir -p "$(win32_http_destdir)/requests"
-	mkdir -p "$(win32_http_destdir)/js"
-	mkdir -p "$(win32_http_destdir)/dialogs"
-	cp $(srcdir)/share/http/*.html $(win32_http_destdir)/
-	$(U2D) $(win32_http_destdir)/*.html
-	cp $(srcdir)/share/http/.hosts $(win32_http_destdir)/
-	$(U2D) $(win32_http_destdir)/.hosts
-	cp $(srcdir)/share/http/*.css $(win32_http_destdir)/
-	$(U2D) $(win32_http_destdir)/*.css
-	cp $(srcdir)/share/http/js/*.js $(win32_http_destdir)/js/
-	$(U2D) $(win32_http_destdir)/js/*.js
-	cp $(srcdir)/share/http/dialogs/* $(win32_http_destdir)/dialogs/
-	$(U2D) $(win32_http_destdir)/dialogs/*
-	cp $(srcdir)/share/http/dialogs/.hosts $(win32_http_destdir)/dialogs/
-	$(U2D) $(win32_http_destdir)/dialogs/.hosts
-	cp $(srcdir)/share/http/*.ico $(win32_http_destdir)/
-	cp $(srcdir)/share/http/images/*.png $(win32_http_destdir)/images/
-	cp $(srcdir)/share/http/requests/*.xml $(win32_http_destdir)/requests/
-	$(U2D) $(win32_http_destdir)/requests/*.xml
-	cp $(srcdir)/share/http/requests/readme $(win32_http_destdir)/requests/readme.txt
-	$(U2D) $(win32_http_destdir)/requests/readme.txt
-
+	cp -r $(destdir)/share/vlc/http $(win32_http_destdir)
 endif
-
 if BUILD_SKINS
-# Skins
-	mkdir -p $(win32_destdir)/skins/fonts
-	for i in $(srcdir)/share/skins2/fonts/*.*; do \
-	  cp -- "$$i" $(win32_destdir)/skins/fonts/ || true ; \
-	done
-	for i in $(top_builddir)/share/skins2/*.*; do \
-	  cp -- "$$i" $(win32_destdir)/skins/ || true ; \
-	done
-	cp -- $(srcdir)/share/skins2/skin.catalog $(win32_destdir)/skins/ || true ;
-	cp -- $(srcdir)/share/skins2/skin.dtd $(win32_destdir)/skins/ || true ;
+	cp -r $(destdir)/share/vlc/skins2 $(win32_destdir)/skins
 endif
-
 if BUILD_OSDMENU
-#OSD Menu
-	mkdir -p "$(win32_destdir)/osdmenu"
-	cp $(srcdir)/share/osdmenu/*.* "$(win32_destdir)/osdmenu"
-	for dir in default default/selected default/selection default/volume ;do \
-		mkdir -p "$(win32_destdir)/osdmenu/$$dir"; \
-		for file in $(srcdir)/share/osdmenu/$${dir}/*.png;do \
-			 cp -- "$$file" "$(win32_destdir)/osdmenu/$$dir"; \
-		done; \
-	done
-	$(U2D) $(win32_destdir)/osdmenu/*.cfg;
+	cp -r $(destdir)/share/vlc/osdmenu "$(win32_destdir)/osdmenu"
 	for file in $(win32_destdir)/osdmenu/*.cfg; do \
 		sed 's%share/osdmenu%osdmenu%g' "$$file" > "$$file.tmp" || exit $$? ; \
 		sed 's%/%\\%g' "$$file.tmp" > "$$file" || exit$$? ; \
 		rm -f -- "$$file.tmp"; \
 	done
 endif
+if BUILD_MOZILLA
+	cp $(top_srcdir)/projects/mozilla/npvlc.dll.manifest $(win32_destdir)
+endif
+if BUILD_ACTIVEX
+	cp $(top_srcdir)/projects/activex/axvlc.dll.manifest $(win32_destdir)
+endif
 
 # SDK
-	mkdir -p "$(win32_destdir)/sdk.tmp"
-	mkdir -p "$(win32_destdir)/sdk"
-	d=$$(pwd) && \
-	cd src && \
-	make install DESTDIR="$$d/vlc-$(VERSION)/sdk.tmp"
-	cd vlc-$(VERSION) && mv sdk.tmp/$(prefix)/* sdk/
-	find vlc-$(VERSION)/sdk.tmp -type d | sort -r | xargs rmdir
-	rm -Rf vlc-$(VERSION)/sdk/bin
+	mkdir -p "$(win32_destdir)/sdk/lib"
+	cp -r $(destdir)/include "$(win32_destdir)/sdk"
+	cp -r $(destdir)/lib/pkgconfig "$(win32_destdir)/sdk/lib"
+	for file in libvlc.dll.a libvlc.la libvlccore.dll.a libvlccore.la; do \
+        cp -r $(destdir)/lib/$$file "$(win32_destdir)/sdk/lib"; done
+if BUILD_ACTIVEX
+	cp $(srcdir)/projects/activex/README.TXT $(win32_destdir)/sdk/
+	cp $(srcdir)/projects/activex/test.html $(win32_destdir)/sdk/
+endif
+
+	find $(win32_destdir) -type f -name "*xml" -or -name "*html" -or -name '*js' -or -name '*css' -or -name '*hosts' -or -iname '*txt' -or -name '*.cfg' -or -name '*lua' -exec $(U2D) {} \;
+
+#Enable DEP and ASLR for all the binaries
+if USE_PEFLAGS
+	find $(win32_destdir) -type f -name '*$(LIBEXT)' -print -o -name '*$(EXEEXT)' -print -exec $(PEFLAGS) --dynamicbase=true --nxcompat=true {} \;
+endif
+# Rebase all those DLLs to speed up loading (needs cygwin rebase)
+	if rebase -b 0x42 /dev/null >/dev/null 2>&1; then \
+		find $(win32_destdir) -type f -name '*$(LIBEXT)' -print | rebase -b 0x70000000 -T -; \
+	fi
 
 # Strip DLLs
-package-win-common-strip: package-win32-base-debug
-	for i in "" $(win32_destdir)/*$(LIBEXT) \
-	            $(win32_destdir)/*$(EXEEXT) \
-	            $(win32_destdir)/activex/*$(LIBEXT) \
-	            $(win32_destdir)/mozilla/*$(LIBEXT) \
-	            $(win32_destdir)/plugins/*$(LIBEXT) \
-	; do \
-	  if test -n "$$i" ; then \
+package-win-common-strip: package-win-common
+	find $(win32_destdir) -name '*$(LIBEXT)' -or -name '*$(EXEEXT)' | while read i; \
+	do if test -n "$$i" ; then \
 	    $(OBJCOPY) --only-keep-debug "$$i" "$$i.dbg"; \
 	    $(OBJCOPY) --strip-all "$$i" ; \
 	    $(OBJCOPY) --add-gnu-debuglink="$$i.dbg" "$$i" ; \
@@ -989,11 +841,38 @@ package-win-common-strip: package-win32-base-debug
 	  fi ; \
 	done
 
+package-win32-webplugin-common: package-win-common-strip
+	mkdir -p "$(win32_xpi_destdir)/plugins"
+	find $(destdir) -maxdepth 4 -name "*$(LIBEXT)" -exec cp {} "$(win32_xpi_destdir)/" \;
+	cp $(top_srcdir)/projects/mozilla/npvlc.dll.manifest "$(win32_xpi_destdir)/plugins"
+	cp "$(top_srcdir)/extras/package/win32/libvlc.dll.manifest" "$(win32_xpi_destdir)/plugins"
+	cp -r $(win32_destdir)/plugins/ "$(win32_xpi_destdir)/plugins"
+	rm -rf "$(win32_xpi_destdir)/plugins/plugins/*qt*"
+	rm -rf "$(win32_xpi_destdir)/plugins/plugins/*skins*"
+
+package-win32-xpi: package-win32-webplugin-common
+	cp $(top_builddir)/projects/mozilla/install.rdf "$(win32_xpi_destdir)"
+	cd $(win32_xpi_destdir) && zip -r "../vlc-$(VERSION).xpi" install.rdf plugins
+
+package-win32-crx: package-win32-webplugin-common
+	cp $(top_builddir)/projects/mozilla/manifest.json "$(win32_xpi_destdir)"
+	crxmake --pack-extension "$(win32_xpi_destdir)" \
+		--extension-output "$(win32_destdir)/vlc-$(VERSION).crx" --ignore-file install.rdf
+
 package-win32-base: package-win-common-strip
 
 package-win32-base-exe: package-win32-base
+# Script installer
+	cp "$(top_builddir)/extras/package/win32/vlc.win32.nsi" "$(win32_destdir)/"
+	cp "$(top_builddir)/extras/package/win32/spad.nsi" "$(win32_destdir)/"
+	mkdir "$(win32_destdir)/languages"
+	cp $(srcdir)/extras/package/win32/languages/*.nsh "$(win32_destdir)/languages/"
+# Copy the UAC NSIS plugin
+	mkdir -p "$(win32_destdir)/NSIS"
+	cp "$(top_srcdir)/extras/package/win32/UAC.nsh" "$(win32_destdir)/NSIS"
+	cp "$(top_srcdir)/extras/package/win32/UAC.dll" "$(win32_destdir)/NSIS"
+
 # Create package
-	rm -Rf $(win32_destdir)/sdk
 	if makensis -VERSION >/dev/null 2>&1; then \
 	    MAKENSIS="makensis"; \
 	elif [ -x "/cygdrive/c/Program Files/NSIS/makensis" ]; then \
@@ -1027,8 +906,7 @@ package-win32-base-debug-7zip: package-win32-base-debug
 	7z a -t7z -m0=lzma -mx=9 -mfb=64 -md=32m -ms=on vlc-$(VERSION)-win32-debug.7z vlc-$(VERSION)
 
 package-win32-cleanup:
-	rm -Rf $(win32_destdir)
-	rm -Rf $(win32_debugdir)
+	rm -Rf $(win32_destdir) $(win32_debugdir)
 
 package-win32-exe: package-win32-base package-win32-base-exe package-win32-cleanup
 
@@ -1040,7 +918,7 @@ package-win32-7zip: package-win32-base-7zip package-win32-cleanup
 
 package-win32-debug-7zip: package-win32-base-debug-7zip package-win32-cleanup
 
-package-win32-no-clean: package-win32-base-zip package-win32-base-7zip package-win32-base-exe 
+package-win32-no-clean: package-win32-base-zip package-win32-base-7zip package-win32-base-exe
 
 package-win32: package-win32-no-clean package-win32-cleanup
 
@@ -1058,44 +936,6 @@ package-wince-base-zip: package-wince-base
 
 package-wince: package-wince-base-zip package-win32-cleanup
 
-
-#####################################################################
-##   BeOS                                                          ##
-#####################################################################
-package-beos:
-# Check that tmp isn't in the way
-	@if test -e $(srcdir)/tmp; then \
-	  echo "Error: please remove $(srcdir)/tmp, it is in the way"; \
-	  false ; \
-	else \
-	  echo "OK." ; mkdir $(srcdir)/tmp ; \
-	fi
-
-# Copy relevant files
-	mkdir -p $(srcdir)/tmp/vlc
-	cd $(srcdir) && cp -R vlc-bundle/* AUTHORS COPYING ChangeLog README \
-	  THANKS NEWS tmp/vlc/
-
-# Create debug package
-	xres -o $(srcdir)/tmp/vlc/vlc $(srcdir)/share/vlc_beos.rsrc
-	find $(srcdir)/tmp/vlc -exec mimeset -f {} \;
-	mv $(srcdir)/tmp/vlc $(srcdir)/tmp/vlc-$(VERSION)
-	(cd $(srcdir)/tmp && zip -9 -r vlc-$(VERSION)-BeOS-debug.zip vlc-$(VERSION) )
-	mv $(srcdir)/tmp/vlc-$(VERSION)-BeOS-debug.zip $(srcdir)/
-	mv $(srcdir)/tmp/vlc-$(VERSION) $(srcdir)/tmp/vlc
-
-# Create normal package
-	$(STRIP) --strip-debug --strip-unneeded $(srcdir)/tmp/vlc/vlc
-	find $(srcdir)/tmp/vlc -name 'lib*.so' -exec $(STRIP) \
-	  --strip-debug --strip-unneeded "{}" \;
-	xres -o $(srcdir)/tmp/vlc/vlc $(srcdir)/share/vlc_beos.rsrc
-	find $(srcdir)/tmp/vlc -exec mimeset -f {} \;
-	mv $(srcdir)/tmp/vlc $(srcdir)/tmp/vlc-$(VERSION)
-	(cd $(srcdir)/tmp &&  zip -9 -r vlc-$(VERSION)-BeOS.zip vlc-$(VERSION) )
-	mv $(srcdir)/tmp/vlc-$(VERSION)-BeOS.zip $(srcdir)/
-
-# Clean up
-	rm -Rf $(srcdir)/tmp
 
 #########################################################################
 ## MacOS X                                                             ##
