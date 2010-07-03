@@ -79,7 +79,6 @@ const char* xml_getChildElementValue( IXML_Element* p_parent,
 
 IXML_Document* parseBrowseResult( IXML_Document* p_doc );
 
-
 // VLC callbacks...
 
 static int Open( vlc_object_t *p_this )
@@ -89,7 +88,7 @@ static int Open( vlc_object_t *p_this )
     services_discovery_sys_t *p_sys  = ( services_discovery_sys_t * )
             calloc( 1, sizeof( services_discovery_sys_t ) );
 
-    if(!(p_sd->p_sys = p_sys))
+    if( !( p_sd->p_sys = p_sys ) )
         return VLC_ENOMEM;
 
     i_res = UpnpInit( 0, 0 );
@@ -153,7 +152,8 @@ const char* xml_getChildElementValue( IXML_Element* p_parent,
     if ( !psz_tag_name_ ) return 0;
 
     char* psz_tag_name = strdup( psz_tag_name_ );
-    IXML_NodeList* p_node_list = ixmlElement_getElementsByTagName( p_parent, psz_tag_name );
+    IXML_NodeList* p_node_list = ixmlElement_getElementsByTagName( p_parent,
+								  psz_tag_name );
     free( psz_tag_name );
     if ( !p_node_list ) return 0;
 
@@ -668,19 +668,16 @@ void MediaServer::fetchContents()
 	services_discovery_AddItem( _p_sd, _p_input_item, NULL );
     }
 
-    Container* root = new Container( 0, "0", getFriendlyName() );
-    
-    _fetchContents( root );
-
-    _p_contents = root;
+    _p_contents = new Container( 0, "0", getFriendlyName() );
     _p_contents->setInputItem( _p_input_item );
-
+    
+    _fetchContents( _p_contents );
     _buildPlaylist( _p_contents, NULL );
 }
 
 bool MediaServer::_fetchContents( Container* p_parent )
 {
-    if (!p_parent)
+    if ( !p_parent )
     {
         msg_Dbg( _p_sd,
                 "%s:%d: parent==NULL", __FILE__, __LINE__ );
@@ -745,7 +742,6 @@ bool MediaServer::_fetchContents( Container* p_parent )
                 Item* item = new Item( p_parent, objectID, title, resource );
                 p_parent->addItem( item );
             }
-
             else
             {
                 Container* container = new Container( p_parent, objectID, title );
@@ -932,7 +928,6 @@ void MediaServerList::removeServer( const char* psz_udn )
         }
     }
 }
-
 
 // Item...
 
