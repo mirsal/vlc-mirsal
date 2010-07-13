@@ -14,6 +14,7 @@ SOURCES_stream_out_autodel = autodel.c
 SOURCES_stream_out_record = record.c
 SOURCES_stream_out_raop = raop.c
 SOURCES_stream_out_smem = smem.c
+SOURCES_stream_out_dlna_server = dlna_server.c
 
 libvlc_LTLIBRARIES += \
 	libstream_out_dummy_plugin.la \
