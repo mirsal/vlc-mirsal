@@ -3807,7 +3807,7 @@ PKG_ENABLE_MODULES_VLC([UPNP], [upnp_intel], [libupnp], [Intel UPnp SDK],[auto])
 dnl
 dnl  UPNP DLNA plugin (via libdlna)
 dnl
-PKG_ENABLE_MODULES_VLC([DLNA], [dlna_server], [libdlna], [libdlna reference standards implementation],[auto])
+PKG_ENABLE_MODULES_VLC([DLNA], [stream_out_dlna_server], [libdlna], [libdlna reference standards implementation],[auto])
 
 dnl
 dnl  Interface plugins
