@@ -2583,6 +2583,27 @@ CLEAN_FILE += .xcb-util .xcb
 CLEAN_PKG += xcb-util xcb
 DISTCLEAN_PKG += xcb-util-$(XCB_UTIL_VERSION).tar.bz2 libxcb-$(XCB_VERSION).tar.bz2
 
+
+# ***************************************************************************
+# DLNA library
+# ***************************************************************************
+
+libdlna-$(DLNA_VERSION).tar.bz2:
+	$(WGET) $(DLNA_URL)
+
+libdlna: libdlna-$(DLNA_VERSION).tar.bz2
+	$(EXTRACT_BZ2)
+	patch -p0 < Patches/libdlna-no-tags.patch
+
+.libdlna: libdlna
+	(cd $<; CFLAGS="$(CFLAGS) -O3" $(HOSTCC) ./configure --prefix=$(PREFIX) --disable-shared --enable-static --disable-sqlite && make && make install)
+	touch $@
+
+CLEAN_FILE += .libdlna
+CLEAN_PKG += libdlna
+DISTCLEAN_PKG += libdlna-$(DLNA_VERSION).tar.bz2
+
+
 # ***************************************************************************
 # Peflags utility (Windows only)
 # ***************************************************************************

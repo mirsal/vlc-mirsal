@@ -1,0 +1,12 @@
+diff -r 4117c5ff1f40 src/Makefile
+--- libdlna.orig/src/Makefile	Sun Mar 28 17:46:54 2010 +0200
++++ libdlna/src/Makefile	Tue Jul 13 12:30:20 2010 +0400
+@@ -90,7 +90,7 @@
+ 
+ .SUFFIXES: .c .o .lo
+ 
+-all: depend $(BUILD_RULES) TAGS tags
++all: depend $(BUILD_RULES)
+ 
+ .c.o:
+ 	$(CC) -c $(CFLAGS) $(OPTFLAGS) -o $@ $<
