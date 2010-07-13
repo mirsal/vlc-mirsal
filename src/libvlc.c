@@ -761,6 +761,11 @@ int libvlc_InternalInit( libvlc_int_t *p_libvlc, int i_argc,
     var_Create( p_libvlc, "snapshot-file", VLC_VAR_STRING );
     var_Create( p_libvlc, "record-file", VLC_VAR_STRING );
 
+    /* some default internal settings */
+    var_Create( p_libvlc, "window", VLC_VAR_STRING );
+    var_Create( p_libvlc, "user-agent", VLC_VAR_STRING );
+    var_SetString( p_libvlc, "user-agent", "(LibVLC "VERSION")" );
+
     /* Initialize playlist and get commandline files */
     p_playlist = playlist_Create( VLC_OBJECT(p_libvlc) );
     if( !p_playlist )
@@ -923,6 +928,7 @@ int libvlc_InternalInit( libvlc_int_t *p_libvlc, int i_argc,
     }
 #endif
 
+#ifdef __APPLE__
     var_Create( p_libvlc, "drawable-view-top", VLC_VAR_INTEGER );
     var_Create( p_libvlc, "drawable-view-left", VLC_VAR_INTEGER );
     var_Create( p_libvlc, "drawable-view-bottom", VLC_VAR_INTEGER );
@@ -931,6 +937,7 @@ int libvlc_InternalInit( libvlc_int_t *p_libvlc, int i_argc,
     var_Create( p_libvlc, "drawable-clip-left", VLC_VAR_INTEGER );
     var_Create( p_libvlc, "drawable-clip-bottom", VLC_VAR_INTEGER );
     var_Create( p_libvlc, "drawable-clip-right", VLC_VAR_INTEGER );
+#endif
 #ifdef WIN32
     var_Create( p_libvlc, "drawable-hwnd", VLC_VAR_ADDRESS );
 #endif
@@ -1163,9 +1170,7 @@ static void GetFilenames( libvlc_int_t *p_vlc, unsigned n,
             }
         }
 
-        /* TODO: write an internal function of this one, to avoid
-         *       unnecessary lookups. */
-        char *mrl = make_URI( args[n] );
+        char *mrl = make_URI( args[n], NULL );
         if( !mrl )
             continue;
 
@@ -1537,8 +1542,8 @@ static void Usage( libvlc_int_t *p_this, char const *psz_search )
 
                 if( p_item->min.i || p_item->max.i )
                 {
-                    sprintf( psz_buffer, "%s [%i .. %i]", psz_type,
-                             p_item->min.i, p_item->max.i );
+                    sprintf( psz_buffer, "%s [%"PRId64" .. %"PRId64"]",
+                             psz_type, p_item->min.i, p_item->max.i );
                     psz_type = psz_buffer;
                 }
 

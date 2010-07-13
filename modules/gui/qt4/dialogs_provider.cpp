@@ -436,7 +436,7 @@ void DialogsProvider::addFromSimple( bool pl, bool go)
     files.sort();
     foreach( const QString &file, files )
     {
-        char* psz_uri = make_URI( qtu( toNativeSeparators(file) ) );
+        char* psz_uri = make_URI( qtu( toNativeSeparators(file) ), NULL );
         playlist_Add( THEPL, psz_uri, NULL,
                       go ? ( PLAYLIST_APPEND | ( i ? PLAYLIST_PREPARSE : PLAYLIST_GO ) )
                          : ( PLAYLIST_APPEND | PLAYLIST_PREPARSE ),
@@ -497,22 +497,31 @@ static void openDirectory( intf_thread_t *p_intf, bool pl, bool go )
 {
     QString dir = QFileDialog::getExistingDirectory( NULL, qtr( I_OP_DIR_WINTITLE ), p_intf->p_sys->filepath );
 
-    if (!dir.isEmpty() )
-    {
-        QString mrl = (dir.endsWith( "VIDEO_TS", Qt::CaseInsensitive ) ?
-                       "dvd://" : "directory://")
-                    + toNativeSeparators( dir );
-        input_item_t *p_input = input_item_New( THEPL, qtu( mrl ), NULL );
+    if( dir.isEmpty() )
+        return;
 
-        /* FIXME: playlist_AddInput() can fail */
-        playlist_AddInput( THEPL, p_input,
-                       go ? ( PLAYLIST_APPEND | PLAYLIST_GO ) : PLAYLIST_APPEND,
+    const char *scheme = "directory";
+    if( dir.endsWith( "/VIDEO_TS", Qt::CaseInsensitive ) )
+        scheme = "dvd";
+
+    char *uri = make_URI( qtu( dir ), scheme );
+    if( unlikely(uri == NULL) )
+        return;
+
+    RecentsMRL::getInstance( p_intf )->addRecent( qfu(uri) );
+
+    input_item_t *p_input = input_item_New( THEPL, uri, NULL );
+    free( uri );
+    if( unlikely( p_input == NULL ) )
+        return;
+
+    /* FIXME: playlist_AddInput() can fail */
+    playlist_AddInput( THEPL, p_input,
+                      go ? ( PLAYLIST_APPEND | PLAYLIST_GO ) : PLAYLIST_APPEND,
                        PLAYLIST_END, pl, pl_Unlocked );
-        RecentsMRL::getInstance( p_intf )->addRecent( mrl );
-        if( !go )
-            input_Read( THEPL, p_input );
-        vlc_gc_decref( p_input );
-    }
+    if( !go )
+        input_Read( THEPL, p_input );
+    vlc_gc_decref( p_input );
 }
 
 void DialogsProvider::PLOpenDir()
@@ -719,7 +728,7 @@ void DialogsProvider::SDMenuAction( const QString& data )
  **/
 void DialogsProvider::playMRL( const QString &mrl )
 {
-    char* psz_uri = make_URI( qtu(mrl) );
+    char* psz_uri = make_URI( qtu(mrl), NULL );
     playlist_Add( THEPL, psz_uri, NULL,
            PLAYLIST_APPEND | PLAYLIST_GO , PLAYLIST_END, true, false );
     free( psz_uri );

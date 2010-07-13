@@ -74,6 +74,7 @@ vlc_module_begin ()
     set_subcategory (SUBCAT_VIDEO_VOUT)
     set_capability ("vout window xid", 70)
     set_callbacks (EmOpen, EmClose)
+    add_shortcut ("embed-xid")
 
     add_integer ("drawable-xid", 0, NULL, XID_TEXT, XID_LONGTEXT, true)
         change_volatile ()
@@ -216,7 +217,7 @@ static int Open (vlc_object_t *obj)
         return VLC_ENOMEM;
 
     /* Connect to X */
-    char *display = var_CreateGetNonEmptyString (wnd, "x11-display");
+    char *display = var_InheritString (wnd, "x11-display");
     int snum;
 
     xcb_connection_t *conn = xcb_connect (display, &snum);
@@ -271,7 +272,7 @@ static int Open (vlc_object_t *obj)
     wnd->sys = p_sys;
 
     p_sys->conn = conn;
-    if (var_CreateGetBool (obj, "keyboard-events"))
+    if (var_InheritBool (obj, "keyboard-events"))
         p_sys->keys = CreateKeyHandler (obj, conn);
     else
         p_sys->keys = NULL;
@@ -309,7 +310,7 @@ static int Open (vlc_object_t *obj)
     xcb_atom_t utf8 = get_atom (conn, utf8_string_ck);
 
     xcb_atom_t net_wm_name = get_atom (conn, net_wm_name_ck);
-    char *title = var_CreateGetNonEmptyString (wnd, "video-title");
+    char *title = var_InheritString (wnd, "video-title");
     if (title)
     {
         set_string (conn, window, utf8, net_wm_name, title);
@@ -338,7 +339,7 @@ static int Open (vlc_object_t *obj)
     /* Make the window visible */
     xcb_map_window (conn, window);
 
-    if (var_CreateGetBool (obj, "video-wallpaper"))
+    if (var_InheritBool (obj, "video-wallpaper"))
     {
         vout_window_SetState (wnd, VOUT_WINDOW_STATE_BELOW);
         vout_window_SetFullScreen (wnd, true);
@@ -604,10 +605,9 @@ static int EmOpen (vlc_object_t *obj)
 {
     vout_window_t *wnd = (vout_window_t *)obj;
 
-    xcb_window_t window = var_CreateGetInteger (obj, "drawable-xid");
+    xcb_window_t window = var_InheritInteger (obj, "drawable-xid");
     if (window == 0)
         return VLC_EGENERIC;
-    var_Destroy (obj, "drawable-xid");
 
     if (AcquireDrawable (obj, window))
         return VLC_EGENERIC;
@@ -634,7 +634,7 @@ static int EmOpen (vlc_object_t *obj)
     p_sys->root = geo->root;
     free (geo);
 
-    if (var_CreateGetBool (obj, "keyboard-events"))
+    if (var_InheritBool (obj, "keyboard-events"))
     {
         p_sys->keys = CreateKeyHandler (obj, conn);
         if (p_sys->keys != NULL)

@@ -55,7 +55,7 @@ vlc_module_begin ()
     set_capability ("vout display", 50)
     set_callbacks (Open, Close)
 
-    add_shortcut ("xcb-glx", "glx", "opengl")
+    add_shortcut ("xcb-glx", "glx", "opengl", "xid")
 vlc_module_end ()
 
 struct vout_display_sys_t
@@ -458,7 +458,7 @@ static picture_pool_t *Pool (vout_display_t *vd, unsigned requested_count)
 
 static void PictureRender (vout_display_t *vd, picture_t *pic)
 {
-   vout_display_sys_t *sys = vd->sys;
+    vout_display_sys_t *sys = vd->sys;
 
     vout_display_opengl_Prepare (&sys->vgl, pic);
 }

@@ -13,12 +13,14 @@ libvlc_audio_output_list_release
 libvlc_audio_output_set
 libvlc_audio_output_set_device_type
 libvlc_audio_get_channel
+libvlc_audio_get_delay
 libvlc_audio_get_mute
 libvlc_audio_get_track
 libvlc_audio_get_track_count
 libvlc_audio_get_track_description
 libvlc_audio_get_volume
 libvlc_audio_set_channel
+libvlc_audio_set_delay
 libvlc_audio_set_mute
 libvlc_audio_set_track
 libvlc_audio_set_volume
@@ -160,6 +162,7 @@ libvlc_release
 libvlc_retain
 libvlc_set_fullscreen
 libvlc_set_log_verbosity
+libvlc_set_user_agent
 libvlc_toggle_fullscreen
 libvlc_toggle_teletext
 libvlc_track_description_release
@@ -201,6 +204,8 @@ libvlc_video_set_subtitle_file
 libvlc_video_set_teletext
 libvlc_video_set_track
 libvlc_video_take_snapshot
+libvlc_video_set_callbacks
+libvlc_video_set_format
 libvlc_vlm_add_broadcast
 libvlc_vlm_add_vod
 libvlc_vlm_add_input

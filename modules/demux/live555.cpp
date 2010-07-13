@@ -297,7 +297,7 @@ static int  Open ( vlc_object_t *p_this )
     p_sys->b_timeout_call = false;
     p_sys->b_multicast = false;
     p_sys->b_real = false;
-    p_sys->psz_path = strdup( p_demux->psz_path );
+    p_sys->psz_path = strdup( p_demux->psz_location );
     p_sys->b_force_mcast = var_CreateGetBool( p_demux, "rtsp-mcast" );
     p_sys->b_get_param = false;
     p_sys->b_paused = false;
@@ -1476,7 +1476,7 @@ static int Control( demux_t *p_demux, int i_query, va_list args )
 
         case DEMUX_GET_PTS_DELAY:
             pi64 = (int64_t*)va_arg( args, int64_t * );
-            *pi64 = (int64_t)var_GetInteger( p_demux, "rtsp-caching" ) * 1000;
+            *pi64 = var_GetInteger( p_demux, "rtsp-caching" ) * 1000;
             return VLC_SUCCESS;
 
         default:

@@ -367,6 +367,16 @@ libvlc_media_player_new( libvlc_instance_t *instance )
     var_Create (mp, "rate", VLC_VAR_FLOAT|VLC_VAR_DOINHERIT);
 
     /* Video */
+    var_Create (mp, "vout", VLC_VAR_STRING|VLC_VAR_DOINHERIT);
+    var_Create (mp, "window", VLC_VAR_STRING);
+    var_Create (mp, "vmem-lock", VLC_VAR_ADDRESS);
+    var_Create (mp, "vmem-unlock", VLC_VAR_ADDRESS);
+    var_Create (mp, "vmem-display", VLC_VAR_ADDRESS);
+    var_Create (mp, "vmem-data", VLC_VAR_ADDRESS);
+    var_Create (mp, "vmem-chroma", VLC_VAR_STRING | VLC_VAR_DOINHERIT);
+    var_Create (mp, "vmem-width", VLC_VAR_INTEGER | VLC_VAR_DOINHERIT);
+    var_Create (mp, "vmem-height", VLC_VAR_INTEGER | VLC_VAR_DOINHERIT);
+    var_Create (mp, "vmem-width", VLC_VAR_INTEGER | VLC_VAR_DOINHERIT);
     var_Create (mp, "drawable-xid", VLC_VAR_INTEGER);
 #ifdef WIN32
     var_Create (mp, "drawable-hwnd", VLC_VAR_ADDRESS);
@@ -765,6 +775,29 @@ void libvlc_media_player_stop( libvlc_media_player_t *p_mi )
     unlock_input(p_mi);
 }
 
+
+void libvlc_video_set_callbacks( libvlc_media_player_t *mp,
+    void *(*lock_cb) (void *, void **),
+    void (*unlock_cb) (void *, void *, void *const *),
+    void (*display_cb) (void *, void *),
+    void *opaque )
+{
+    var_SetAddress( mp, "vmem-lock", lock_cb );
+    var_SetAddress( mp, "vmem-unlock", unlock_cb );
+    var_SetAddress( mp, "vmem-display", display_cb );
+    var_SetAddress( mp, "vmem-data", opaque );
+    var_SetString( mp, "vout", "vmem" );
+}
+
+void libvlc_video_set_format( libvlc_media_player_t *mp, const char *chroma,
+                              unsigned width, unsigned height, unsigned pitch )
+{
+    var_SetString( mp, "vmem-chroma", chroma );
+    var_SetInteger( mp, "vmem-width", width );
+    var_SetInteger( mp, "vmem-height", height );
+    var_SetInteger( mp, "vmem-pitch", pitch );
+}
+
 /**************************************************************************
  * set_nsobject
  **************************************************************************/
@@ -825,6 +858,9 @@ void libvlc_media_player_set_xwindow( libvlc_media_player_t *p_mi,
                                       uint32_t drawable )
 {
     assert (p_mi != NULL);
+
+    var_SetString (p_mi, "vout", drawable ? "xid" : "any");
+    var_SetString (p_mi, "window", drawable ? "embed-xid,any" : "any");
     var_SetInteger (p_mi, "drawable-xid", drawable);
 }
 
@@ -844,6 +880,8 @@ void libvlc_media_player_set_hwnd( libvlc_media_player_t *p_mi,
 {
     assert (p_mi != NULL);
 #ifdef WIN32
+    var_SetString (p_mi, "window",
+                   (drawable != NULL) ? "embed-hwnd,any" : "");
     var_SetAddress (p_mi, "drawable-hwnd", drawable);
 #else
     (void) p_mi; (void) drawable;

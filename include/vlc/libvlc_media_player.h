@@ -201,6 +201,53 @@ VLC_PUBLIC_API void libvlc_media_player_pause ( libvlc_media_player_t *p_mi );
 VLC_PUBLIC_API void libvlc_media_player_stop ( libvlc_media_player_t *p_mi );
 
 /**
+ * Set callbacks and private data to render decoded video to a custom area
+ * in memory. Use libvlc_video_set_format() to configure the decoded format.
+ *
+ * Whenever a new video frame needs to be decoded, the lock callback is
+ * invoked. Depending on the video chroma, one or three pixel planes of
+ * adequate dimensions must be returned via the second parameter. Those
+ * planes must be aligned on 32-bytes boundaries.
+ *
+ * When the video frame is decoded, the unlock callback is invoked. The
+ * second parameter to the callback corresponds is the return value of the
+ * lock callback. The third parameter conveys the pixel planes for convenience.
+ *
+ * When the video frame needs to be shown, as determined by the media playback
+ * clock, the display callback is invoked. The second parameter also conveys
+ * the return value from the lock callback.
+ *
+ * \param mp the media player
+ * \param lock callback to allocate video memory
+ * \param unlock callback to release video memory
+ * \param opaque private pointer for the three callbacks (as first parameter)
+ * \version LibVLC 1.1.1 or later
+ */
+VLC_PUBLIC_API
+void libvlc_video_set_callbacks( libvlc_media_player_t *mp,
+    void *(*lock) (void *opaque, void **plane),
+    void (*unlock) (void *opaque, void *picture, void *const *plane),
+    void (*display) (void *opaque, void *picture),
+    void *opaque );
+
+/**
+ * Set decoded video chroma and dimensions. This only works in combination with
+ * libvlc_video_set_callbacks().
+ *
+ * \param mp the media player
+ * \param chroma a four-characters string identifying the chroma
+ *               (e.g. "RV32" or "I420")
+ * \param width pixel width
+ * \param height pixel height
+ * \param pitch line pitch (in bytes)
+ * \version LibVLC 1.1.1 or later
+ */
+VLC_PUBLIC_API
+void libvlc_video_set_format( libvlc_media_player_t *mp, const char *chroma,
+                              unsigned width, unsigned height,
+                              unsigned pitch );
+
+/**
  * Set the NSView handler where the media player should render its video output.
  *
  * Use the vout called "macosx".
@@ -1211,6 +1258,25 @@ VLC_PUBLIC_API int libvlc_audio_get_channel( libvlc_media_player_t *p_mi );
  * \return 0 on success, -1 on error
  */
 VLC_PUBLIC_API int libvlc_audio_set_channel( libvlc_media_player_t *p_mi, int channel );
+
+/**
+ * Get current audio delay.
+ *
+ * \param p_mi media player
+ * \return the audio delay (microseconds)
+ * \version LibVLC 1.1.1 or later
+ */
+VLC_PUBLIC_API int64_t libvlc_audio_get_delay( libvlc_media_player_t *p_mi );
+
+/**
+ * Set current audio delay. The audio delay will be reset to zero each time the media changes.
+ *
+ * \param p_mi media player
+ * \param i_delay the audio delay (microseconds)
+ * \return 0 on success, -1 on error
+ * \version LibVLC 1.1.1 or later
+ */
+VLC_PUBLIC_API int libvlc_audio_set_delay( libvlc_media_player_t *p_mi, int64_t i_delay );
 
 /** @} audio */
 

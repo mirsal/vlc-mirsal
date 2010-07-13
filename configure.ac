@@ -2471,11 +2471,16 @@ then
       AC_MSG_ERROR([cannot find ${real_mod_tree}/src/.libs/libmodplug.a, make sure you compiled mod in ${with_mod_tree}])
     fi
   else
-    PKG_CHECK_MODULES(LIBMODPLUG, libmodplug >= 0.8,
-        [ VLC_ADD_PLUGIN([mod])
-          VLC_ADD_CXXFLAGS([mod],[$LIBMODPLUG_CFLAGS])
-          VLC_ADD_LIBS([mod],[$LIBMODPLUG_LIBS])
-        ],[AC_MSG_WARN([libmodplug not found!])])
+    PKG_CHECK_MODULES(LIBMODPLUG, [libmodplug >= 0.8], [
+      PKG_CHECK_MODULES(WORKING_LIBMODPLUG, [libmodplug != 0.8.8],, [
+        AC_MSG_ERROR([libmodplug version 0.8.8 will not work. Please upgrade to 0.8.8.1 or later (or downgrade to 0.8.7)!])
+      ])
+      VLC_ADD_PLUGIN([mod])
+      VLC_ADD_CXXFLAGS([mod],[$LIBMODPLUG_CFLAGS])
+      VLC_ADD_LIBS([mod],[$LIBMODPLUG_LIBS])
+    ], [
+      AC_MSG_WARN([libmodplug not found!])
+    ])
   fi
 fi
 
@@ -3309,7 +3314,7 @@ AS_IF([test "${enable_xcb}" != "no"], [
   dnl libxcb
   PKG_CHECK_MODULES(XCB, [xcb])
   PKG_CHECK_MODULES(XCB_SHM, [xcb-shm])
-  VLC_ADD_PLUGIN([screensaver xcb_x11 xcb_screen xcb_apps])
+  VLC_ADD_PLUGIN([screensaver xcb_x11 xcb_window xcb_screen xcb_apps])
 
   AS_IF([test "${enable_xvideo}" != "no"], [
     PKG_CHECK_MODULES(XCB_XV, [xcb-xv >= 1.1.90.1], [
@@ -3338,14 +3343,16 @@ AS_IF([test "${enable_xcb}" != "no"], [
     ], [
       have_xcb_keysyms="no"
       need_xid_provider="yes"
+      AC_MSG_WARN([libxcb-keysyms not found. Hotkeys will not be supported.])
     ])
   ])
 
   AS_IF([test "${have_xcb_keysyms}" = "yes"], [
     PKG_CHECK_MODULES(XPROTO, [xproto])
-    VLC_ADD_PLUGIN([xcb_window globalhotkeys])
+    VLC_ADD_PLUGIN([globalhotkeys])
     VLC_ADD_CFLAGS([globalhotkeys], [${XCB_KEYSYMS_CFLAGS} ${XCB_CFLAGS}])
     VLC_ADD_LIBS([globalhotkeys], [${XCB_KEYSYMS_LIBS} ${XCB_LIBS}])
+    VLC_ADD_CFLAGS([xcb_window], [-DHAVE_XCB_KEYSYMS])
   ])
   VLC_ADD_PLUGIN([xdg_screensaver])
 ])
@@ -3382,6 +3389,9 @@ then
       # SDL on Darwin is heavily patched and can only run SDL_image
       if test "${SYS}" != "darwin"; then
         VLC_ADD_PLUGIN([vout_sdl aout_sdl])
+      fi
+      if test "${SYS}" != "mingw32"; then
+        VLC_ADD_LIBS([vout_sdl],[${X_LIBS} ${X_PRE_LIBS} -lX11])
       fi
       VLC_ADD_CFLAGS([vout_sdl aout_sdl],[${SDL_CFLAGS}])
       VLC_ADD_LIBS([vout_sdl aout_sdl],[${SDL_LIBS}])

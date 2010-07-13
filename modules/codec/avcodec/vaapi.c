@@ -128,6 +128,8 @@ static int Open( vlc_va_vaapi_t *p_va, int i_codec_id )
 
     /* */
     memset( p_va, 0, sizeof(*p_va) );
+    p_va->i_config_id  = VA_INVALID_ID;
+    p_va->i_context_id = VA_INVALID_ID;
 
     /* Create a VA display */
     if( !XInitThreads() )
@@ -158,7 +160,7 @@ static int Open( vlc_va_vaapi_t *p_va, int i_codec_id )
     if( vaCreateConfig( p_va->p_display,
                         i_profile, VAEntrypointVLD, &attrib, 1, &p_va->i_config_id ) )
     {
-        p_va->i_config_id = 0;
+        p_va->i_config_id = VA_INVALID_ID;
         goto error;
     }
 
@@ -176,13 +178,13 @@ error:
 
 static void DestroySurfaces( vlc_va_vaapi_t *p_va )
 {
-    if( p_va->image.image_id )
+    if( p_va->image.image_id != VA_INVALID_SURFACE )
     {
         CopyCleanCache( &p_va->image_cache );
         vaDestroyImage( p_va->p_display, p_va->image.image_id );
     }
 
-    if( p_va->i_context_id )
+    if( p_va->i_context_id != VA_INVALID_ID )
         vaDestroyContext( p_va->p_display, p_va->i_context_id );
 
     for( int i = 0; i < p_va->i_surface_count && p_va->p_surface; i++ )
@@ -195,8 +197,8 @@ static void DestroySurfaces( vlc_va_vaapi_t *p_va )
     free( p_va->p_surface );
 
     /* */
-    p_va->image.image_id = 0;
-    p_va->i_context_id = 0;
+    p_va->image.image_id = VA_INVALID_SURFACE;
+    p_va->i_context_id = VA_INVALID_ID;
     p_va->p_surface = NULL;
     p_va->i_surface_width = 0;
     p_va->i_surface_height = 0;
@@ -210,6 +212,8 @@ static int CreateSurfaces( vlc_va_vaapi_t *p_va, void **pp_hw_ctx, vlc_fourcc_t 
     p_va->p_surface = calloc( p_va->i_surface_count, sizeof(*p_va->p_surface) );
     if( !p_va->p_surface )
         return VLC_EGENERIC;
+    p_va->image.image_id = VA_INVALID_SURFACE;
+    p_va->i_context_id   = VA_INVALID_ID;
 
     /* Create surfaces */
     VASurfaceID pi_surface_id[p_va->i_surface_count];
@@ -235,11 +239,11 @@ static int CreateSurfaces( vlc_va_vaapi_t *p_va, void **pp_hw_ctx, vlc_fourcc_t 
                          i_width, i_height, VA_PROGRESSIVE,
                          pi_surface_id, p_va->i_surface_count, &p_va->i_context_id ) )
     {
-        p_va->i_context_id = 0;
+        p_va->i_context_id = VA_INVALID_ID;
         goto error;
     }
 
-    /* Find a supported image chroma */
+    /* Find and create a supported image chroma */
     int i_fmt_count = vaMaxNumImageFormats( p_va->p_display );
     VAImageFormat *p_fmt = calloc( i_fmt_count, sizeof(*p_fmt) );
     if( !p_fmt )
@@ -259,6 +263,21 @@ static int CreateSurfaces( vlc_va_vaapi_t *p_va, void **pp_hw_ctx, vlc_fourcc_t 
             p_fmt[i].fourcc == VA_FOURCC( 'I', '4', '2', '0' ) ||
             p_fmt[i].fourcc == VA_FOURCC( 'N', 'V', '1', '2' ) )
         {
+            if( vaCreateImage(  p_va->p_display, &p_fmt[i], i_width, i_height, &p_va->image ) )
+            {
+                p_va->image.image_id = VA_INVALID_SURFACE;
+                continue;
+            }
+            /* Validate that vaGetImage works with this format */
+            if( vaGetImage( p_va->p_display, pi_surface_id[0],
+                            0, 0, i_width, i_height,
+                            p_va->image.image_id) )
+            {
+                vaDestroyImage( p_va->p_display, p_va->image.image_id );
+                p_va->image.image_id = VA_INVALID_SURFACE;
+                continue;
+            }
+
             i_chroma = VLC_CODEC_YV12;
             fmt = p_fmt[i];
             break;
@@ -269,12 +288,6 @@ static int CreateSurfaces( vlc_va_vaapi_t *p_va, void **pp_hw_ctx, vlc_fourcc_t 
         goto error;
     *pi_chroma = i_chroma;
 
-    /* Create an image for surface extraction */
-    if( vaCreateImage(  p_va->p_display, &fmt, i_width, i_height, &p_va->image ) )
-    {
-        p_va->image.image_id = 0;
-        goto error;
-    }
     CopyInitCache( &p_va->image_cache, i_width );
 
     /* Setup the ffmpeg hardware context */
@@ -446,7 +459,7 @@ static void Close( vlc_va_vaapi_t *p_va )
     if( p_va->i_surface_width || p_va->i_surface_height )
         DestroySurfaces( p_va );
 
-    if( p_va->i_config_id )
+    if( p_va->i_config_id != VA_INVALID_ID )
         vaDestroyConfig( p_va->p_display, p_va->i_config_id );
     if( p_va->p_display )
         vaTerminate( p_va->p_display );

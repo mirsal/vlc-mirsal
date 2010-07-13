@@ -126,6 +126,7 @@ vlc_module_begin ()
     add_string( "http-user-agent", PACKAGE_NAME"/"PACKAGE_VERSION, NULL,
                 AGENT_TEXT, AGENT_LONGTEXT, true )
         change_safe()
+        change_need_restart()
     add_bool( "http-reconnect", false, NULL, RECONNECT_TEXT,
               RECONNECT_LONGTEXT, true )
     add_bool( "http-continuous", false, NULL, CONTINUOUS_TEXT,
@@ -1073,7 +1074,7 @@ static int Control( access_t *p_access, int i_query, va_list args )
         /* */
         case ACCESS_GET_PTS_DELAY:
             pi_64 = (int64_t*)va_arg( args, int64_t * );
-            *pi_64 = (int64_t)var_GetInteger( p_access, "http-caching" ) * 1000;
+            *pi_64 = var_GetInteger( p_access, "http-caching" ) * 1000;
             break;
 
         /* */

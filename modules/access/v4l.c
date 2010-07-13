@@ -444,7 +444,7 @@ static int Control( demux_t *p_demux, int i_query, va_list args )
 
         case DEMUX_GET_PTS_DELAY:
             pi64 = (int64_t*)va_arg( args, int64_t * );
-            *pi64 = (int64_t)var_GetInteger( p_demux, "v4l-caching" ) * 1000;
+            *pi64 = var_GetInteger( p_demux, "v4l-caching" ) * 1000;
             return VLC_SUCCESS;
 
         case DEMUX_GET_TIME:
@@ -488,7 +488,7 @@ static void ParseMRL( demux_t *p_demux )
 {
     demux_sys_t *p_sys = p_demux->p_sys;
 
-    char *psz_dup = strdup( p_demux->psz_path );
+    char *psz_dup = strdup( p_demux->psz_location );
     char *psz_parser = psz_dup;
 
     while( *psz_parser && *psz_parser != ':' )

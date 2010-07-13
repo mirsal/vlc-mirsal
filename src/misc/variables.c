@@ -1054,7 +1054,7 @@ void var_OptionParse( vlc_object_t *p_obj, const char *psz_option,
         break;
 
     case VLC_VAR_INTEGER:
-        val.i_int = strtol( psz_value, NULL, 0 );
+        val.i_int = strtoll( psz_value, NULL, 0 );
         break;
 
     case VLC_VAR_FLOAT:
@@ -1225,6 +1225,8 @@ int var_Inherit( vlc_object_t *p_this, const char *psz_name, int i_type,
         case VLC_VAR_BOOL:
             p_val->b_bool = config_GetInt( p_this, psz_name );
             break;
+        case VLC_VAR_ADDRESS:
+            return VLC_ENOOBJ;
         default:
             msg_Warn( p_this, "Could not inherit value for var %s "
                               "from config. Invalid Type", psz_name );
