@@ -1696,7 +1696,11 @@ AC_ARG_ENABLE(taglib,
     PKG_CHECK_MODULES(TAGLIB, taglib >= 1.5,
       [ VLC_ADD_PLUGIN([taglib])
         VLC_ADD_LIBS([taglib],[$TAGLIB_LIBS -lz])
-       VLC_ADD_CXXFLAGS([taglib],[$TAGLIB_CFLAGS]) ],
+        VLC_ADD_CXXFLAGS([taglib],[$TAGLIB_CFLAGS])
+        AC_LANG_PUSH(C++)
+        AC_CHECK_HEADERS(taglib/mp4coverart.h)
+        AC_LANG_POP(C++)
+      ],
       [AC_MSG_WARN(TagLib library not found)])
   ])
 
@@ -2636,7 +2640,7 @@ dnl
 dnl   libid3tag support (FIXME!!! doesn't work with new input)
 dnl
 AC_ARG_ENABLE( id3tag,
-[  --disable-id3tag        id3tag metadata reader plugin (default disabled)])
+[  --enable-id3tag         id3tag metadata reader plugin (default disabled)])
 AS_IF([test "${enable_id3tag}" = "yes"], [
   AC_CHECK_HEADERS(id3tag.h, [
       AS_IF([test "${have_zlib}" = "yes"],[
@@ -3623,6 +3627,9 @@ then
   then
     VLC_ADD_PLUGIN([aa])
     VLC_ADD_LIBS([aa],[-laa])
+    if test "${SYS}" != "mingw32"; then
+      VLC_ADD_LIBS([aa],[${X_LIBS} ${X_PRE_LIBS} -lX11])
+    fi
   fi
 fi
 
