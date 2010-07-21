@@ -42,53 +42,41 @@
 #endif
 #include <errno.h>
 
-#if defined (__APPLE__) || defined (HAVE_MAEMO)
-/* Define this if the OS always use UTF-8 internally */
-# define ASSUME_UTF8 1
-#endif
-
 #if defined (ASSUME_UTF8)
 /* Cool */
+
 #elif defined (WIN32) || defined (UNDER_CE)
 # define USE_MB2MB 1
-#elif defined (HAVE_ICONV)
-# define USE_ICONV 1
-#else
-# error No UTF8 charset conversion implemented on this platform!
-#endif
 
-#if defined (USE_ICONV)
-# include <langinfo.h>
-static char charset[sizeof ("CSISO11SWEDISHFORNAMES")] = "";
-
-static void find_charset_once (void)
+static char *locale_dup (const char *string, bool from)
 {
-    strlcpy (charset, nl_langinfo (CODESET), sizeof (charset));
-    if (!strcasecmp (charset, "ASCII")
-     || !strcasecmp (charset, "ANSI_X3.4-1968"))
-        strcpy (charset, "UTF-8"); /* superset... */
-}
+    char *out;
+    int len;
 
-static int find_charset (void)
-{
-    static pthread_once_t once = PTHREAD_ONCE_INIT;
-    pthread_once (&once, find_charset_once);
-    return !strcasecmp (charset, "UTF-8");
-}
-#endif
-
-
-static char *locale_fast (const char *string, bool from)
-{
-    if( string == NULL )
+    len = 1 + MultiByteToWideChar (from ? CP_ACP : CP_UTF8,
+                                   0, string, -1, NULL, 0);
+    wchar_t *wide = malloc (len * sizeof (wchar_t));
+    if (wide == NULL)
         return NULL;
 
-#if defined (USE_ICONV)
-    if (find_charset ())
-        return (char *)string;
+    MultiByteToWideChar (from ? CP_ACP : CP_UTF8, 0, string, -1, wide, len);
+    len = 1 + WideCharToMultiByte (from ? CP_UTF8 : CP_ACP, 0, wide, -1,
+                                   NULL, 0, NULL, NULL);
+    out = malloc (len);
+    if (out != NULL)
+        WideCharToMultiByte (from ? CP_UTF8 : CP_ACP, 0, wide, -1, out, len,
+                             NULL, NULL);
+    free (wide);
+    return out;
+}
 
-    vlc_iconv_t hd = vlc_iconv_open (from ? "UTF-8" : charset,
-                                     from ? charset : "UTF-8");
+#elif defined (HAVE_ICONV)
+# define USE_ICONV 1
+
+static char *locale_dup (const char *string, bool from)
+{
+    vlc_iconv_t hd = vlc_iconv_open (from ? "UTF-8" : "",
+                                     from ? "" : "UTF-8");
     if (hd == (vlc_iconv_t)(-1))
         return NULL; /* Uho! */
 
@@ -113,47 +101,12 @@ static char *locale_fast (const char *string, bool from)
     assert (*optr == '\0');
     assert (strlen (output) == (size_t)(optr - output));
     return strdup (output);
-#elif defined (USE_MB2MB)
-    char *out;
-    int len;
-
-    len = 1 + MultiByteToWideChar (from ? CP_ACP : CP_UTF8,
-                                   0, string, -1, NULL, 0);
-    wchar_t *wide = malloc (len * sizeof (wchar_t));
-    if (wide == NULL)
-        return NULL;
-
-    MultiByteToWideChar (from ? CP_ACP : CP_UTF8, 0, string, -1, wide, len);
-    len = 1 + WideCharToMultiByte (from ? CP_UTF8 : CP_ACP, 0, wide, -1,
-                                   NULL, 0, NULL, NULL);
-    out = malloc (len);
-    if (out != NULL)
-        WideCharToMultiByte (from ? CP_UTF8 : CP_ACP, 0, wide, -1, out, len,
-                             NULL, NULL);
-    free (wide);
-    return out;
-#else
-    (void)from;
-    return (char *)string;
-#endif
 }
 
-
-static inline char *locale_dup (const char *string, bool from)
-{
-    assert( string );
-
-#if defined (USE_ICONV)
-    if (find_charset ())
-        return strdup (string);
-    return locale_fast (string, from);
-#elif defined (USE_MB2MB)
-    return locale_fast (string, from);
 #else
-    (void)from;
-    return strdup (string);
+# error No UTF8 charset conversion implemented on this platform!
 #endif
-}
+
 
 /**
  * Releases (if needed) a localized or uniformized string.
@@ -161,13 +114,10 @@ static inline char *locale_dup (const char *string, bool from)
  */
 void LocaleFree (const char *str)
 {
-#if defined (USE_ICONV)
-    if (!find_charset ())
-        free ((char *)str);
-#elif defined (USE_MB2MB)
-    free ((char *)str);
+#ifdef ASSUME_UTF8
+    (void) str;
 #else
-    (void)str;
+    free ((char *)str);
 #endif
 }
 
@@ -183,7 +133,11 @@ void LocaleFree (const char *str)
  */
 char *FromLocale (const char *locale)
 {
-    return locale_fast (locale, true);
+#ifdef ASSUME_UTF8
+    return (char *)locale;
+#else
+    return locale ? locale_dup (locale, true) : NULL;
+#endif
 }
 
 /**
@@ -197,7 +151,11 @@ char *FromLocale (const char *locale)
  */
 char *FromLocaleDup (const char *locale)
 {
+#ifdef ASSUME_UTF8
+    return strdup (locale);
+#else
     return locale_dup (locale, true);
+#endif
 }
 
 
@@ -212,7 +170,11 @@ char *FromLocaleDup (const char *locale)
  */
 char *ToLocale (const char *utf8)
 {
-    return locale_fast (utf8, false);
+#ifdef ASSUME_UTF8
+    return (char *)utf8;
+#else
+    return utf8 ? locale_fast (utf8, false) : NULL
+#endif
 }
 
 
@@ -227,7 +189,11 @@ char *ToLocale (const char *utf8)
  */
 char *ToLocaleDup (const char *utf8)
 {
+#ifdef ASSUME_UTF8
+    return strdup (utf8);
+#else
     return locale_dup (utf8, false);
+#endif
 }
 
 /**
@@ -241,8 +207,12 @@ static int utf8_vasprintf( char **str, const char *fmt, va_list ap )
     if( res == -1 )
         return -1;
 
+#ifdef ASSUME_UTF8
+    *str = utf8;
+#else
     *str = ToLocaleDup( utf8 );
     free( utf8 );
+#endif
     return res;
 }
 

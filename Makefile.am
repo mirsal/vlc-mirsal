@@ -103,7 +103,7 @@ DISTCHECK_CONFIGURE_FLAGS = \
 
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = \
-	1.9 \
+	1.11 \
 	-Wall \
 	check-news \
 	dist-bzip2 \
@@ -695,14 +695,11 @@ VLC.app: vlc $(top_builddir)/src/.libs/libvlccore.dylib $(top_builddir)/src/.lib
 ############################################################################
 ## Win                                                                    ##
 ############################################################################
+destdir=$(prefix)
 win32_destdir=$(top_builddir)/vlc-$(VERSION)
-win32_xpi_destdir=$(win32_destdir)/vlc-plugin
 win32_debugdir=$(top_builddir)/symbols-$(VERSION)
-npvlc=vlc-$(VERSION)/mozilla/npvlc$(LIBEXT)
-axvlc=vlc-$(VERSION)/activex/axvlc$(LIBEXT)
 win32_lua_destdir=$(win32_destdir)/lua
-win32_http_destdir=$(win32_destdir)/http
-destdir=_win32
+win32_xpi_destdir=$(win32_destdir)/vlc-plugin
 
 #Win-common is for win32 and wince
 package-win-common: install
@@ -714,12 +711,12 @@ package-win-common: install
 	    echo "Error: please remove $(win32_debugdir), it is in the way"; \
 	    false; \
 	else \
-	    echo "OK."; mkdir -p "$(win32_debugdir)"; \
-	    echo "OK."; mkdir -p "$(win32_destdir)"; \
+	    echo "Debug dir OK."; mkdir -p "$(win32_debugdir)"; \
+	    echo "Dest dir OK."; mkdir -p "$(win32_destdir)"; \
 	fi
 
 # Executables, major libs+manifests
-	find $(destdir) -maxdepth 4 -name "*$(LIBEXT)" -o -name "*$(EXEEXT)" -exec cp {} "$(win32_destdir)/" \;
+	find $(destdir) -maxdepth 4 \( -name "*$(LIBEXT)" -o -name "*$(EXEEXT)" \) -exec cp {} "$(win32_destdir)/" \;
 	for file in $(top_srcdir)/extras/package/win32/vlc$(EXEEXT).manifest \
                 $(top_srcdir)/extras/package/win32/libvlc$(LIBEXT).manifest; \
 	    do cp $$file "$(win32_destdir)/" ; done;
@@ -731,10 +728,10 @@ package-win-common: install
 	  do cp "$(srcdir)/$$file" "$(win32_destdir)/$${file}.txt"; done
 
 # Necessary icon
-	cp $(srcdir)/share/icons/vlc.ico $(win32_destdir)/
+	cp $(srcdir)/share/icons/vlc.ico $(win32_destdir)
 
 # Locales
-	cp -r $(destdir)/share/locale $(win32_destdir)
+	-cp -r $(destdir)/share/locale $(win32_destdir)
 
 # Plugins
 	cp -r $(destdir)/lib/vlc/plugins $(win32_destdir)
@@ -788,7 +785,7 @@ if BUILD_LUA
 endif
 
 if BUILD_HTTPD
-	cp -r $(destdir)/share/vlc/http $(win32_http_destdir)
+	cp -r $(destdir)/share/vlc/http $(win32_destdir)
 endif
 if BUILD_SKINS
 	cp -r $(destdir)/share/vlc/skins2 $(win32_destdir)/skins
@@ -815,20 +812,21 @@ endif
 	for file in libvlc.dll.a libvlc.la libvlccore.dll.a libvlccore.la; do \
         cp -r $(destdir)/lib/$$file "$(win32_destdir)/sdk/lib"; done
 if BUILD_ACTIVEX
-	cp $(srcdir)/projects/activex/README.TXT $(win32_destdir)/sdk/
-	cp $(srcdir)/projects/activex/test.html $(win32_destdir)/sdk/
+	mkdir -p "$(win32_destdir)/sdk/activex"
+	cp $(srcdir)/projects/activex/README.TXT $(win32_destdir)/sdk/activex/
+	cp $(srcdir)/projects/activex/test.html $(win32_destdir)/sdk/activex/
 endif
 
-	find $(win32_destdir) -type f -name "*xml" -or -name "*html" -or -name '*js' -or -name '*css' -or -name '*hosts' -or -iname '*txt' -or -name '*.cfg' -or -name '*lua' -exec $(U2D) {} \;
+	find $(win32_destdir) -type f \( -name "*xml" -or -name "*html" -or -name '*js' -or -name '*css' -or -name '*hosts' -or -iname '*txt' -or -name '*.cfg' -or -name '*.lua' \) -exec $(U2D) {} \;
 
 #Enable DEP and ASLR for all the binaries
 if USE_PEFLAGS
-	find $(win32_destdir) -type f -name '*$(LIBEXT)' -print -o -name '*$(EXEEXT)' -print -exec $(PEFLAGS) --dynamicbase=true --nxcompat=true {} \;
+	find $(win32_destdir) -type f \( -name '*$(LIBEXT)' -print -o -name '*$(EXEEXT)' -print \) -exec $(PEFLAGS) --dynamicbase=true --nxcompat=true {} \;
 endif
 
 # Strip DLLs
 package-win-base: package-win-common
-	find $(win32_destdir) -name '*$(LIBEXT)' -or -name '*$(EXEEXT)' | while read i; \
+	find $(win32_destdir) -type f \( -name '*$(LIBEXT)' -or -name '*$(EXEEXT)' \) | while read i; \
 	do if test -n "$$i" ; then \
 	    $(OBJCOPY) --only-keep-debug "$$i" "$$i.dbg"; \
 	    $(OBJCOPY) --strip-all "$$i" ; \
@@ -882,7 +880,7 @@ package-win32-base-exe: package-win-base
 	eval "$$MAKENSIS $(win32_destdir)/vlc.win32.nsi"
 
 package-win32-base-zip: package-win-base
-# Create package 
+# Create package
 	rm -f -- vlc-$(VERSION)-win32.zip
 	zip -r -9 vlc-$(VERSION)-win32.zip vlc-$(VERSION)
 
@@ -892,7 +890,7 @@ package-win32-base-debug-zip: package-win-common
 	zip -r -9 vlc-$(VERSION)-win32-debug.zip vlc-$(VERSION)
 
 package-win32-base-7zip: package-win-base
-# Create package 
+# Create package
 	7z a -t7z -m0=lzma -mx=9 -mfb=64 -md=32m -ms=on vlc-$(VERSION)-win32.7z vlc-$(VERSION)
 
 package-win32-base-debug-7zip: package-win-common
@@ -912,11 +910,12 @@ package-win32-7zip: package-win32-base-7zip package-win32-cleanup
 
 package-win32-debug-7zip: package-win32-base-debug-7zip package-win32-cleanup
 
-package-win32-no-clean: package-win32-base-zip package-win32-base-7zip package-win32-base-exe
+package-win32-no-clean: package-win32-base-zip package-win32-base-7zip package-win32-base-exe package-win32-xpi
 
 package-win32: package-win32-no-clean package-win32-cleanup
 
 package-win32-debug: package-win32-base-debug-zip package-win32-base-debug-7zip package-win32-cleanup
+
 
 #######
 # WinCE
@@ -924,7 +923,7 @@ package-win32-debug: package-win32-base-debug-zip package-win32-base-debug-7zip 
 package-wince-base: package-win-base
 
 package-wince-base-zip: package-wince-base
-# Create package 
+# Create package
 	rm -f -- vlc-$(VERSION)-wince.zip
 	zip -r -9 vlc-$(VERSION)-wince.zip vlc-$(VERSION)
 

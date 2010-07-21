@@ -14,7 +14,6 @@ CONFIGURE_LINE="`echo "$0 $ac_configure_args" | sed -e 's/\\\/\\\\\\\/g'`"
 CODENAME="Twoflower"
 COPYRIGHT_YEARS="1996-2010"
 
-AC_PREREQ(2.59c)
 AC_CONFIG_SRCDIR(src/libvlc.c)
 AC_CONFIG_AUX_DIR(autotools)
 AC_CONFIG_MACRO_DIR(m4)
@@ -27,13 +26,7 @@ AM_INIT_AUTOMAKE(tar-ustar)
 AM_CONFIG_HEADER(config.h)
 
 # Disable with "./configure --disable-silent-rules" or "make V=1"
-m4_ifdef([AM_SILENT_RULES], [
-  AM_SILENT_RULES([yes])
-], [
-  AM_DEFAULT_VERBOSITY=1
-  AC_SUBST(AM_DEFAULT_VERBOSITY)
-])
-
+AM_SILENT_RULES([yes])
 
 dnl Too many people are not aware of maintainer mode:
 dnl If you want to use it, you definitely know what you are doing, so
@@ -908,6 +901,19 @@ then
   VLC_ADD_PLUGIN([unzip zip])
 fi
 AM_CONDITIONAL(HAVE_MINIZIP, [ test "${have_minizip}" = "yes" ])
+
+
+dnl Manual switch for UTF-8
+AC_ARG_ENABLE(non-utf8,
+  [  --enable-non-utf8       Legacy non-UTF-8 systems support (default disabled)], [
+  AS_IF([test "${SYS}" != "mingw32" -a "${SYS}" != "mingwce"], [
+    enable_non_utf8="no"
+  ])
+])
+AS_IF([test "${enable_non_utf8}" != "no"], [
+  AC_DEFINE([ASSUME_UTF8], [1],
+            [Define to 1 if the operating system uses UTF-8 internally])
+])
 
 
 dnl Check for dbus
@@ -2447,45 +2453,17 @@ dnl
 dnl  modplug demux plugin
 dnl
 AC_ARG_ENABLE(mod,
-  [  --enable-mod            Mod demux support (default enabled)])
-if test "${enable_mod}" != "no"
-then
-  AC_ARG_WITH(mod-tree,
-  [  --with-mod-tree=PATH    mod tree for static linking])
-  if test -n "${with_mod_tree}"
-  then
-    AC_MSG_CHECKING(for libmodplug.a in ${with_mod_tree})
-    real_mod_tree="`cd ${with_mod_tree} 2>/dev/null && pwd`"
-    if test -z "${real_mod_tree}"
-    then
-      dnl  The given directory can't be found
-      AC_MSG_RESULT(no)
-      AC_MSG_ERROR([cannot cd to ${with_mod_tree}])
-    fi
-    if test -f "${real_mod_tree}/src/.libs/libmodplug.a"
-    then
-      dnl  Use a custom mod
-      AC_MSG_RESULT(${real_mod_tree}/src/.libs/libmodplug.a)
-      VLC_ADD_PLUGIN([mod])
-      VLC_ADD_LIBS([mod],[${real_mod_tree}/src/.libs/libmodplug.a -lstdc++])
-      VLC_ADD_CXXFLAGS([mod],[-I${real_mod_tree}/include])
-    else
-      dnl  The given mod wasn't built
-      AC_MSG_RESULT(no)
-      AC_MSG_ERROR([cannot find ${real_mod_tree}/src/.libs/libmodplug.a, make sure you compiled mod in ${with_mod_tree}])
-    fi
-  else
-    PKG_CHECK_MODULES(LIBMODPLUG, [libmodplug >= 0.8], [
-      PKG_CHECK_MODULES(WORKING_LIBMODPLUG, [libmodplug != 0.8.8],, [
-        AC_MSG_ERROR([libmodplug version 0.8.8 will not work. Please upgrade to 0.8.8.1 or later (or downgrade to 0.8.7)!])
-      ])
-      VLC_ADD_PLUGIN([mod])
-      VLC_ADD_CXXFLAGS([mod],[$LIBMODPLUG_CFLAGS])
-      VLC_ADD_LIBS([mod],[$LIBMODPLUG_LIBS])
-    ], [
-      AC_MSG_WARN([libmodplug not found!])
+  [  --enable-mod            Mod demux support (default auto)])
+if test "${enable_mod}" != "no" ; then
+    PKG_CHECK_MODULES(LIBMODPLUG, [libmodplug >= 0.8.4 libmodplug != 0.8.8], [
+          VLC_ADD_PLUGIN([mod])
+          VLC_ADD_CXXFLAGS([mod],[$LIBMODPLUG_CFLAGS])
+          VLC_ADD_LIBS([mod],[$LIBMODPLUG_LIBS])
+    ],[
+       AS_IF([test x"${enable_mod}" = "xyes"],
+         [AC_MSG_ERROR(libmodplug not found or a broken version (0.8.8.0) was found!)],
+         [AC_MSG_WARN(libmodplug not found or a broken version (0.8.8.0) was found!)])
     ])
-  fi
 fi
 
 dnl
@@ -2636,19 +2614,6 @@ then
   fi
 fi
 
-dnl
-dnl   libid3tag support (FIXME!!! doesn't work with new input)
-dnl
-AC_ARG_ENABLE( id3tag,
-[  --enable-id3tag         id3tag metadata reader plugin (default disabled)])
-AS_IF([test "${enable_id3tag}" = "yes"], [
-  AC_CHECK_HEADERS(id3tag.h, [
-      AS_IF([test "${have_zlib}" = "yes"],[
-          VLC_ADD_LIBS([id3tag],[-lid3tag -lz])
-          VLC_ADD_PLUGIN([id3tag])
-       ])
-    ])
-])
 
 AC_ARG_ENABLE(merge-ffmpeg,
 [  --enable-merge-ffmpeg   merge FFmpeg-based plugins (default disabled)],, [
@@ -2661,9 +2626,8 @@ dnl  avcodec decoder/encoder plugin
 dnl
 AC_ARG_ENABLE(avcodec,
 [  --enable-avcodec        libavcodec codec (default enabled)])
-if test "${enable_avcodec}" != "no"
-then
-  PKG_CHECK_MODULES(AVCODEC,[libavcodec >= 52.2.0 libavutil],
+AS_IF([test "${enable_avcodec}" != "no"], [
+  PKG_CHECK_MODULES(AVCODEC,[libavcodec >= 52.25.0 libavutil],
     [
       VLC_SAVE_FLAGS
       CPPFLAGS="${CPPFLAGS} ${AVCODEC_CFLAGS}"
@@ -2678,7 +2642,9 @@ then
     ],[
       AC_MSG_ERROR([Could not find libavcodec or libavutil. Use --disable-avcodec to ignore this error.])
   ])
-fi
+], [
+  have_avcodec="no"
+])
 
 dnl
 dnl libva needs avcodec
@@ -2770,10 +2736,12 @@ dnl  avformat demuxer/muxer plugin
 dnl
 
 AC_ARG_ENABLE(avformat,
-[  --enable-avformat       libavformat containers (default enabled)])
+[  --enable-avformat       libavformat containers (default enabled)],, [
+  enable_avformat="${have_avcodec}"
+])
 if test "${enable_avformat}" != "no"
 then
-  PKG_CHECK_MODULES(AVFORMAT,[libavformat libavutil],
+  PKG_CHECK_MODULES(AVFORMAT,[libavformat > 52.30.0 libavcodec libavutil],
     [
       VLC_SAVE_FLAGS
       CPPFLAGS="${CPPFLAGS} ${AVFORMAT_CFLAGS}"
@@ -2800,7 +2768,9 @@ dnl
 
 AC_ARG_ENABLE(swscale,
   AS_HELP_STRING([--enable-swscale],[libswscale image scaling and conversion
-		  (default enabled)]))
+		  (default enabled)]),, [
+  enable_swscale="${have_avcodec}"
+])
 if test "${enable_swscale}" != "no"
 then
   PKG_CHECK_MODULES(SWSCALE,[libswscale],
@@ -3648,7 +3618,7 @@ dnl
 dnl  OSS /dev/dsp module (enabled by default except on win32)
 dnl
 AC_ARG_ENABLE(oss,
-  [  --enable-oss            Linux OSS /dev/dsp support (enabled on Linux)])
+  [  --enable-oss            Open Sound System OSS support (default enabled)])
 
 if test "${enable_oss}" != "no" &&
   (test "${SYS}" != "mingw32" -a "${SYS}" != "mingwce" ||
@@ -3681,7 +3651,19 @@ PKG_ENABLE_MODULES_VLC([PORTAUDIO], [], [portaudio-2.0], [Portaudio library supp
 dnl
 dnl  ALSA module
 dnl
-PKG_ENABLE_MODULES_VLC([ALSA], [alsa access_alsa], [alsa >= 1.0.0], [Alsa sound support for linux], [auto])
+AC_ARG_ENABLE(alsa,
+  [  --enable-alsa           Advanced Linux Sound Architecture (default auto)])
+have_alsa="no"
+AS_IF([test "${enable_alsa}" != "no"], [
+  PKG_CHECK_MODULES([ALSA], [alsa >= 1.0.0], [
+    have_alsa="yes"
+  ], [
+    AS_IF([test "x${enable_alsa}" != "x"], [
+      AC_MSG_ERROR([alsa-lib not found])
+    ])
+  ])
+])
+AM_CONDITIONAL([HAVE_ALSA], [test "${have_alsa}" = "yes"])
 
 dnl
 dnl  win32 waveOut plugin

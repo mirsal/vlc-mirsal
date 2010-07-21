@@ -126,6 +126,7 @@ struct vout_display_sys_t
     bool   use_wallpaper;   /* show as desktop wallpaper ? */
 
     bool   use_overlay;     /* Are we using an overlay surface */
+    bool   restore_overlay;
 
     /* DDraw capabilities */
     bool            can_blit_fourcc;
@@ -236,6 +237,7 @@ void CommonClean(vout_display_t *);
 void CommonManage(vout_display_t *);
 int  CommonControl(vout_display_t *, int , va_list );
 void CommonDisplay(vout_display_t *);
+int  CommonUpdatePicture(picture_t *, picture_t **, uint8_t *, unsigned);
 
 void UpdateRects (vout_display_t *,
                   const vout_display_cfg_t *,

@@ -695,7 +695,7 @@ char *str_format_meta( vlc_object_t *p_object, const char *string )
                     if( p_item && p_item->p_stats )
                     {
                         vlc_mutex_lock( &p_item->p_stats->lock );
-                        snprintf( buf, 10, "%d",
+                        snprintf( buf, 10, "%"PRIi64,
                                   p_item->p_stats->i_displayed_pictures );
                         vlc_mutex_unlock( &p_item->p_stats->lock );
                     }
@@ -1054,7 +1054,7 @@ char *make_URI (const char *path, const char *scheme)
 #ifdef WIN32
     if (isalpha (path[0]) && (path[1] == ':'))
     {
-        if (asprintf (&buf, "%s:///%c:", scheme, path[0]) == -1)
+        if (asprintf (&buf, "%s:///%c:", scheme ? scheme : "file", path[0]) == -1)
             buf = NULL;
         path += 2;
     }

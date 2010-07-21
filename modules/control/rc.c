@@ -126,7 +126,7 @@ struct intf_sys_t
 
     /* status changes */
     vlc_mutex_t       status_lock;
-    playlist_status_t i_last_state;
+    int               i_last_state;
     playlist_t        *p_playlist;
     bool              b_input_buffering;
 
@@ -512,7 +512,7 @@ static void Run( intf_thread_t *p_intf )
 
             if( p_playlist )
             {
-                p_intf->p_sys->i_last_state = (int) PLAYLIST_STOPPED;
+                p_intf->p_sys->i_last_state = PLAYLIST_STOPPED;
                 msg_rc( STATUS_CHANGE "( stop state: 0 )" );
             }
         }
@@ -1555,12 +1555,12 @@ static int VolumeMove( vlc_object_t *p_this, char const *psz_cmd,
 
     if ( !strcmp(psz_cmd, "volup") )
     {
-        if ( aout_VolumeUp( p_this, i_nb_steps, &i_volume ) < 0 )
+        if ( aout_VolumeUp( p_intf->p_sys->p_playlist, i_nb_steps, &i_volume ) < 0 )
             i_error = VLC_EGENERIC;
     }
     else
     {
-        if ( aout_VolumeDown( p_this, i_nb_steps, &i_volume ) < 0 )
+        if ( aout_VolumeDown( p_intf->p_sys->p_playlist, i_nb_steps, &i_volume ) < 0 )
             i_error = VLC_EGENERIC;
     }
     osd_Volume( p_this );
@@ -1882,32 +1882,33 @@ static int updateStatistics( intf_thread_t *p_intf, input_item_t *p_item )
             (float)(p_item->p_stats->i_demux_read_bytes)/1024 );
     msg_rc(_("| demux bitrate    :   %6.0f kb/s"),
             (float)(p_item->p_stats->f_demux_bitrate)*8000 );
-    msg_rc(_("| demux corrupted  :    %5i"),
+    msg_rc(_("| demux corrupted  :    %5"PRIi64),
             p_item->p_stats->i_demux_corrupted );
-    msg_rc(_("| discontinuities  :    %5i"),
+    msg_rc(_("| discontinuities  :    %5"PRIi64),
             p_item->p_stats->i_demux_discontinuity );
     msg_rc("|");
     /* Video */
     msg_rc("%s", _("+-[Video Decoding]"));
-    msg_rc(_("| video decoded    :    %5i"),
+    msg_rc(_("| video decoded    :    %5"PRIi64),
             p_item->p_stats->i_decoded_video );
-    msg_rc(_("| frames displayed :    %5i"),
+    msg_rc(_("| frames displayed :    %5"PRIi64),
             p_item->p_stats->i_displayed_pictures );
-    msg_rc(_("| frames lost      :    %5i"),
+    msg_rc(_("| frames lost      :    %5"PRIi64),
             p_item->p_stats->i_lost_pictures );
     msg_rc("|");
     /* Audio*/
     msg_rc("%s", _("+-[Audio Decoding]"));
-    msg_rc(_("| audio decoded    :    %5i"),
+    msg_rc(_("| audio decoded    :    %5"PRIi64),
             p_item->p_stats->i_decoded_audio );
-    msg_rc(_("| buffers played   :    %5i"),
+    msg_rc(_("| buffers played   :    %5"PRIi64),
             p_item->p_stats->i_played_abuffers );
-    msg_rc(_("| buffers lost     :    %5i"),
+    msg_rc(_("| buffers lost     :    %5"PRIi64),
             p_item->p_stats->i_lost_abuffers );
     msg_rc("|");
     /* Sout */
     msg_rc("%s", _("+-[Streaming]"));
-    msg_rc(_("| packets sent     :    %5i"), p_item->p_stats->i_sent_packets );
+    msg_rc(_("| packets sent     :    %5"PRIi64),
+           p_item->p_stats->i_sent_packets );
     msg_rc(_("| bytes sent       : %8.0f KiB"),
             (float)(p_item->p_stats->i_sent_bytes)/1024 );
     msg_rc(_("| sending bitrate  :   %6.0f kb/s"),

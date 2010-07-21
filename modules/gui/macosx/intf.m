@@ -353,7 +353,7 @@ static VLCMain *_o_sharedMainInstance = nil;
     o_wizard = [[VLCWizard alloc] init];
     o_extended = nil;
     o_bookmarks = [[VLCBookmarks alloc] init];
-    o_embedded_list = [[VLCEmbeddedList alloc] init];
+    o_embedded_list = NULL; // [[VLCEmbeddedList alloc] init];
     o_coredialogs = [[VLCCoreDialogProvider alloc] init];
     o_info = [[VLCInfo alloc] init];
 
@@ -1047,7 +1047,7 @@ static NSString * VLCToolbarMediaControl     = @"VLCToolbarMediaControl";
 - (BOOL)application:(NSApplication *)o_app openFile:(NSString *)o_filename
 {
     BOOL b_autoplay = config_GetInt( VLCIntf, "macosx-autoplay" );
-    char *psz_uri = make_URI([o_filename UTF8String]);
+    char *psz_uri = make_URI([o_filename UTF8String], "file" );
     if( !psz_uri )
         return( FALSE );
 

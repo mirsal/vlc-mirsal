@@ -41,7 +41,7 @@
 
 #include "libmp4.h"
 #include "drms.h"
-#include "../../meta_engine/id3genres.h"
+#include "id3genres.h"
 
 /*****************************************************************************
  * Module descriptor
@@ -941,7 +941,7 @@ static int Control( demux_t *p_demux, int i_query, va_list args )
                     break;
                 }
 #undef SET
-                static const struct { uint32_t xa9_type; char metadata[25]; } xa9typetoextrameta[] = 
+                static const struct { uint32_t xa9_type; char metadata[25]; } xa9typetoextrameta[] =
                 {
                     { FOURCC_0xa9wrt, N_("Writer") },
                     { FOURCC_0xa9com, N_("Composr") },
