@@ -8,6 +8,7 @@ Important changes for packagers:
 
 Access
  * Multiple files are supported from RAR files
+ * BDA: experimental support for ClearQam devices
 
 Codecs
  * You can now use ffmpeg-mt in conjunction with vlc
@@ -17,6 +18,9 @@ Demuxers:
 
 Interfaces
  * The telnet interface has been removed in the favour of the lua one
+
+Video Output:
+ * New video output based on Direct2D for Windows 7 and Vista (with Platform Update)
 
 Video Filter:
  * New gradfun filter for debanding videos using dithering
@@ -30,8 +34,87 @@ Stream output:
     dst=public_html/iphonestreamfile-###.ts}"
 
 
+Changes between 1.1.1 and 1.1.2
+-------------------------------
+
+Demuxers:
+ * Avformat fps displaying fix
+ * TS, fix an issue where some programs would get dropped (fixes DVB issues too)
+
+Audio filters:
+ * fix timestamps handling on some filters that provoqued issues when playback
+   of mono streams, especially on Windows
+
+Windows:
+ * fix a bug in direct3d video output with old nVidia drivers that broke video
+   playback with overlay (YUV->RGB)
+ * fix console output encoding
+
+Interface and extensions:
+ * Youtube and other scripts updates
+ * Misc fixes in Qt4 (especially VLM and EPG dialogs) and MacOS interface
+
+
+Changes between 1.1.0 and 1.1.1:
+--------------------------------
+
+libVLC:
+ * New capabilities for libVLC:
+   * Adjust video filter control: libvlc_adjust_Enable,
+     libvlc_adjust_Contrast, libvlc_adjust_Brightness, libvlc_adjust_Hue,
+     libvlc_adjust_Saturation, libvlc_adjust_Gamma
+   * libvlc_media_player_set_pause() can force the pause state, whereas
+     libvlc_media_player_pause() would only toggle it.
+   * libvlc_set_user_agent() configures the "user agent" strings used for some
+     protocols (HTTP, PulseAudio...). This replaces the --http-user-agent and
+     the former --user-agent libvlc_new() parameters.
+   * libvlc_video_set_callbacks() and libvlc_video_set_format() allow grabbing
+     video frames from a chosen memory location in real-time. This replace the
+     ugly --vmem-* libvlc_new() parameters in previous versions.
+     See http://wiki.videolan.org/LibVLC_SampleCode_SDL as an example.
+   * libvlc_audio_get_delay() and libvlc_audio_set_delay() configure the delay
+     between audio and video/subpictures for the current input.
+ * Various fixes and crash preventions, especially when video functions were
+   called early
+
+Decoders/Demuxers:
+ * Fix performance issues with GPU decoding using DxVA2 using ATI graphic cards
+   You NEED ATI Catalyst 10.7
+ * Fix :program selection in TS and DVB-T
+ * Fixes and improvements for MKV, Avformat and Avcodec modules
+ * Fix mod (.xm, .s3m, .it) files support on Windows and Mac builds
+
+Stream output:
+ * Fix h264 streaming in ts
+
+Interfaces:
+ * Qt: fix preferences, hotkeys, messages and some fulscreen behaviour
+ * Skins: support for mousewheel in fullscreen, fix radialsliders
+ * Http: fix fullscreen toggle
+
+Linux:
+ * Fix pulse closing
+ * VAAPI small improvements, notably for extraction mode selection
+
+MacOS:
+ * Multiple interface and crash fixes
+ * Deinterlace selection is repaired
+ * Crashes when playing multi-channel tracks fixes
+
+Windows:
+ * Activation of DEP on XP SP3
+ * Fix opening of .m3u and .pls playlists
+ * Fix crash when My Document isn't available
+ * Fix crash when Windows was getting into standby while playing video
+
+Translations:
+ * Update translations for Spanish, Polish, German, Sinhala, Hungarian, Khmer,
+   Brazilian Portuguese, Chinese, Hebrew, Slovak, Galician
+
+
 Changes between 1.0.6 and 1.1.0:
 --------------------------------
+
 Important changes for users:
  * On Linux, known bugs in the ALSA library might prevent audio output.
    Update to alsa-lib 1.0.24 or later, or use the PulseAudio output instead.
@@ -62,29 +145,30 @@ Access:
 Decoders:
  * Support for DxVA2 for H.264 decoding on GPU on Windows Vista and 7
  * Support for VAAPI for H.264 decoding on GPU on GNU/Linux
- * Audio/Video decoders and encoders using OpenMAX IL components for DSP usage
+ * Support for Audio/Video decoders and encoders using OpenMAX IL components for DSP
 
- * Support for HD-DVB subtitles - Display Definition Segment
  * Support PGS subtitles for Blu-Ray
+ * Support for HD-DVB subtitles - Display Definition Segment
  * Invmem module improvements
  * Support for Atrac1 audio codec
  * Support for SSE3 and SSE4 capabilities in some codecs
  * Multiple improvements for subtitles styles in .SRT and .SSA
- * Support for Windows Media Speech (Voice) audio codec natively on all platforms
+ * Support for native decoding of Windows Media Speech (Voice) audio codec
  * Support for AMR-NB audio codec on the Windows and Mac port
  * Support for Indeo5 video codec
  * Improvements on the FLAC format (7.1 channels and 88.2/176.4/192 kHz support)
  * Direct rendering is used more often with H.264 in avcodec module
  * Support for MPEG-4 ALS lossless audio codec
  * Support for VP8 codec
+ * Support for 7.1 channels in vorbis audio
 
 Demuxers:
+ * Many fixes on Matroska support (notably seeking) and support for Webm format
  * Support for .aob files from DVD-Audio (MLP and LPCM) (Full disc support is NOT present yet)
  * Support for ADPCM in .flv streams
  * Support for TwinVQ (.vqf) and AMV (.amv) files
  * Various EGP improvements
  * Support for embedded subtitles in OpenDML and legacy .avi files
- * Many fixes on Matroska support and support for Webm format
  * Metadata and cover art improvements
 
 Playlist:
@@ -118,12 +202,10 @@ Audio filters:
  * NEON assembly audio converter module
  * Converter filters have been rewritten and extended to support s32 as input
 
-Visualization:
- * Support of .milk visualization files using projectM libraries
-
 Service discovery:
  * Service discoveries can now be written in lua
  * Service discovery for Picture/Music/Video user directories
+ * Service discovery based on libudev
  * Shoutcast Service discoveries are now removed
 
 Encoders:
@@ -145,6 +227,9 @@ Interfaces:
    and oldhttp.
  * rc, telnet and http are now implemented using the lua interface system.
  * qt4 interface contains new iconview and listview mode for playlist
+
+Visualization:
+ * Support of .milk visualization files using projectM libraries
 
 Mac OS X Port:
  * Vastly improved VLCKit framework

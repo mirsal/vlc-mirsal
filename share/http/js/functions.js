@@ -28,6 +28,7 @@
 var old_time = 0;
 var pl_cur_id;
 var albumart_id = -1;
+var req = null;
 
 /**********************************************************************
  * Slider functions
@@ -278,6 +279,14 @@ function clear_children( elt )
         while( elt.hasChildNodes() )
             elt.removeChild( elt.firstChild );
 }
+function playlist_populated()
+{
+    if( document.getElementById( 'playtree' ) != null && document.getElementById( 'playtree' ).childElementCount > 0 )
+    {
+        return true;
+    }
+    return false;
+}
 
 /**********************************************************************
  * Interface actions
@@ -331,22 +340,22 @@ function pl_previous()
 function pl_delete( id )
 {
     loadXMLDoc( 'requests/status.xml?command=pl_delete&id='+id, parse_status );
-    setTimeout( 'update_playlist()', 1000 );
+    setTimeout( 'update_playlist(true)', 1000 );
 }
 function pl_empty()
 {
     loadXMLDoc( 'requests/status.xml?command=pl_empty', parse_status );
-    setTimeout( 'update_playlist()', 1000 );
+    setTimeout( 'update_playlist(true)', 1000 );
 }
 function pl_sort( sort, order )
 {
     loadXMLDoc( 'requests/status.xml?command=pl_sort&id='+order+'&val='+sort, parse_status );
-    setTimeout( 'update_playlist()', 1000 );
+    setTimeout( 'update_playlist(true)', 1000 );
 }
 function pl_shuffle()
 {
     loadXMLDoc( 'requests/status.xml?command=pl_random', parse_status );
-    setTimeout( 'update_playlist()', 1000 );
+    setTimeout( 'update_playlist(true)', 1000 );
 }
 function pl_loop()
 {
@@ -389,11 +398,21 @@ function hotkey( str )
 }
 function update_status()
 {
-    loadXMLDoc( 'requests/status.xml', parse_status );
+    if( req == null || req.readyState == 0 || req.readyState == 4 )
+    {
+        loadXMLDoc( 'requests/status.xml', parse_status );
+    }
 }
-function update_playlist()
+function update_playlist(force_refresh)
 {
-    loadXMLDoc( 'requests/playlist.xml', parse_playlist );
+    if( force_refresh || !playlist_populated() )
+    {
+        loadXMLDoc( 'requests/playlist.xml', parse_playlist );
+    }
+    else
+    {
+        loadXMLDoc( 'requests/status.xml', update_playlist_view );
+    }
 }
 
 /**********************************************************************
@@ -540,6 +559,8 @@ function parse_playlist()
             var answer = req.responseXML.documentElement;
             var playtree = document.getElementById( 'playtree' );
             var pos = document.createElement( "div" );
+            pos.style.height = document.body.clientHeight - 100 + "px";
+            pos.style.overflow = "auto";
             var pos_top = pos;
             var elt = answer.firstChild;
             
@@ -592,7 +613,7 @@ function parse_playlist()
                         var nowplaying = document.getElementById( 'nowplaying' );
                         clear_children( nowplaying );
                         nowplaying.appendChild( document.createTextNode( elt.getAttribute( 'name' ) ) );
-                        pl.appendChild( document.createTextNode( '* '));
+                        pl.appendChild( document.createTextNode( '' ));
                         pl_cur_id = elt.getAttribute( 'id' );
                     }
                     pl.setAttribute( 'title', elt.getAttribute( 'uri' ));
@@ -694,6 +715,65 @@ function parse_browse_dir( )
         else
         {
             /*alert( 'Error! HTTP server replied: ' + req.status );*/
+        }
+    }
+}
+
+/* updates playlist to display active entry */
+function update_playlist_view ()
+{
+    if( req.readyState == 4 ) {
+        if( req.status == 200 ) {
+            var status = req.responseXML.documentElement;
+            var title = status.getElementsByTagName( 'title' );
+            if( title.length > 0 ) {
+                title = title[0].firstChild.data;
+
+                //update now-playing..
+                var nowplaying = document.getElementById( 'nowplaying' );
+                clear_children( nowplaying );
+                nowplaying.appendChild( document.createTextNode( title ) );
+
+                //update playlist..
+                var playtree = document.getElementById( 'playtree' );
+                if( playtree.hasChildNodes() )
+                {
+                    var root = playtree.firstChild;  //root div
+                    if( root.hasChildNodes() )
+                    {
+                        for( var i = 0; i < root.childNodes.length - 1; i++ )
+                        {
+                            if ( root.childNodes[i].className == "pl_node" && root.childNodes[i].hasChildNodes() )
+                            {
+                                var node = root.childNodes[i];  //pl_node
+                                if( node.className == "pl_node" && node.hasChildNodes() )
+                                {
+                                    for( var j = 0; j < node.childNodes.length - 1; j++ )
+                                    {
+                                        if( node.childNodes[j].className == "pl_leaf" )
+                                        {
+                                            var leaf = node.childNodes[j];  //pl_leaf
+                                            var pl_title = leaf.textContent.substring( 0, leaf.textContent.length - leaf.text.length )
+                                            //if( leaf.style.fontWeight == "bold" && pl_title.substring(0, 2) == "* " )  //handle leaf currently identified as playing..
+                                            //{
+                                            //    pl_title = pl_title.substring(2);
+                                            //}
+                                            if( pl_title == title )
+                                            {
+                                                leaf.style.fontWeight = "bold";
+                                            }
+                                            else
+                                            {
+                                                leaf.style.fontWeight = "";
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

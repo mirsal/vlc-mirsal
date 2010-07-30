@@ -293,11 +293,12 @@ vlc_module_begin ()
         change_integer_list( i_hierarchy_list, ppsz_hierarchy_text, NULL )
 
     set_capability( "access", 0 )
-    add_shortcut( "dvb",                                    /* Generic name */
-                  "dvb-s", "dvbs", "qpsk", "satellite",     /* Satellite */
-                  "dvb-c", "dvbc", "qam", "cable",          /* Cable */
-                  "dvbt", "dvb-t", "ofdm", "terrestrial",   /* Terrestrial */
-                  "atsc", "usdigital" )                     /* Atsc */
+    add_shortcut( "dvb",                  /* Generic name */
+                  "dvb-s", "dvbs",        /* Satellite */
+                  "dvb-c", "dvbc",        /* Cable */
+                  "dvb-t", "dvbt",        /* Terrestrial */
+                  "atsc",                 /* Atsc */
+                  "cqam",)                /* Clear QAM */
 
     set_callbacks( Open, Close )
 vlc_module_end ()
@@ -368,31 +369,28 @@ static int Open( vlc_object_t *p_this )
 
     i_ret = VLC_EGENERIC;
 
-    if( strncmp( p_access->psz_access, "qpsk", 4 ) == 0 ||
-        strncmp( p_access->psz_access, "dvb-s", 5 ) == 0 ||
-        strncmp( p_access->psz_access, "dvbs", 4 ) == 0 ||
-        strncmp( p_access->psz_access, "satellite", 9 ) == 0 )
+    if( strncmp( p_access->psz_access, "dvb-s", 5 ) == 0 ||
+        strncmp( p_access->psz_access, "dvbs", 4 ) == 0 )
     {
         i_ret = dvb_SubmitDVBSTuneRequest( p_access );
     }
-    if( strncmp( p_access->psz_access, "cable", 5 ) == 0 ||
-        strncmp( p_access->psz_access, "dvb-c", 5 ) == 0  ||
-        strncmp( p_access->psz_access, "dvbc", 4 ) == 0  ||
-        strncmp( p_access->psz_access, "qam", 3 ) == 0 )
+    if( strncmp( p_access->psz_access, "dvb-c", 5 ) == 0  ||
+        strncmp( p_access->psz_access, "dvbc", 4 ) == 0 )
     {
         i_ret = dvb_SubmitDVBCTuneRequest( p_access );
     }
-    if( strncmp( p_access->psz_access, "terrestrial", 11 ) == 0 ||
-        strncmp( p_access->psz_access, "dvb-t", 5 ) == 0 ||
-        strncmp( p_access->psz_access, "ofdm", 4 ) == 0 ||
+    if( strncmp( p_access->psz_access, "dvb-t", 5 ) == 0 ||
         strncmp( p_access->psz_access, "dvbt", 4 ) == 0 )
     {
         i_ret = dvb_SubmitDVBTTuneRequest( p_access );
     }
-    if( strncmp( p_access->psz_access, "usdigital", 9 ) == 0 ||
-        strncmp( p_access->psz_access, "atsc", 4 ) == 0 )
+    if( strncmp( p_access->psz_access, "atsc", 4 ) == 0 )
     {
         i_ret = dvb_SubmitATSCTuneRequest( p_access );
+    }
+    if( strncmp( p_access->psz_access, "cqam", 4 ) == 0 )
+    {
+        i_ret = dvb_SubmitCQAMTuneRequest( p_access );
     }
     if( !strcmp( p_access->psz_access, "dvb" ) )
     {
@@ -405,6 +403,8 @@ static int Open( vlc_object_t *p_this )
             i_ret = dvb_SubmitDVBTTuneRequest( p_access );
         if( i_ret )
             i_ret = dvb_SubmitATSCTuneRequest( p_access );
+        if( i_ret )
+            i_ret = dvb_SubmitCQAMTuneRequest( p_access );
     }
 
     if( !i_ret )

@@ -128,6 +128,7 @@ static void ShowDialog   ( intf_thread_t *, int, int, intf_dialog_args_t * );
                                  "software amplification." )
 
 #define SAVEVOL_TEXT N_( "Automatically save the volume on exit" )
+#define STARTVOL_TEXT N_( "Default start volume" )
 
 #define PRIVACY_TEXT N_( "Ask for network policy at start" )
 
@@ -200,6 +201,8 @@ vlc_module_begin ()
               COMPLETEVOL_LONGTEXT, true )
     add_bool( "qt-autosave-volume", false, NULL, SAVEVOL_TEXT,
               SAVEVOL_TEXT, true )
+    add_integer_with_range( "qt-startvolume", QT_VOLUME_DEFAULT, 0,
+               QT_VOLUME_MAX, NULL, STARTVOL_TEXT, STARTVOL_TEXT, true )
 
     add_bool( "qt-embedded-open", false, NULL, QT_NATIVEOPEN_TEXT,
                QT_NATIVEOPEN_TEXT, false )
@@ -248,12 +251,14 @@ vlc_module_begin ()
 
         set_callbacks( OpenDialogs, Close )
 
-#if defined(Q_WS_X11) || defined(Q_WS_WIN)
+#if defined(Q_WS_X11) || defined(Q_WS_WIN) || defined(Q_WS_MAC)
     add_submodule ()
 #if defined(Q_WS_X11)
         set_capability( "vout window xid", 0 )
 #elif defined(Q_WS_WIN)
         set_capability( "vout window hwnd", 0 )
+#elif defined(Q_WS_MAC)
+        set_capability( "vout window nsobject", 0 )
 #endif
         set_callbacks( WindowOpen, WindowClose )
 #endif
@@ -573,6 +578,11 @@ static int WindowOpen( vlc_object_t *p_obj )
 #elif defined (Q_WS_WIN)
     p_wnd->handle.hwnd = p_mi->getVideo( &i_x, &i_y, &i_width, &i_height );
     if( !p_wnd->handle.hwnd )
+        return VLC_EGENERIC;
+
+#elif defined (Q_WS_MAC)
+    p_wnd->handle.nsobject = (void *)p_mi->getVideo( &i_x, &i_y, &i_width, &i_height );
+    if( !p_wnd->handle.nsobject )
         return VLC_EGENERIC;
 #else
 # error FIXME

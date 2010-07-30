@@ -29,14 +29,8 @@
 #include <vlc_common.h>
 #include <vlc_codec.h>
 
-#ifdef HAVE_LIBAVCODEC_AVCODEC_H
-#   include <libavcodec/avcodec.h>
-#elif defined(HAVE_FFMPEG_AVCODEC_H)
-#   include <ffmpeg/avcodec.h>
-#else
-#   include <avcodec.h>
-#endif
-#include "avcodec.h"
+#include <libavutil/avutil.h>
+#include "chroma.h"
 
 /*****************************************************************************
  * Chroma fourcc -> ffmpeg_id mapping
@@ -105,9 +99,7 @@ static const struct
     VLC_RGB( VLC_CODEC_RGB32, PIX_FMT_RGB32, PIX_FMT_BGR32, 0x00ff0000, 0x0000ff00, 0x000000ff )
     VLC_RGB( VLC_CODEC_RGB32, PIX_FMT_RGB32_1, PIX_FMT_BGR32_1, 0xff000000, 0x00ff0000, 0x0000ff00 )
 
-#if defined(PIX_FMT_RGBA)
     {VLC_CODEC_RGBA, PIX_FMT_RGBA, 0xff000000, 0x00ff0000, 0x0000ff00},
-#endif
     {VLC_CODEC_GREY, PIX_FMT_GRAY8, 0, 0, 0},
 
      /* Paletized RGB */

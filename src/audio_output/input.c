@@ -40,6 +40,7 @@
 
 #include <vlc_input.h>
 #include <vlc_vout.h>                  /* for vout_Request */
+#include <vlc_modules.h>
 
 #include <vlc_aout.h>
 #include <vlc_filter.h>
@@ -223,15 +224,10 @@ int aout_InputNew( aout_instance_t * p_aout, aout_input_t * p_input, const aout_
         var_Create( p_aout, "audio-replay-gain-peak-protection",
                     VLC_VAR_BOOL | VLC_VAR_DOINHERIT );
     }
-    if( var_Type( p_aout, "audio-time-stretch" ) == 0 )
-    {
-        var_Create( p_aout, "audio-time-stretch",
-                    VLC_VAR_BOOL | VLC_VAR_DOINHERIT );
-    }
 
     psz_filters = var_GetString( p_aout, "audio-filter" );
     psz_visual = var_GetString( p_aout, "audio-visual");
-    psz_scaletempo = var_GetBool( p_aout, "audio-time-stretch" ) ? strdup( "scaletempo" ) : NULL;
+    psz_scaletempo = var_InheritBool( p_aout, "audio-time-stretch" ) ? strdup( "scaletempo" ) : NULL;
 
     p_input->b_recycle_vout = psz_visual && *psz_visual;
 

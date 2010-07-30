@@ -40,7 +40,8 @@
 #include "../libvlc.h"
 #include <vlc_charset.h>
 #include <vlc_fs.h>
-#include "vlc_keys.h"
+#include <vlc_keys.h>
+#include <vlc_modules.h>
 
 #include "configuration.h"
 #include "modules/modules.h"
@@ -437,7 +438,7 @@ static int SaveConfigFile( vlc_object_t *p_this, const char *psz_module_name,
     if( config_PrepareDir( p_this ) )
     {
         msg_Err( p_this, "no configuration directory" );
-        goto error;
+        return -1;
     }
 
     file = config_OpenConfigFile( p_this );
@@ -557,6 +558,7 @@ static int SaveConfigFile( vlc_object_t *p_this, const char *psz_module_name,
     file = fdopen (fd, "wt");
     if (file == NULL)
     {
+        msg_Err (p_this, "cannot create configuration file: %m");
         vlc_rwlock_unlock (&config_lock);
         close (fd);
         vlc_mutex_unlock (&lock);
@@ -704,6 +706,14 @@ static int SaveConfigFile( vlc_object_t *p_this, const char *psz_module_name,
      * Flush to disk and replace atomically
      */
     fflush (file); /* Flush from run-time */
+    if (ferror (file))
+    {
+        vlc_unlink (temporary);
+        vlc_mutex_unlock (&lock);
+        msg_Err (p_this, "cannot write configuration file");
+        clearerr (file);
+        goto error;
+    }
 #ifndef WIN32
 #ifdef __APPLE__
     fsync (fd); /* Flush from OS */

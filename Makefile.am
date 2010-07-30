@@ -8,7 +8,7 @@
 #  - src (libvlc) is nedeed by modules, mozilla and bindings
 #  - libs/* are needed by modules
 BASE_SUBDIRS = po compat src bin modules share doc test
-EXTRA_SUBDIRS = m4 extras/package/ipkg \
+EXTRA_SUBDIRS = m4 \
 	libs/loader libs/srtp libs/unzip \
 	projects/mozilla projects/activex
 DIST_SUBDIRS = $(BASE_SUBDIRS) $(EXTRA_SUBDIRS)
@@ -78,7 +78,11 @@ EXTRA_DIST = \
 dist_noinst_SCRIPTS = bootstrap toolbox
 nodist_noinst_SCRIPTS = compile
 
-BUILT_SOURCES_distclean = vlc-config extras/package/win32/vlc.win32.nsi extras/package/win32/spad.nsi
+BUILT_SOURCES_distclean = vlc-config
+if HAVE_WIN32
+BUILT_SOURCES_distclean += \
+	extras/package/win32/vlc.win32.nsi extras/package/win32/spad.nsi
+endif
 if HAVE_DARWIN
 BUILT_SOURCES_clean = macosx-sdk
 else

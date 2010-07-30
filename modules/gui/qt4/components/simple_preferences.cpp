@@ -49,6 +49,7 @@
 #ifdef WIN32
 # include <vlc_windows_interfaces.h>
 #endif
+#include <vlc_modules.h>
 
 /*********************************************************************
  * The List of categories
@@ -191,7 +192,7 @@ SPrefsPanel::SPrefsPanel( intf_thread_t *_p_intf, QWidget *_parent,
 
     // Title Label
     QLabel *panel_label = new QLabel;
-    QFont labelFont = QApplication::font( static_cast<QWidget*>(0) );
+    QFont labelFont = QApplication::font();
     labelFont.setPointSize( labelFont.pointSize() + 6 );
     panel_label->setFont( labelFont );
 
@@ -200,7 +201,7 @@ SPrefsPanel::SPrefsPanel( intf_thread_t *_p_intf, QWidget *_parent,
     title_line->setFrameShape(QFrame::HLine);
     title_line->setFrameShadow(QFrame::Sunken);
 
-    QFont italicFont = QApplication::font( static_cast<QWidget*>(0) );
+    QFont italicFont = QApplication::font();
     italicFont.setItalic( true );
 
     switch( number )
@@ -309,7 +310,8 @@ SPrefsPanel::SPrefsPanel( intf_thread_t *_p_intf, QWidget *_parent,
 #undef audioCommon
 
             /* Audio Options */
-            CONFIG_GENERIC_NO_BOOL( "volume" , IntegerRangeSlider, NULL,
+            ui.volumeValue->setMaximum( QT_VOLUME_MAX / QT_VOLUME_DEFAULT * 100 );
+            CONFIG_GENERIC_NO_BOOL( "qt-startvolume" , IntegerRangeSlider, NULL,
                                      defaultVolume );
             CONNECT( ui.defaultVolume, valueChanged( int ),
                      this, updateAudioVolume( int ) );
@@ -562,12 +564,12 @@ SPrefsPanel::SPrefsPanel( intf_thread_t *_p_intf, QWidget *_parent,
             ui.stylesCombo->hide();
             optionWidgets.append( NULL );
 #endif
-
-            ui.skins_zone->setEnabled( ui.skins->isChecked() );
-            CONNECT( ui.skins, toggled( bool ), ui.skins_zone, setEnabled( bool ) );
-
-            ui.native_zone->setEnabled( ui.qt4->isChecked() );
-            CONNECT( ui.qt4, toggled( bool ), ui.native_zone, setEnabled( bool ) );
+            radioGroup = new QButtonGroup(this);
+            radioGroup->addButton( ui.qt4, 0 );
+            radioGroup->addButton( ui.skins, 1 );
+            CONNECT( radioGroup, buttonClicked( int ),
+                     ui.styleStackedWidget, setCurrentIndex( int ) );
+            ui.styleStackedWidget->setCurrentIndex( radioGroup->checkedId() );
 
             CONNECT( ui.minimalviewBox, toggled( bool ),
                      ui.mainPreview, setNormalPreview( bool ) );
@@ -596,8 +598,7 @@ SPrefsPanel::SPrefsPanel( intf_thread_t *_p_intf, QWidget *_parent,
             CONNECT( ui.updatesBox, toggled( bool ),
                      ui.updatesDays, setEnabled( bool ) );
 #else
-            ui.updatesBox->hide();
-            ui.updatesDays->hide();
+            ui.updateNotifierZone->hide();
 #endif
             /* ONE INSTANCE options */
 #if defined( WIN32 ) || defined( HAVE_DBUS ) || defined(__APPLE__)
@@ -664,7 +665,7 @@ SPrefsPanel::SPrefsPanel( intf_thread_t *_p_intf, QWidget *_parent,
 
             p_config = config_FindConfig( VLC_OBJECT(p_intf), "hotkeys-mousewheel-mode" );
             control = new IntegerListConfigControl( VLC_OBJECT(p_intf),
-                    p_config, false, this, gLayout, line );
+                    p_config, this, false, gLayout, line );
             controls.append( control );
 
             break;
@@ -728,7 +729,7 @@ SPrefsPanel::~SPrefsPanel()
 void SPrefsPanel::updateAudioVolume( int volume )
 {
     qobject_cast<QSpinBox *>(optionWidgets[volLW])
-        ->setValue( volume * 100 / 256 );
+        ->setValue( volume * 100 / QT_VOLUME_DEFAULT );
 }
 
 

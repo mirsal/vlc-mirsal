@@ -46,6 +46,7 @@
 #include <vlc_intf_strings.h>
 #include <vlc_vout.h>
 #include <vlc_osd.h>
+#include <vlc_modules.h>
 
 #include <vlc_charset.h> /* us_strtod */
 
@@ -843,7 +844,7 @@ static const QString band_frequencies[] =
 Equalizer::Equalizer( intf_thread_t *_p_intf, QWidget *_parent ) :
                             QWidget( _parent ) , p_intf( _p_intf )
 {
-    QFont smallFont = QApplication::font( static_cast<QWidget*>( 0 ) );
+    QFont smallFont = QApplication::font();
     smallFont.setPointSize( smallFont.pointSize() - 3 );
 
     ui.setupUi( this );
@@ -1130,7 +1131,7 @@ static const char *psz_control_names[] =
 Spatializer::Spatializer( intf_thread_t *_p_intf, QWidget *_parent ) :
     QWidget( _parent ) , p_intf( _p_intf )
 {
-    QFont smallFont = QApplication::font( static_cast<QWidget*>( 0 ) );
+    QFont smallFont = QApplication::font();
     smallFont.setPointSize( smallFont.pointSize() - 3 );
 
     QGridLayout *layout = new QGridLayout( this );

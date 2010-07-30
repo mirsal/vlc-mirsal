@@ -436,13 +436,7 @@ int OpenEncoder( vlc_object_t *p_this )
                    p_enc->fmt_in.video.i_sar_num,
                    p_enc->fmt_in.video.i_sar_den, 1 << 30 );
 
-        p_sys->i_buffer_out = p_context->height * p_context->width
-            * 3     /* Assume 24bpp maximum */
-            + 200;  /* some room for potential headers (such as BMP) */
-
-        if( p_sys->i_buffer_out < FF_MIN_BUFFER_SIZE )
-            p_sys->i_buffer_out = FF_MIN_BUFFER_SIZE;
-        p_sys->p_buffer_out = malloc( p_sys->i_buffer_out );
+        p_sys->p_buffer_out = NULL;
 
         p_enc->fmt_in.i_codec = VLC_CODEC_I420;
         p_enc->fmt_in.video.i_chroma = p_enc->fmt_in.i_codec;
@@ -763,6 +757,10 @@ int OpenEncoder( vlc_object_t *p_this )
         if( p_enc->fmt_out.i_extra )
         {
             p_enc->fmt_out.p_extra = malloc( p_enc->fmt_out.i_extra );
+            if ( p_enc->fmt_out.p_extra == NULL )
+            {
+                goto error;
+            }
             memcpy( p_enc->fmt_out.p_extra, p_context->extradata,
                     p_enc->fmt_out.i_extra );
         }
@@ -781,6 +779,10 @@ int OpenEncoder( vlc_object_t *p_this )
                                     p_context->frame_size :
                                     RAW_AUDIO_FRAME_SIZE;
         p_sys->p_buffer = malloc( p_sys->i_frame_size * p_sys->i_sample_bytes );
+        if ( p_sys->p_buffer == NULL )
+        {
+            goto error;
+        }
         p_enc->fmt_out.audio.i_blockalign = p_context->block_align;
         p_enc->fmt_out.audio.i_bitspersample = aout_BitsPerSample( vlc_fourcc_GetCodec( AUDIO_ES, p_enc->fmt_out.i_codec ) );
 
@@ -789,11 +791,21 @@ int OpenEncoder( vlc_object_t *p_this )
         else
             p_sys->i_buffer_out = p_sys->i_frame_size * p_sys->i_sample_bytes;
         p_sys->p_buffer_out = malloc( p_sys->i_buffer_out );
+        if ( p_sys->p_buffer_out == NULL )
+        {
+            goto error;
+        }
     }
 
     msg_Dbg( p_enc, "found encoder %s", psz_namecodec );
 
     return VLC_SUCCESS;
+error:
+    free( p_enc->fmt_out.p_extra );
+    free( p_sys->p_buffer );
+    free( p_sys->p_buffer_out );
+    free( p_sys );
+    return VLC_ENOMEM;
 }
 
 /****************************************************************************
@@ -805,6 +817,24 @@ static block_t *EncodeVideo( encoder_t *p_enc, picture_t *p_pict )
     AVFrame frame;
     int i_out, i_plane;
 
+    /* Initialize the video output buffer the first time.
+     * This is done here instead of OpenEncoder() because we need the actual
+     * bits_per_pixel value, without having to assume anything.
+     */
+    if ( p_sys->p_buffer_out == NULL )
+    {
+        int bytesPerPixel = p_enc->fmt_out.video.i_bits_per_pixel ?
+                            p_enc->fmt_out.video.i_bits_per_pixel / 8 : 3;
+
+        p_sys->i_buffer_out = p_sys->p_context->height * p_sys->p_context->width
+            * bytesPerPixel + 200;  /* some room for potential headers (such as BMP) */
+
+        if( p_sys->i_buffer_out < FF_MIN_BUFFER_SIZE )
+            p_sys->i_buffer_out = FF_MIN_BUFFER_SIZE;
+        p_sys->p_buffer_out = malloc( p_sys->i_buffer_out );
+        if ( p_sys->p_buffer_out == NULL )
+            return NULL;
+    }
 
     memset( &frame, 0, sizeof( AVFrame ) );
     if( likely(p_pict) ) {

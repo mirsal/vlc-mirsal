@@ -22,7 +22,7 @@ AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 AC_PRESERVE_HELP_ORDER
 
-AM_INIT_AUTOMAKE(tar-ustar)
+AM_INIT_AUTOMAKE(tar-ustar color-tests)
 AM_CONFIG_HEADER(config.h)
 
 # Disable with "./configure --disable-silent-rules" or "make V=1"
@@ -428,7 +428,7 @@ AS_IF([test "${enable_shared}" = "no"], [
 dnl
 dnl Gettext stuff
 dnl
-AM_GNU_GETTEXT_VERSION([0.17])
+AM_GNU_GETTEXT_VERSION([0.18.1])
 AM_GNU_GETTEXT([external])
 VLC_ADD_LIBS([libvlccore vlc], [${LTLIBINTL}])
 
@@ -2127,42 +2127,6 @@ then
 fi
 
 dnl
-dnl  Video4Linux plugin
-dnl
-AC_ARG_ENABLE(v4l,
-  [  --enable-v4l            Video4Linux input support (default disabled)])
-if test "${enable_v4l}" = "yes"
-then
-  AC_ARG_WITH(v4l,
-    [  --with-v4l=PATH         path to a v4l-enabled kernel tree],[],[])
-  if test "${with_v4l}" != "no" -a -n "${with_v4l}"
-  then
-    VLC_ADD_CPPFLAGS([v4l],[-I${with_v4l}/include])
-  fi
-
-  CPPFLAGS="${CPPFLAGS_save} ${CPPFLAGS_v4l}"
-  AC_CHECK_HEADERS(linux/videodev.h, [
-    VLC_ADD_PLUGIN([v4l])
-  ],[])
-  CPPFLAGS="${CPPFLAGS_save}"
-fi
-
-dnl
-dnl libv4l1 support for video4linux.
-dnl
-AC_ARG_ENABLE( libv4l,
-  [  --enable-libv4l         Libv4l Video4Linux support (default enabled)])
-if test "${enable_libv4l}" != "no" -a "${enable_v4l}" != "no"
-then
-    PKG_CHECK_MODULES( LIBV4L, libv4l1, [
-      VLC_ADD_LDFLAGS([v4l],[${LIBV4L_LIBS}])
-      VLC_ADD_CFLAGS([v4l],[${LIBV4L_CFLAGS}])
-      AC_DEFINE(HAVE_LIBV4L1, 1, Define if libv4l is available)],
-      AC_MSG_WARN([LibV4L support disabled because libv4l development headers were not found])
-    )
-fi
-
-dnl
 dnl  Video4Linux2 plugin
 dnl
 AC_ARG_ENABLE(v4l2,
@@ -2660,8 +2624,8 @@ AS_IF([test "${enable_libva}" != "no"], [
         CPPFLAGS="${CPPFLAGS} ${AVCODEC_CFLAGS}"
         CFLAGS="${CFLAGS} ${AVCODEC_CFLAGS}"
         AC_CHECK_HEADERS(libavcodec/vaapi.h, [
-           VLC_ADD_LIBS([avcodec],[$LIBVA_LIBS])
-           VLC_ADD_CFLAGS([avcodec],[$LIBVA_CFLAGS])
+           VLC_ADD_LIBS([avcodec],[$LIBVA_LIBS ${X_LIBS} ${X_PRE_LIBS} -lX11])
+           VLC_ADD_CFLAGS([avcodec],[$LIBVA_CFLAGS ${X_CFLAGS}])
            AC_DEFINE(HAVE_AVCODEC_VAAPI, 1, [Define if avcodec has to be built with VAAPI support.])
            echo "VAAPI acceleration activated"
         ],[
@@ -2768,9 +2732,7 @@ dnl
 
 AC_ARG_ENABLE(swscale,
   AS_HELP_STRING([--enable-swscale],[libswscale image scaling and conversion
-		  (default enabled)]),, [
-  enable_swscale="${have_avcodec}"
-])
+		  (default enabled)]))
 if test "${enable_swscale}" != "no"
 then
   PKG_CHECK_MODULES(SWSCALE,[libswscale],
@@ -3488,6 +3450,23 @@ then
 fi
 
 dnl
+dnl  Windows Direct2D plugin
+dnl
+AC_ARG_ENABLE(direct2d,
+  [  --enable-direct2d         Win7/VistaPU Direct2D support (default auto on Win32)])
+if test "${enable_direct2d}" != "no"; then
+  if test "${SYS}" = "mingw32" -o "${SYS}" = "mingwce"
+  then
+    AC_CHECK_HEADERS(d2d1.h,
+      [
+        VLC_ADD_PLUGIN([direct2d])
+        VLC_ADD_LIBS([direct2d],[-lgdi32 -lole32])
+      ], [AC_MSG_WARN([Cannot find Direct2D headers!])]
+    )
+  fi
+fi
+
+dnl
 dnl  win32 GDI plugin
 dnl
 AC_ARG_ENABLE(wingdi,
@@ -3889,14 +3868,34 @@ AC_ARG_ENABLE(qt4,
 AS_IF([test "${enable_qt4}" != "no"], [
   PKG_CHECK_MODULES(QT4, [QtCore QtGui >= 4.4.0], [
     VLC_ADD_PLUGIN([qt4])
+    VLC_ADD_LIBS([qt4],[${QT4_LIBS}])
+    VLC_ADD_CXXFLAGS([qt4],[${QT4_CFLAGS}])
     ALIASES="${ALIASES} qvlc"
-    AS_IF([test "${SYS}" != "mingw32" -a "${SYS}" != "mingwce" -a "${SYS}" != "darwin"], [
-        VLC_ADD_LIBS([qt4],[$QT4_LIBS ${X_LIBS} ${X_PRE_LIBS} -lX11])
-        need_xid_provider="no"
-        VLC_ADD_CXXFLAGS([qt4],[$QT4_CFLAGS ${X_CFLAGS}])
+
+    AC_LANG_PUSH([C++])
+    CPPFLAGS_save="${CPPFLAGS}"
+
+    AC_MSG_CHECKING([whether Qt uses X11])
+    CPPFLAGS="${CPPFLAGS} ${QT4_CFLAGS}"
+    AC_PREPROC_IFELSE([
+#include <QWidget>
+#if !defined (Q_WS_X11)
+# error Fail
+#endif
     ], [
-        VLC_ADD_LIBS([qt4],[$QT4_LIBS -lole32])
-        VLC_ADD_CXXFLAGS([qt4],[$QT4_CFLAGS])
+      AC_MSG_RESULT([yes])
+      VLC_ADD_LIBS([qt4],[${X_LIBS} ${X_PRE_LIBS} -lX11])
+      need_xid_provider="no"
+      VLC_ADD_CXXFLAGS([qt4],[${X_CFLAGS}])
+    ], [
+      AC_MSG_RESULT([no])
+    ])
+
+    CPPFLAGS="${CPPFLAGS_save}"
+    AC_LANG_POP([C++])
+
+    AS_IF([test "${SYS}" = "mingw32" -o "${SYS}" = "mingwce"], [
+        VLC_ADD_LIBS([qt4],[-lole32])
     ])
     AC_PATH_PROGS(MOC, [moc-qt4 moc], moc,`eval $PKG_CONFIG --variable=exec_prefix QtCore`/bin)
     AC_PATH_PROG(RCC, rcc, rcc,`eval $PKG_CONFIG --variable=exec_prefix QtCore`/bin)
@@ -4689,17 +4688,9 @@ dnl Create vlc-config.in
 VLC_OUTPUT_VLC_CONFIG_IN
 
 AC_CONFIG_FILES([
-  extras/package/win32/spad.nsi
-  extras/package/win32/vlc.win32.nsi
-  extras/package/macosx/Info.plist
-  extras/package/macosx/Resources/English.lproj/InfoPlist.strings
-  extras/package/macosx/plugin/Info.plist
-  extras/package/macosx/plugin/InstallerInfo.plist
   Makefile
   projects/activex/Makefile
-  projects/activex/axvlc.inf
   doc/Makefile
-  extras/package/ipkg/Makefile
   libs/loader/Makefile
   libs/srtp/Makefile
   libs/unzip/Makefile
@@ -4707,12 +4698,6 @@ AC_CONFIG_FILES([
   projects/mozilla/Makefile
   m4/Makefile
   po/Makefile.in
-  projects/activex/axvlc_rc.rc
-  projects/mozilla/npvlc_rc.rc
-  projects/mozilla/vlc.r
-  projects/mozilla/install.js
-  projects/mozilla/install.rdf
-  projects/mozilla/manifest.json
   share/Makefile
   compat/Makefile
   src/Makefile
@@ -4795,6 +4780,46 @@ AC_CONFIG_FILES([
   modules/sse2/Makefile
   modules/altivec/Makefile
   modules/arm_neon/Makefile
+])
+
+AM_COND_IF([BUILD_MOZILLA], [
+  AC_CONFIG_FILES([
+    projects/mozilla/install.js
+    projects/mozilla/install.rdf
+    projects/mozilla/manifest.json
+  ])
+])
+
+AM_COND_IF([HAVE_WIN32], [
+  AC_CONFIG_FILES([
+    extras/package/win32/spad.nsi
+    extras/package/win32/vlc.win32.nsi
+  ])
+  AM_COND_IF([BUILD_ACTIVEX], [
+    AC_CONFIG_FILES([
+      projects/activex/axvlc.inf
+      projects/activex/axvlc_rc.rc
+    ])
+  ])
+  AM_COND_IF([BUILD_MOZILLA], [
+    AC_CONFIG_FILES([
+      projects/mozilla/npvlc_rc.rc
+    ])
+  ])
+])
+
+AM_COND_IF([HAVE_DARWIN], [
+  AC_CONFIG_FILES([
+    extras/package/macosx/Info.plist
+    extras/package/macosx/Resources/English.lproj/InfoPlist.strings
+    extras/package/macosx/plugin/Info.plist
+    extras/package/macosx/plugin/InstallerInfo.plist
+  ])
+  AM_COND_IF([BUILD_MOZILLA], [
+    AC_CONFIG_FILES([
+      projects/mozilla/vlc.r
+    ])
+  ])
 ])
 
 dnl Generate makefiles

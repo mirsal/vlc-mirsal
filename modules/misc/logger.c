@@ -33,6 +33,7 @@
 #include <vlc_plugin.h>
 #include <vlc_interface.h>
 #include <vlc_fs.h>
+#include <vlc_charset.h>
 
 #include <assert.h>
 
@@ -372,8 +373,20 @@ static void Overflow (msg_cb_data_t *p_sys, msg_item_t *p_item, unsigned overrun
     if (verbosity == -1)
         verbosity = var_CreateGetInteger( p_sys->p_intf, "verbose" );
 
-    if (verbosity < p_item->i_type)
-        return;
+    switch( p_item->i_type )
+    {
+        case VLC_MSG_INFO:
+        case VLC_MSG_ERR:
+            if( verbosity < 0 ) return;
+            break;
+        case VLC_MSG_WARN:
+            if( verbosity < 1 ) return;
+            break;
+        case VLC_MSG_DBG:
+            if( verbosity < 2 ) return;
+            break;
+    }
+
 
     int canc = vlc_savecancel();
 
@@ -405,8 +418,8 @@ static const char ppsz_type[4][11] = {
 
 static void TextPrint( const msg_item_t *p_msg, FILE *p_file )
 {
-    fprintf( p_file, "%s%s%s\n", p_msg->psz_module, ppsz_type[p_msg->i_type],
-             p_msg->psz_msg );
+    utf8_fprintf( p_file, "%s%s%s\n", p_msg->psz_module,
+                  ppsz_type[p_msg->i_type], p_msg->psz_msg );
 }
 
 #ifdef HAVE_SYSLOG_H

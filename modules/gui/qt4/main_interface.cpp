@@ -102,6 +102,9 @@ MainInterface::MainInterface( intf_thread_t *_p_intf ) : QVLCMW( _p_intf )
     setWindowRole( "vlc-main" );
     setWindowIcon( QApplication::windowIcon() );
     setWindowOpacity( var_InheritFloat( p_intf, "qt-opacity" ) );
+#ifdef Q_WS_MAC
+    setAttribute( Qt::WA_MacBrushedMetal );
+#endif
 
     /* Is video in embedded in the UI or not */
     b_videoEmbedded = var_InheritBool( p_intf, "embedded-video" );
@@ -968,7 +971,11 @@ void MainInterface::handleSystrayClick(
     {
         case QSystemTrayIcon::Trigger:
         case QSystemTrayIcon::DoubleClick:
+#ifdef Q_WS_MAC
+            QVLCMenu::updateSystrayMenu( this, p_intf );
+#else
             toggleUpdateSystrayMenu();
+#endif
             break;
         case QSystemTrayIcon::MiddleClick:
             sysTray->showMessage( qtr( "VLC media player" ),

@@ -32,7 +32,7 @@
  * For example, you can use smem as it :
  * --sout="#transcode{vcodec=RV24,acodec=s16l}:smem{smem-options}"
  *
- * Into each lock function (audio and video), you will have all the informations
+ * Into each lock function (audio and video), you will have all the information
  * you need to allocate a buffer, so that this module will copy data in it.
  *
  * the video-data and audio-data pointers will be passed to lock/unlock function
@@ -230,6 +230,7 @@ static sout_stream_id_t *AddVideo( sout_stream_t *p_stream, es_format_t *p_fmt )
     switch( p_fmt->i_codec )
     {
         case VLC_CODEC_RGB32:
+        case VLC_CODEC_RGBA:
             i_bits_per_pixel = 32;
             break;
         case VLC_CODEC_I444:

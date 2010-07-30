@@ -39,11 +39,9 @@
 
 #include <assert.h>
 #include <vlc_common.h>
+#include <vlc_modules.h>
+#include <vlc_interface.h>
 
-#include <vlc_aout.h>
-#include <vlc_vout.h>
-
-#include "vlc_interface.h"
 #if defined( __APPLE__ ) || defined( WIN32 )
 #include "../control/libvlc_internal.h"
 #endif
@@ -53,7 +51,7 @@
  * Local prototypes
  *****************************************************************************/
 static void* RunInterface( vlc_object_t *p_this );
-#if defined( __APPLE__ ) || defined( WIN32 )
+#if defined( __APPLE__ )
 static void * MonitorLibVLCDeath( vlc_object_t *p_this );
 #endif
 static int AddIntfCallback( vlc_object_t *, char const *,
@@ -108,7 +106,7 @@ int intf_Create( vlc_object_t *p_this, const char *psz_module )
 
     /* Attach interface to LibVLC */
     vlc_object_attach( p_intf, p_libvlc );
-#if defined( __APPLE__ ) || defined( WIN32 )
+#if defined( __APPLE__ )
     p_intf->b_should_run_on_first_thread = false;
 #endif
 
@@ -129,7 +127,7 @@ int intf_Create( vlc_object_t *p_this, const char *psz_module )
     }
 
     vlc_mutex_lock( &lock );
-#if defined( __APPLE__ ) || defined( WIN32 )
+#if defined( __APPLE__ )
     /* Hack to get Mac OS X Cocoa runtime running
      * (it needs access to the main thread) */
     if( p_intf->b_should_run_on_first_thread )
@@ -225,7 +223,7 @@ static void* RunInterface( vlc_object_t *p_this )
     return NULL;
 }
 
-#if defined( __APPLE__ ) || defined( WIN32 )
+#if defined( __APPLE__ )
 #include "control/libvlc_internal.h" /* libvlc_InternalWait */
 /**
  * MonitorLibVLCDeath: Used when b_should_run_on_first_thread is set.

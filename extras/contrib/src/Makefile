@@ -473,7 +473,7 @@ endif
 .fontconfig: fontconfig .xml .freetype
 ifdef HAVE_WIN32
   ifdef HAVE_CYGWIN
-	(cd $<; ./configure --target=$(HOST) --disable-pic --disable-shared --disable-docs --with-arch=i686 --prefix=$(PREFIX) --with-freetype-config=$(PREFIX)/bin/freetype-config --enable-libxml2 && make && make install)
+	(cd $<; ./configure --target=$(HOST) --disable-pic --disable-shared --disable-docs --with-arch=i686 --prefix=$(PREFIX) --with-freetype-config=$(PREFIX)/bin/freetype-config --disable-libxml2 && make && make install)
   else
 	(cd $<; $(HOSTCC)  ./configure $(HOSTCONF) --with-arch=i686 --prefix=$(PREFIX) --with-freetype-config=$(PREFIX)/bin/freetype-config --disable-libxml2 --disable-docs && make && make install)
   endif
@@ -2099,8 +2099,12 @@ dshow-headers.tgz:
 dxva2api.h:
 	$(WGET) $(DXVA2_URL)
 
-.dshow_headers: dshow-headers.tgz dxva2api.h
+d2d_headers.tar.gz:
+	$(WGET) $(D2D_URL) -O $@
+
+.dshow_headers: dshow-headers.tgz dxva2api.h d2d_headers.tar.gz
 	tar xzf $< -C $(PREFIX)/include
+	tar xzf d2d_headers.tar.gz -C $(PREFIX)/include
 	cp dxva2api.h $(PREFIX)/include
 	touch $@
 
