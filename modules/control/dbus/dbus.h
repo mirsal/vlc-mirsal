@@ -27,6 +27,6 @@
 #ifndef _VLC_DBUS_H
 #define _VLC_DBUS_H
 
-#define DBUS_MPRIS_BUS_NAME "org.mpris.vlc"
+#define DBUS_MPRIS_BUS_NAME "org.mpris.mediaplayers.vlc"
 
 #endif //dbus.h

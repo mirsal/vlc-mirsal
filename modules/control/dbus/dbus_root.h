@@ -34,8 +34,8 @@
 #define DBUS_MPRIS_VERSION_MINOR     0
 
 /* DBUS IDENTIFIERS */
-#define DBUS_MPRIS_ROOT_INTERFACE    "org.freedesktop.MediaPlayer"
-#define DBUS_MPRIS_ROOT_PATH         "/"
+#define DBUS_MPRIS_ROOT_INTERFACE    "org.mpris.MediaPlayer"
+#define DBUS_MPRIS_ROOT_PATH         "/org/mpris/MediaPlayer"
 
 /* Handle incoming dbus messages */
 DBusHandlerResult handle_root ( DBusConnection *p_conn,

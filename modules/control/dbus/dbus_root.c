@@ -46,7 +46,7 @@ static const char* psz_root_introspection_xml =
 "      <arg name=\"data\" direction=\"out\" type=\"s\"/>\n"
 "    </method>\n"
 "  </interface>\n"
-"  <interface name=\"org.freedesktop.MediaPlayer\">\n"
+"  <interface name=\"org.mpris.MediaPlayer\">\n"
 "    <method name=\"Identity\">\n"
 "      <arg type=\"s\" direction=\"out\" />\n"
 "    </method>\n"

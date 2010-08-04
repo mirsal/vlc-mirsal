@@ -30,8 +30,8 @@
 #include <vlc_interface.h>
 #include "dbus_common.h"
 
-#define DBUS_MPRIS_PLAYER_INTERFACE    "org.freedesktop.MediaPlayer"
-#define DBUS_MPRIS_PLAYER_PATH         "/Player"
+#define DBUS_MPRIS_PLAYER_INTERFACE    "org.mpris.MediaPlayer.Player"
+#define DBUS_MPRIS_PLAYER_PATH         "/org/mpris/MediaPlayer/Player"
 
 /* Handle incoming dbus messages */
 DBusHandlerResult handle_player ( DBusConnection *p_conn,

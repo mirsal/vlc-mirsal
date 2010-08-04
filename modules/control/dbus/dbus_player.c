@@ -50,7 +50,7 @@ static const char* psz_player_introspection_xml =
 "      <arg name=\"data\" direction=\"out\" type=\"s\"/>\n"
 "    </method>\n"
 "  </interface>\n"
-"  <interface name=\"org.freedesktop.MediaPlayer\">\n"
+"  <interface name=\"org.mpris.MediaPlayer.Player\">\n"
 "    <method name=\"GetStatus\">\n"
 "      <arg type=\"(iiii)\" direction=\"out\" />\n"
 "    </method>\n"

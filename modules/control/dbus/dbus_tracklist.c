@@ -46,7 +46,7 @@ const char* psz_tracklist_introspection_xml =
 "      <arg name=\"data\" direction=\"out\" type=\"s\"/>\n"
 "    </method>\n"
 "  </interface>\n"
-"  <interface name=\"org.freedesktop.MediaPlayer\">\n"
+"  <interface name=\"org.mpris.MediaPlayer.TrackList\">\n"
 "    <method name=\"AddTrack\">\n"
 "      <arg type=\"s\" direction=\"in\" />\n"
 "      <arg type=\"b\" direction=\"in\" />\n"
