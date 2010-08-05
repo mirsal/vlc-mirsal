@@ -236,8 +236,6 @@ case "${host_os}" in
         build_dir=`pwd`
         echo "  Assuming --prefix=${build_dir}/vlc_install_dir"
         ac_default_prefix="${build_dir}/vlc_install_dir"
-        enable_macosx="yes"
-        echo "  Assuming --enable-macosx"
         enable_faad="yes"
         echo "  Assuming --enable-faad"
         enable_flac="yes"
@@ -829,11 +827,6 @@ then
 fi
 ])
 
-dnl Check for dirent
-need_dirent=false
-AC_CHECK_HEADERS(dirent.h,,[need_dirent=:])
-AM_CONDITIONAL(BUILD_DIRENT, ${need_dirent})
-
 dnl Mac OS X and other OSes don't have declaration for nanosleep
 if test "${SYS}" != "mingw32" -a "${SYS}" != "mingwce"; then
 AC_MSG_CHECKING(for nanosleep in time.h)
@@ -905,8 +898,8 @@ AM_CONDITIONAL(HAVE_MINIZIP, [ test "${have_minizip}" = "yes" ])
 
 dnl Manual switch for UTF-8
 AC_ARG_ENABLE(non-utf8,
-  [  --enable-non-utf8       Legacy non-UTF-8 systems support (default disabled)], [
-  AS_IF([test "${SYS}" != "mingw32" -a "${SYS}" != "mingwce"], [
+  [  --enable-non-utf8       Legacy non-UTF-8 systems support (default disabled)],, [
+  AS_IF([test "${SYS}" = "mingw32" -o "${SYS}" = "mingwce"], [
     enable_non_utf8="no"
   ])
 ])

@@ -162,8 +162,8 @@ misc.cachedir(): Get the user's VLC cache directory.
 misc.datadir_list( name ): FIXME: write description ... or ditch function
   if it isn't useful anymore, we have datadir and userdatadir :)
 
-misc.mdate(): Get the current date (in milliseconds).
-misc.mwait(): Wait for the given date (in milliseconds).
+misc.mdate(): Get the current date (in microseconds).
+misc.mwait(): Wait for the given date (in microseconds).
 
 misc.lock_and_wait(): Lock our object thread and wait for a wake up signal.
 
@@ -231,7 +231,10 @@ OSD
 osd.icon( type, [id] ): Display an icon on the given OSD channel. Uses the
   default channel is none is given. Icon types are: "pause", "play",
   "speaker" and "mute".
-osd.message( string, [id] ): Display text message on the given OSD channel.
+osd.message( string, [id], [position], [duration]: Display the text message on
+  the given OSD channel. Position types are: "center", "left", "right", "top",
+  "bottom", "top-left", "top-right", "bottom-left" or "bottom-right". The
+  duration is set in microseconds.
 osd.slider( position, type, [id] ): Display slider. Position is an integer
   from 0 to 100. Type can be "horizontal" or "vertical".
 osd.channel_register(): Register a new OSD channel. Returns the channel id.

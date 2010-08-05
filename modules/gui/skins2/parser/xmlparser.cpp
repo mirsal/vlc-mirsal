@@ -29,9 +29,6 @@
 #   include <sys/stat.h>
 #endif
 
-// Static variable to avoid initializing catalogs twice
-static bool m_initialized = false;
-
 XMLParser::XMLParser( intf_thread_t *pIntf, const string &rFileName,
                       bool useDTD ):
     SkinObject( pIntf )
@@ -39,21 +36,16 @@ XMLParser::XMLParser( intf_thread_t *pIntf, const string &rFileName,
     m_pReader = NULL;
     m_pStream = NULL;
 
-    m_pXML = xml_Create( pIntf );
-    if( !m_pXML )
+    if( useDTD )
     {
-        msg_Err( getIntf(), "failed to open XML parser" );
-        return;
+        m_pXML = xml_Create( pIntf );
+        if( m_pXML )
+            LoadCatalog();
+        else
+            msg_Err( getIntf(), "DTD not supported" );
     }
-
-    // Avoid duplicate initialization (mutex needed ?) -> doesn't work
-    // Reinitialization required for a new XMLParser
-    // if( !m_initialized )
-    // {
-    //    LoadCatalog();
-    //    m_initialized = true;
-    // }
-    LoadCatalog();
+    else
+        m_pXML = NULL;
 
     char* psz_uri = make_URI( rFileName.c_str(), NULL );
     m_pStream = stream_UrlNew( pIntf, psz_uri );
@@ -63,6 +55,7 @@ XMLParser::XMLParser( intf_thread_t *pIntf, const string &rFileName,
     {
         msg_Err( getIntf(), "failed to open %s for reading",
                  rFileName.c_str() );
+        m_pReader = NULL;
         return;
     }
     m_pReader = xml_ReaderCreate( m_pXML, m_pStream );
@@ -73,7 +66,8 @@ XMLParser::XMLParser( intf_thread_t *pIntf, const string &rFileName,
         return;
     }
 
-    xml_ReaderUseDTD( m_pReader, useDTD );
+    if( m_pXML )
+        xml_ReaderUseDTD( m_pReader );
 }
 
 

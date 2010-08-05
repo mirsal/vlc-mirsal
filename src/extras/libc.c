@@ -42,10 +42,6 @@
 #   include <iconv.h>
 #endif
 
-#ifdef HAVE_DIRENT_H
-#   include <dirent.h>
-#endif
-
 #ifdef HAVE_FORK
 #   include <signal.h>
 #   include <unistd.h>
@@ -58,12 +54,9 @@
 #endif
 
 #if defined(WIN32) || defined(UNDER_CE)
-#   undef _wopendir
-#   undef _wreaddir
-#   undef _wclosedir
-#   undef rewinddir
 #   define WIN32_LEAN_AND_MEAN
 #   include <windows.h>
+#   include <dirent.h>
 #endif
 
 /*****************************************************************************
@@ -170,12 +163,10 @@ void vlc_rewinddir( void *_p_dir )
     if ( p_dir->p_real_dir != NULL )
         _wrewinddir( p_dir->p_real_dir );
 }
-#endif
 
 /* This one is in the libvlccore exported symbol list */
 int vlc_wclosedir( void *_p_dir )
 {
-#if defined(WIN32)
     vlc_DIR *p_dir = (vlc_DIR *)_p_dir;
     int i_ret = 0;
 
@@ -184,10 +175,9 @@ int vlc_wclosedir( void *_p_dir )
 
     free( p_dir );
     return i_ret;
-#else
-    return closedir( _p_dir );
-#endif
 }
+#endif
+
 
 #ifdef ENABLE_NLS
 # include <libintl.h>

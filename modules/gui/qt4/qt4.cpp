@@ -282,6 +282,24 @@ static struct
  * Module callbacks
  *****************************************************************************/
 
+#ifdef Q_WS_MAC
+/* Used to abort the app.exec() on OSX after libvlc_Quit is called */
+#include "../../../src/control/libvlc_internal.h" /* libvlc_SetExitHandler */
+static void Abort( void *obj )
+{
+    QVLCApp::triggerQuit();
+}
+#endif
+
+static void RegisterIntf( vlc_object_t *p_this )
+{
+    playlist_t *pl = pl_Get(p_this);
+    var_Create (pl, "qt4-iface", VLC_VAR_ADDRESS);
+    var_SetAddress (pl, "qt4-iface", p_this);
+    var_Create (pl, "window", VLC_VAR_STRING);
+    var_SetString (pl, "window", "qt4,any");
+}
+
 /* Open Interface */
 static int Open( vlc_object_t *p_this, bool isDialogProvider )
 {
@@ -320,13 +338,17 @@ static int Open( vlc_object_t *p_this, bool isDialogProvider )
     intf_sys_t *p_sys = p_intf->p_sys = new intf_sys_t;
     p_intf->p_sys->b_isDialogProvider = isDialogProvider;
     p_sys->p_mi = NULL;
-    p_sys->p_playlist = pl_Get( p_intf );
 
     /* */
 #ifdef Q_WS_X11
     x11_display = display;
 #endif
     vlc_sem_init (&ready, 0);
+#ifdef Q_WS_MAC
+    /* Run mainloop on the main thread as Cocoa requires */
+    libvlc_SetExitHandler( p_intf->p_libvlc, Abort, p_intf );
+    Thread( (void *)p_intf );
+#else
     if( vlc_clone( &p_sys->thread, Thread, p_intf, VLC_THREAD_PRIORITY_LOW ) )
     {
         delete p_sys;
@@ -336,19 +358,19 @@ static int Open( vlc_object_t *p_this, bool isDialogProvider )
         vlc_mutex_unlock (&one.lock);
         return VLC_ENOMEM;
     }
+#endif
 
     /* */
     vlc_sem_wait (&ready);
     vlc_sem_destroy (&ready);
 
+#ifndef Q_WS_MAC
     if( !p_sys->b_isDialogProvider )
     {
-        playlist_t *pl = pl_Get(p_this);
-        var_Create (pl, "qt4-iface", VLC_VAR_ADDRESS);
-        var_SetAddress (pl, "qt4-iface", p_this);
-        var_Create (pl, "window", VLC_VAR_STRING);
-        var_SetString (pl, "window", "qt4,any");
+        RegisterIntf( p_this );
     }
+#endif
+
     return VLC_SUCCESS;
 }
 
@@ -377,15 +399,17 @@ static void Close( vlc_object_t *p_this )
 
     QVLCApp::triggerQuit();
 
+#ifndef Q_WS_MAC
     vlc_join (p_sys->thread, NULL);
+#endif
 #ifdef Q_WS_X11
     free (x11_display);
     x11_display = NULL;
 #endif
     delete p_sys;
-    vlc_mutex_lock (&one.lock);
+
+    vlc_mutex_locker locker (&one.lock);
     one.busy = false;
-    vlc_mutex_unlock (&one.lock);
 }
 
 static void *Thread( void *obj )
@@ -423,10 +447,12 @@ static void *Thread( void *obj )
             QSettings::UserScope, "vlc", "vlc-qt-interface" );
 
     /* Icon setting */
+#ifndef Q_WS_MAC
     if( QDate::currentDate().dayOfYear() >= 352 ) /* One Week before Xmas */
         app.setWindowIcon( QIcon(vlc_christmas_xpm) );
     else
         app.setWindowIcon( QIcon(vlc_xpm) );
+#endif
 
     /* Initialize timers and the Dialog Provider */
     DialogsProvider::getInstance( p_intf );
@@ -463,6 +489,15 @@ static void *Thread( void *obj )
 
     /* */
     vlc_sem_post (&ready);
+
+#ifdef Q_WS_MAC
+    /* We took over main thread, register and start here */
+    if( !p_intf->p_sys->b_isDialogProvider )
+    {
+        RegisterIntf( (vlc_object_t *)p_intf );
+        playlist_Play( THEPL );
+    }
+#endif
 
     /* Last settings */
     app.setQuitOnLastWindowClosed( false );
