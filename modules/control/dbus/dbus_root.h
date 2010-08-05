@@ -37,6 +37,16 @@
 #define DBUS_MPRIS_ROOT_INTERFACE    "org.mpris.MediaPlayer"
 #define DBUS_MPRIS_ROOT_PATH         "/org/mpris/MediaPlayer"
 
+/* Root object capabilities */
+enum
+{
+    ROOT_CAPS_NONE = 0,
+    ROOT_CAN_MANAGE_TRACKLIST = 1 << 0,
+    ROOT_CAN_MANAGE_PLAYLISTS = 1 << 1,
+    ROOT_CAN_RAISE = 1 << 2,
+    ROOT_CAN_QUIT  = 1 << 3
+};
+
 /* Handle incoming dbus messages */
 DBusHandlerResult handle_root ( DBusConnection *p_conn,
                                 DBusMessage *p_from,
@@ -46,5 +56,7 @@ static const DBusObjectPathVTable dbus_mpris_root_vtable = {
         NULL, handle_root, /* handler function */
         NULL, NULL, NULL, NULL
 };
+
+void UpdateRootCaps( intf_thread_t *p_intf );
 
 #endif //dbus-root.h

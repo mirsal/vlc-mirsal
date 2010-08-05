@@ -343,7 +343,6 @@ int TrackListChangeEmit( intf_thread_t *p_intf, int signal, int i_node )
     if( p_intf->p_sys->b_dead )
         return VLC_SUCCESS;
 
-    UpdateCaps( p_intf );
     TrackListChangeSignal( p_intf->p_sys->p_conn, p_intf );
     return VLC_SUCCESS;
 }

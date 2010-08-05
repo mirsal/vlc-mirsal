@@ -48,6 +48,7 @@ static const char* psz_root_introspection_xml =
 "  </interface>\n"
 "  <interface name=\"org.mpris.MediaPlayer\">\n"
 "    <property name=\"Identity\" type=\"s\" access=\"read\" />\n"
+"    <property name=\"Capabilities\" type=\"i\" access=\"read\" />\n"
 "    <property name=\"MprisVersion\" type=\"(qq)\" access=\"read\" />\n"
 "    <method name=\"Quit\" />\n"
 "  </interface>\n"
@@ -98,6 +99,18 @@ DBUS_METHOD( GetMprisVersion )
     REPLY_SEND;
 }
 
+DBUS_METHOD( GetCapabilities )
+{
+    REPLY_INIT;
+    OUT_ARGUMENTS;
+    VLC_UNUSED( p_this );
+
+    dbus_int32_t i_caps = ROOT_CAN_QUIT;
+    ADD_INT32( &i_caps );
+
+    REPLY_SEND;
+}
+
 DBUS_METHOD( Quit )
 { /* exits vlc */
     REPLY_INIT;
@@ -145,6 +158,7 @@ DBUS_METHOD( GetProperty )
     PROPERTY_MAPPING_BEGIN
     PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "Identity",     GetIdentity )
     PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "MprisVersion", GetMprisVersion )
+    PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "Capabilities", GetCapabilities )
     PROPERTY_MAPPING_END
 }
 

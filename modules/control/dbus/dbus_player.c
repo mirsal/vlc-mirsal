@@ -298,7 +298,7 @@ DBUS_METHOD( GetCaps )
     REPLY_INIT;
     OUT_ARGUMENTS;
 
-    ADD_INT32( &INTF->p_sys->i_caps );
+    ADD_INT32( &INTF->p_sys->i_player_caps );
 
     REPLY_SEND;
 }
@@ -351,7 +351,7 @@ DBUS_SIGNAL( CapsChangeSignal )
 
     OUT_ARGUMENTS;
 
-    ADD_INT32( &((intf_thread_t*)p_data)->p_sys->i_caps );
+    ADD_INT32( &((intf_thread_t*)p_data)->p_sys->i_player_caps );
     SIGNAL_SEND;
 }
 
@@ -408,20 +408,7 @@ int StatusChangeEmit( intf_thread_t * p_intf )
     if( p_intf->p_sys->b_dead )
         return VLC_SUCCESS;
 
-    UpdateCaps( p_intf );
     StatusChangeSignal( p_intf->p_sys->p_conn, p_intf );
-    return VLC_SUCCESS;
-}
-
-/*****************************************************************************
- * CapsChangeEmit: Emits the CapsChange signal
- *****************************************************************************/
-int CapsChangeEmit( intf_thread_t * p_intf )
-{
-    if( p_intf->p_sys->b_dead )
-        return VLC_SUCCESS;
-
-    CapsChangeSignal( p_intf->p_sys->p_conn, p_intf );
     return VLC_SUCCESS;
 }
 
@@ -433,8 +420,19 @@ int TrackChangeEmit( intf_thread_t * p_intf, input_item_t* p_item )
     if( p_intf->p_sys->b_dead )
         return VLC_SUCCESS;
 
-    UpdateCaps( p_intf );
     TrackChangeSignal( p_intf->p_sys->p_conn, p_item );
+    return VLC_SUCCESS;
+}
+
+/*****************************************************************************
+ * CapsChangeEmit: Emits the CapsChange signal
+ *****************************************************************************/
+static int CapsChangeEmit( intf_thread_t * p_intf )
+{
+    if( p_intf->p_sys->b_dead )
+        return VLC_SUCCESS;
+
+    CapsChangeSignal( p_intf->p_sys->p_conn, p_intf );
     return VLC_SUCCESS;
 }
 
@@ -469,4 +467,50 @@ static int MarshalStatus( intf_thread_t* p_intf, DBusMessageIter* args )
     dbus_message_iter_close_container( args, &status );
 
     return VLC_SUCCESS;
+}
+
+/**
+ * UpdatePlayerCaps() updates the player capabilities and sends a
+ * CapabilitiesChanged signal if needed
+ *
+ * This function must be called with the playlist unlocked
+ *
+ * @param intf_thread_t *p_intf This interface thread state
+ */
+void UpdatePlayerCaps( intf_thread_t* p_intf )
+{
+    intf_sys_t* p_sys      = p_intf->p_sys;
+    playlist_t* p_playlist = p_sys->p_playlist;
+
+    dbus_int32_t i_caps    = PLAYER_CAN_REPEAT |
+                             PLAYER_CAN_LOOP |
+                             PLAYER_CAN_SHUFFLE;
+
+    PL_LOCK;
+    if( p_playlist->current.i_size > 0 )
+        i_caps |= PLAYER_CAN_PLAY | PLAYER_CAN_GO_PREVIOUS | PLAYER_CAN_GO_NEXT;
+    PL_UNLOCK;
+
+    input_thread_t* p_input = playlist_CurrentInput( p_playlist );
+    if( p_input )
+    {
+        i_caps |= PLAYER_CAN_PROVIDE_POSITION;
+
+        /* XXX: if UpdatePlayerCaps() is called too early, these are
+         * unconditionnaly true */
+        if( var_GetBool( p_input, "can-pause" ) )
+            i_caps |= PLAYER_CAN_PAUSE;
+        if( var_GetBool( p_input, "can-seek" ) )
+            i_caps |= PLAYER_CAN_SEEK;
+        vlc_object_release( p_input );
+    }
+
+    if( p_sys->b_meta_read )
+        i_caps |= PLAYER_CAN_PROVIDE_METADATA;
+
+    if( i_caps != p_intf->p_sys->i_player_caps )
+    {
+        p_sys->i_player_caps = i_caps;
+        CapsChangeEmit( p_intf );
+    }
 }

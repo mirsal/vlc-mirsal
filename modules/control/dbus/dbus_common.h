@@ -85,7 +85,7 @@ struct intf_sys_t
     DBusConnection *p_conn;
     playlist_t     *p_playlist;
     bool            b_meta_read;
-    dbus_int32_t    i_caps;
+    dbus_int32_t    i_player_caps;
     dbus_int32_t    i_playing_state;
     bool            b_dead;
     vlc_array_t    *p_events;
@@ -119,6 +119,5 @@ enum
 };
 
 int GetInputMeta  ( input_item_t* p_input, DBusMessageIter *args );
-int UpdateCaps    ( intf_thread_t* );
 
 #endif //dbus-common.h

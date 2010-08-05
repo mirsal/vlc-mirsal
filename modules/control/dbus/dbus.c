@@ -165,10 +165,10 @@ static int Open( vlc_object_t *p_this )
     if( !p_sys || !dbus_threads_init_default())
         return VLC_ENOMEM;
 
-    p_sys->b_meta_read = false;
-    p_sys->i_caps = CAPS_NONE;
-    p_sys->b_dead = false;
-    p_sys->p_input = NULL;
+    p_sys->b_meta_read     = false;
+    p_sys->b_dead          = false;
+    p_sys->p_input         = NULL;
+    p_sys->i_player_caps   = PLAYER_CAPS_NONE;
     p_sys->i_playing_state = -1;
 
     if( vlc_pipe( p_sys->p_pipe_fds ) )
@@ -285,8 +285,6 @@ static int Open( vlc_object_t *p_this )
 /*     dbus_connection_set_wakeup_main_function( p_conn,
                                               wakeup_main_loop,
                                               p_intf, NULL); */
-
-    UpdateCaps( p_intf );
 
     return VLC_SUCCESS;
 }
@@ -549,6 +547,7 @@ static int UpdateTimeouts( intf_thread_t *p_intf, mtime_t i_loop_interval )
 static void ProcessEvents( intf_thread_t *p_intf,
                            callback_info_t **p_events, int i_events )
 {
+    UpdatePlayerCaps( p_intf );
     for( int i = 0; i < i_events; i++ )
     {
         switch( p_events[i]->signal )
@@ -717,6 +716,8 @@ static void Run          ( intf_thread_t *p_intf )
     intf_sys_t    *p_sys = p_intf->p_sys;
     mtime_t        i_last_run = mdate();
 
+    UpdatePlayerCaps( p_intf );
+
     for( ;; )
     {
         int canc = vlc_savecancel();
@@ -815,6 +816,7 @@ static void Run          ( intf_thread_t *p_intf )
 
         ProcessTimeouts( p_intf, p_timeouts, i_timeouts );
         DispatchDBusMessages( p_intf );
+        UpdatePlayerCaps( p_intf );
 
         vlc_restorecancel( canc );
     }
@@ -831,92 +833,6 @@ static void   wakeup_main_loop( void *p_data )
         msg_Err( p_intf,
             "Could not wake up the main loop: %s", strerror( errno ) );
     }
-}
-
-/*****************************************************************************
- * UpdateCaps: update p_sys->i_caps
- * This function have to be called with the playlist unlocked
- ****************************************************************************/
-int UpdateCaps( intf_thread_t* p_intf )
-{
-    intf_sys_t* p_sys = p_intf->p_sys;
-    dbus_int32_t i_caps = CAPS_CAN_HAS_TRACKLIST;
-    playlist_t* p_playlist = p_sys->p_playlist;
-
-    PL_LOCK;
-    if( p_playlist->current.i_size > 0 )
-        i_caps |= CAPS_CAN_PLAY | CAPS_CAN_GO_PREV | CAPS_CAN_GO_NEXT;
-    PL_UNLOCK;
-
-    input_thread_t* p_input = playlist_CurrentInput( p_playlist );
-    if( p_input )
-    {
-        /* XXX: if UpdateCaps() is called too early, these are
-         * unconditionnaly true */
-        if( var_GetBool( p_input, "can-pause" ) )
-            i_caps |= CAPS_CAN_PAUSE;
-        if( var_GetBool( p_input, "can-seek" ) )
-            i_caps |= CAPS_CAN_SEEK;
-        vlc_object_release( p_input );
-    }
-
-    if( p_sys->b_meta_read )
-        i_caps |= CAPS_CAN_PROVIDE_METADATA;
-
-    if( i_caps != p_intf->p_sys->i_caps )
-    {
-        p_sys->i_caps = i_caps;
-        CapsChangeEmit( p_intf );
-    }
-
-    return VLC_SUCCESS;
-}
-
-/* InputIntfEventCallback() fills a callback_info_t data structure in response
- * to an "intf-event" input event.
- *
- * Caution: This function executes in the input thread
- *
- * This function must be called with p_sys->lock locked
- *
- * @return int VLC_SUCCESS on success, VLC_E* on error
- * @param intf_thread_t *p_intf the interface thread
- * @param input_thread_t *p_input This input thread
- * @param const int i_event input event type
- * @param callback_info_t *p_info Location of the callback info to fill
- */
-static int InputIntfEventCallback( intf_thread_t   *p_intf,
-                                   input_thread_t  *p_input,
-                                   const int        i_event,
-                                   callback_info_t *p_info )
-{
-    dbus_int32_t i_state = PLAYBACK_STATE_INVALID;
-    assert(!p_info->signal);
-
-    switch( i_event )
-    {
-        case INPUT_EVENT_DEAD:
-        case INPUT_EVENT_ABORT:
-            i_state = PLAYBACK_STATE_STOPPED;
-            break;
-        case INPUT_EVENT_STATE:
-            i_state = ( var_GetInteger( p_input, "state" ) == PAUSE_S ) ?
-                PLAYBACK_STATE_PAUSED : PLAYBACK_STATE_PLAYING;
-            break;
-        case INPUT_EVENT_ITEM_META:
-            p_info->signal = SIGNAL_INPUT_METADATA;
-            return VLC_SUCCESS;
-        default:
-            return VLC_EGENERIC;
-    }
-
-    if( i_state != p_intf->p_sys->i_playing_state )
-    {
-        p_intf->p_sys->i_playing_state = i_state;
-        p_info->signal = SIGNAL_STATE;
-    }
-
-    return p_info->signal ? VLC_SUCCESS : VLC_EGENERIC;
 }
 
 // Get all the callbacks
@@ -1001,8 +917,6 @@ static int StateChange( intf_thread_t *p_intf )
 
     if( p_intf->p_sys->b_dead )
         return VLC_SUCCESS;
-
-    UpdateCaps( p_intf );
 
     if( !p_sys->b_meta_read && p_sys->i_playing_state == 0)
     {
