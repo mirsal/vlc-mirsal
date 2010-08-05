@@ -47,19 +47,14 @@ static const char* psz_root_introspection_xml =
 "    </method>\n"
 "  </interface>\n"
 "  <interface name=\"org.mpris.MediaPlayer\">\n"
-"    <method name=\"Identity\">\n"
-"      <arg type=\"s\" direction=\"out\" />\n"
-"    </method>\n"
-"    <method name=\"MprisVersion\">\n"
-"      <arg type=\"(qq)\" direction=\"out\" />\n"
-"    </method>\n"
-"    <method name=\"Quit\">\n"
-"    </method>\n"
+"    <property name=\"Identity\" type=\"s\" access=\"read\" />\n"
+"    <property name=\"MprisVersion\" type=\"(qq)\" access=\"read\" />\n"
+"    <method name=\"Quit\" />\n"
 "  </interface>\n"
 "</node>\n"
 ;
 
-DBUS_METHOD( Identity )
+DBUS_METHOD( GetIdentity )
 {
     VLC_UNUSED(p_this);
     REPLY_INIT;
@@ -77,7 +72,7 @@ DBUS_METHOD( Identity )
     REPLY_SEND;
 }
 
-DBUS_METHOD( MprisVersion )
+DBUS_METHOD( GetMprisVersion )
 { /*implemented version of the mpris spec */
     REPLY_INIT;
     OUT_ARGUMENTS;
@@ -119,6 +114,44 @@ DBUS_METHOD( handle_introspect_root )
     REPLY_SEND;
 }
 
+#define PROPERTY_MAPPING_BEGIN if( 0 ) {}
+#define PROPERTY_FUNC( interface, property, function ) \
+    else if( !strcmp( psz_interface_name, interface ) && \
+             !strcmp( psz_property_name,  property ) ) \
+        return function( p_conn, p_from, p_this );
+#define PROPERTY_MAPPING_END return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+
+DBUS_METHOD( GetProperty )
+{
+    DBusError error;
+
+    char *psz_interface_name = NULL;
+    char *psz_property_name  = NULL;
+
+    dbus_error_init( &error );
+    dbus_message_get_args( p_from, &error,
+            DBUS_TYPE_STRING, &psz_interface_name,
+            DBUS_TYPE_STRING, &psz_property_name,
+            DBUS_TYPE_INVALID );
+
+    if( dbus_error_is_set( &error ) )
+    {
+        msg_Err( (vlc_object_t*) p_this, "D-Bus message reading : %s",
+                                         error.message );
+        dbus_error_free( &error );
+        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+    }
+
+    PROPERTY_MAPPING_BEGIN
+    PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "Identity",     GetIdentity )
+    PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "MprisVersion", GetMprisVersion )
+    PROPERTY_MAPPING_END
+}
+
+#undef PROPERTY_MAPPING_BEGIN
+#undef PROPERTY_GET_FUNC
+#undef PROPERTY_MAPPING_END
+
 #define METHOD_FUNC( interface, method, function ) \
     else if( dbus_message_is_method_call( p_from, interface, method ) )\
         return function( p_conn, p_from, p_this )
@@ -126,15 +159,13 @@ DBUS_METHOD( handle_introspect_root )
 DBusHandlerResult
 handle_root ( DBusConnection *p_conn, DBusMessage *p_from, void *p_this )
 {
+
     if( dbus_message_is_method_call( p_from,
                 DBUS_INTERFACE_INTROSPECTABLE, "Introspect" ) )
         return handle_introspect_root( p_conn, p_from, p_this );
 
-    /* here D-Bus method names are associated to an handler */
-
-    METHOD_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "Identity",      Identity );
-    METHOD_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "MprisVersion",  MprisVersion );
-    METHOD_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "Quit",          Quit );
+    METHOD_FUNC( DBUS_INTERFACE_PROPERTIES, "Get",          GetProperty );
+    METHOD_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "Quit",         Quit );
 
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 }

@@ -375,6 +375,10 @@ handle_player ( DBusConnection *p_conn, DBusMessage *p_from, void *p_this )
                 DBUS_INTERFACE_INTROSPECTABLE, "Introspect" ) )
         return handle_introspect_player( p_conn, p_from, p_this );
 
+/*  METHOD_FUNC( DBUS_INTERFACE_PROPERTIES,   "Get",        GetProperty );
+    METHOD_FUNC( DBUS_INTERFACE_PROPERTIES,   "Set",        SetProperty );
+    METHOD_FUNC( DBUS_INTERFACE_PROPERTIES,   "GetAll",     GetAllProperties );*/
+
     /* here D-Bus method names are associated to an handler */
 
     METHOD_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Prev",        Prev );
