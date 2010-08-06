@@ -565,13 +565,25 @@ static void ProcessEvents( intf_thread_t *p_intf,
         case SIGNAL_RANDOM:
         case SIGNAL_REPEAT:
         case SIGNAL_LOOP:
-            StatusChangeEmit( p_intf );
+            PlayerStatusChangedEmit( p_intf );
             break;
         case SIGNAL_STATE:
             StateChange( p_intf );
             break;
         case SIGNAL_INPUT_METADATA:
+        {
+            input_thread_t *p_input = playlist_CurrentInput( p_intf->p_sys->p_playlist );
+            input_item_t   *p_item;
+            if( p_input )
+            {
+                p_item = input_GetItem( p_input );
+                vlc_object_release( p_input );
+
+                if( p_item )
+                    PlayerMetadataChangedEmit( p_intf, p_item );
+            }
             break;
+        }
         default:
             assert(0);
         }
@@ -877,15 +889,32 @@ static int AllCallback( vlc_object_t *p_this, const char *psz_var,
 
     else if( !strcmp( "intf-event", psz_var ) )
     {
-        int i_res;
-        i_res = InputIntfEventCallback( p_intf, p_this, newval.i_int, info );
+        dbus_int32_t i_state = PLAYBACK_STATE_INVALID;
 
-        if( VLC_SUCCESS != i_res )
+        if( INPUT_EVENT_DEAD == newval.i_int ||
+            INPUT_EVENT_ABORT == newval.i_int )
+        {
+            i_state = PLAYBACK_STATE_STOPPED;
+        }
+        else if( INPUT_EVENT_STATE == newval.i_int )
+            i_state = ( var_GetInteger( p_this, "state" ) == PAUSE_S ) ?
+                    PLAYBACK_STATE_PAUSED : PLAYBACK_STATE_PLAYING;
+        else if( INPUT_EVENT_ITEM_META == newval.i_int )
+            info->signal = SIGNAL_INPUT_METADATA;
+
+        if( PLAYBACK_STATE_INVALID != i_state &&
+            i_state != p_intf->p_sys->i_playing_state )
+        {
+            p_intf->p_sys->i_playing_state = i_state;
+            info->signal = SIGNAL_STATE;
+        }
+
+        if( !info->signal )
         {
             vlc_mutex_unlock( &p_intf->p_sys->lock );
             free( info );
 
-            return i_res;
+            return VLC_EGENERIC;
         }
     }
 
@@ -927,13 +956,13 @@ static int StateChange( intf_thread_t *p_intf )
             if( p_item )
             {
                 p_sys->b_meta_read = true;
-                TrackChangeEmit( p_intf, p_item );
+                TrackChangedEmit( p_intf, p_item );
             }
             vlc_object_release( p_input );
         }
     }
 
-    StatusChangeEmit( p_intf );
+    PlayerStatusChangedEmit( p_intf );
 
     return VLC_SUCCESS;
 }
@@ -976,7 +1005,7 @@ static int TrackChange( intf_thread_t *p_intf )
     if( input_item_IsPreparsed( p_item ) )
     {
         p_sys->b_meta_read = true;
-        TrackChangeEmit( p_intf, p_item );
+        TrackChangedEmit( p_intf, p_item );
     }
 
     p_sys->p_input = p_input;
@@ -1012,7 +1041,7 @@ static int TrackChange( intf_thread_t *p_intf )
     }
 
 int GetInputMeta( input_item_t* p_input,
-                        DBusMessageIter *args )
+                  DBusMessageIter *args )
 {
     DBusMessageIter dict, dict_entry, variant;
     /** The duration of the track can be expressed in second, milli-seconds and
@@ -1020,42 +1049,47 @@ int GetInputMeta( input_item_t* p_input,
     dbus_int64_t i_mtime = input_item_GetDuration( p_input );
     dbus_uint32_t i_time = i_mtime / 1000000;
     dbus_int64_t i_length = i_mtime / 1000;
+    char *psz_trackid;
+
+    if( -1 == asprintf( &psz_trackid, "%d", p_input->i_id ) )
+        return VLC_ENOMEM;
 
     const char* ppsz_meta_items[] =
     {
     /* Official MPRIS metas */
-    "location", "title", "artist", "album", "tracknumber", "time", "mtime",
-    "genre", "rating", "date", "arturl",
+    "trackid", "location", "title", "artist", "album", "tracknumber", "time", "mtime",
+    "genre", "rating", "date", "arturl", "mb track id",
     "audio-bitrate", "audio-samplerate", "video-bitrate",
     /* VLC specifics metas */
     "audio-codec", "copyright", "description", "encodedby", "language", "length",
-    "nowplaying", "publisher", "setting", "status", "trackid", "url",
+    "nowplaying", "publisher", "setting", "status", "url",
     "video-codec"
     };
 
     dbus_message_iter_open_container( args, DBUS_TYPE_ARRAY, "{sv}", &dict );
 
-    ADD_VLC_META_STRING( 0,  URI );
-    ADD_VLC_META_STRING( 1,  Title );
-    ADD_VLC_META_STRING( 2,  Artist );
-    ADD_VLC_META_STRING( 3,  Album );
-    ADD_VLC_META_STRING( 4,  TrackNum );
-    ADD_META( 5, DBUS_TYPE_UINT32, i_time );
-    ADD_META( 6, DBUS_TYPE_UINT32, i_mtime );
-    ADD_VLC_META_STRING( 7,  Genre );
-    ADD_VLC_META_STRING( 8,  Rating );
-    ADD_VLC_META_STRING( 9,  Date );
-    ADD_VLC_META_STRING( 10, ArtURL );
+    ADD_META( 0, DBUS_TYPE_STRING, psz_trackid );
+    ADD_VLC_META_STRING( 1,  URI );
+    ADD_VLC_META_STRING( 2,  Title );
+    ADD_VLC_META_STRING( 3,  Artist );
+    ADD_VLC_META_STRING( 4,  Album );
+    ADD_VLC_META_STRING( 5,  TrackNum );
+    ADD_META( 6, DBUS_TYPE_UINT32, i_time );
+    ADD_META( 7, DBUS_TYPE_UINT32, i_mtime );
+    ADD_VLC_META_STRING( 8,  Genre );
+    ADD_VLC_META_STRING( 9,  Rating );
+    ADD_VLC_META_STRING( 10, Date );
+    ADD_VLC_META_STRING( 11, ArtURL );
+    ADD_VLC_META_STRING( 12, TrackID );
 
-    ADD_VLC_META_STRING( 15, Copyright );
-    ADD_VLC_META_STRING( 16, Description );
-    ADD_VLC_META_STRING( 17, EncodedBy );
-    ADD_VLC_META_STRING( 18, Language );
-    ADD_META( 19, DBUS_TYPE_INT64, i_length );
-    ADD_VLC_META_STRING( 20, NowPlaying );
-    ADD_VLC_META_STRING( 21, Publisher );
-    ADD_VLC_META_STRING( 22, Setting );
-    ADD_VLC_META_STRING( 24, TrackID );
+    ADD_VLC_META_STRING( 17, Copyright );
+    ADD_VLC_META_STRING( 18, Description );
+    ADD_VLC_META_STRING( 19, EncodedBy );
+    ADD_VLC_META_STRING( 20, Language );
+    ADD_META( 21, DBUS_TYPE_INT64, i_length );
+    ADD_VLC_META_STRING( 22, NowPlaying );
+    ADD_VLC_META_STRING( 23, Publisher );
+    ADD_VLC_META_STRING( 24, Setting );
     ADD_VLC_META_STRING( 25, URL );
 
     vlc_mutex_lock( &p_input->lock );

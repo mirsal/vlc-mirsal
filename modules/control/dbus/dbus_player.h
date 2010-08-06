@@ -61,9 +61,10 @@ enum
      PLAYER_CAN_PLAY_BACKWARDS   = 1 << 11
 };
 
-int StatusChangeEmit     ( intf_thread_t * );
-int PlayerCapsChangeEmit ( intf_thread_t * );
-int TrackChangeEmit      ( intf_thread_t *, input_item_t * );
+int PlayerStatusChangedEmit     ( intf_thread_t * );
+int PlayerCapsChangedEmit ( intf_thread_t * );
+int PlayerMetadataChangedEmit( intf_thread_t*, input_item_t* );
+int TrackChangedEmit      ( intf_thread_t *, input_item_t * );
 
 void UpdatePlayerCaps( intf_thread_t * );
 
