@@ -3692,14 +3692,9 @@ PKG_ENABLE_MODULES_VLC([JACK], [jack access_jack], [jack], [JACK audio I/O modul
 
 
 dnl
-dnl UPnP Plugins (Intel SDK)
+dnl  UPnP DLNA Plugins
 dnl
-PKG_ENABLE_MODULES_VLC([UPNP], [upnp upnp_intel], [libupnp], [Intel UPnp SDK],[auto])
-
-dnl
-dnl  UPNP DLNA plugin (via libdlna)
-dnl
-PKG_ENABLE_MODULES_VLC([DLNA], [stream_out_dlna_server], [libdlna], [libdlna reference standards implementation],[auto])
+PKG_ENABLE_MODULES_VLC([UPNP], [upnp upnp_intel], [libupnp libdlna], [Intel UPnp SDK],[auto])
 
 dnl
 dnl  Interface plugins
