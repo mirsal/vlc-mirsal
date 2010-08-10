@@ -81,19 +81,32 @@ static char* didl_append_string( didl_t* p_didl, const char* psz )
 static char* didl_appendf( didl_t* p_didl, const char* psz_format, ... )
 {
     va_list va_args;
-    char* psz, *ret;
-
+    char* psz, *psz_ret;
+    int i_len;
+    
     if( !p_didl || !psz_format || p_didl->b_finalized )
         return NULL;
 
     va_start( va_args, psz_format );
-    if( vasprintf( &psz, psz_format, va_args ) == -1 )
+    if ( ( i_len = vsprintf( NULL, psz_format, va_args ) ) < 0 )
         return NULL;
+    va_end( va_args );
     
-    ret = didl_append_string( p_didl, psz );
+    psz = malloc( i_len + 1 );
+    assert( psz );
+    
+    va_start( va_args, psz_format );
+    if ( ( i_len = vsprintf( psz, psz_format, va_args ) ) < 0 )
+    {
+        free( psz );
+        return NULL;
+    }
+    va_end( va_args );
+    
+    psz_ret = didl_append_string( p_didl, psz );
     free( psz );
 
-    return ret;
+    return psz_ret;
 }
 
 static char* didl_append_tag( didl_t* p_didl, const char* psz_tag,
