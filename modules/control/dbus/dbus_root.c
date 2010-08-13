@@ -49,6 +49,8 @@ static const char* psz_root_introspection_xml =
 "  <interface name=\"org.mpris.MediaPlayer\">\n"
 "    <property name=\"Identity\" type=\"s\" access=\"read\" />\n"
 "    <property name=\"DesktopEntry\" type=\"s\" access=\"read\" />\n"
+"    <property name=\"SupportedMimeTypes\" type=\"as\" access=\"read\" />\n"
+"    <property name=\"SupportedUriSchemes\" type=\"as\" access=\"read\" />\n"
 "    <property name=\"HasTrackList\" type=\"b\" access=\"read\" />\n"
 "    <property name=\"CanQuit\" type=\"b\" access=\"read\" />\n"
 "    <method name=\"Quit\" />\n"
@@ -110,6 +112,52 @@ DBUS_METHOD( DesktopEntry )
     REPLY_SEND;
 }
 
+DBUS_METHOD( SupportedMimeTypes )
+{
+    VLC_UNUSED( p_this );
+    REPLY_INIT;
+    OUT_ARGUMENTS;
+
+    DBusMessageIter ret;
+    size_t i_len = sizeof( ppsz_supported_mime_types ) / sizeof( char* );
+
+    if( !dbus_message_iter_open_container( &args, DBUS_TYPE_ARRAY, "s", &ret ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
+
+    for( size_t i = 0; i < i_len; ++i )
+        if( !dbus_message_iter_append_basic( &ret, DBUS_TYPE_STRING,
+                                             &ppsz_supported_mime_types[i] ) )
+            return DBUS_HANDLER_RESULT_NEED_MEMORY;
+
+    if( !dbus_message_iter_close_container( &args, &ret ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
+
+    REPLY_SEND;
+}
+
+DBUS_METHOD( SupportedUriSchemes )
+{
+    VLC_UNUSED( p_this );
+    REPLY_INIT;
+    OUT_ARGUMENTS;
+
+    DBusMessageIter ret;
+    size_t i_len = sizeof( ppsz_supported_uri_schemes ) / sizeof( char* );
+
+    if( !dbus_message_iter_open_container( &args, DBUS_TYPE_ARRAY, "s", &ret ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
+
+    for( size_t i = 0; i < i_len; ++i )
+        if( !dbus_message_iter_append_basic( &ret, DBUS_TYPE_STRING,
+                                             &ppsz_supported_uri_schemes[i] ) )
+            return DBUS_HANDLER_RESULT_NEED_MEMORY;
+
+    if( !dbus_message_iter_close_container( &args, &ret ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
+
+    REPLY_SEND;
+}
+
 DBUS_METHOD( Quit )
 { /* exits vlc */
     REPLY_INIT;
@@ -155,10 +203,12 @@ DBUS_METHOD( GetProperty )
     }
 
     PROPERTY_MAPPING_BEGIN
-    PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "Identity",     Identity )
-    PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "DesktopEntry", DesktopEntry )
-    PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "HasTrackList", HasTrackList )
-    PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "CanQuit",      CanQuit )
+    PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "Identity",            Identity )
+    PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "DesktopEntry",        DesktopEntry )
+    PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "SupportedMimeTypes",  SupportedMimeTypes )
+    PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "SupportedUriSchemes", SupportedUriSchemes )
+    PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "HasTrackList",        HasTrackList )
+    PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "CanQuit",             CanQuit )
     PROPERTY_MAPPING_END
 }
 
