@@ -48,6 +48,7 @@ static const char* psz_root_introspection_xml =
 "  </interface>\n"
 "  <interface name=\"org.mpris.MediaPlayer\">\n"
 "    <property name=\"Identity\" type=\"s\" access=\"read\" />\n"
+"    <property name=\"CanQuit\" type=\"b\" access=\"read\" />\n"
 "    <method name=\"Quit\" />\n"
 "  </interface>\n"
 "</node>\n"
@@ -68,6 +69,18 @@ DBUS_METHOD( Identity )
     else
         return DBUS_HANDLER_RESULT_NEED_MEMORY;
 
+    REPLY_SEND;
+}
+
+DBUS_METHOD( CanQuit )
+{
+    VLC_UNUSED( p_this );
+    REPLY_INIT;
+    OUT_ARGUMENTS;
+
+    const dbus_bool_t b_ret = TRUE;
+
+    ADD_BOOL( &b_ret );
     REPLY_SEND;
 }
 
@@ -117,10 +130,7 @@ DBUS_METHOD( GetProperty )
 
     PROPERTY_MAPPING_BEGIN
     PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "Identity", Identity )
-<<<<<<< HEAD
     PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "CanQuit",  CanQuit )
-=======
->>>>>>> 6076484... dbus: Remove the MprisVersion and Capabilities properties from the root interface
     PROPERTY_MAPPING_END
 }
 
