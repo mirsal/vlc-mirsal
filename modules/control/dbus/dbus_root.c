@@ -53,6 +53,7 @@ static const char* psz_root_introspection_xml =
 "    <property name=\"SupportedUriSchemes\" type=\"as\" access=\"read\" />\n"
 "    <property name=\"HasTrackList\" type=\"b\" access=\"read\" />\n"
 "    <property name=\"CanQuit\" type=\"b\" access=\"read\" />\n"
+"    <property name=\"CanRaise\" type=\"b\" access=\"read\" />\n"
 "    <method name=\"Quit\" />\n"
 "  </interface>\n"
 "</node>\n"
@@ -83,6 +84,18 @@ DBUS_METHOD( CanQuit )
     OUT_ARGUMENTS;
 
     const dbus_bool_t b_ret = TRUE;
+
+    ADD_BOOL( &b_ret );
+    REPLY_SEND;
+}
+
+DBUS_METHOD( CanRaise )
+{
+    VLC_UNUSED( p_this );
+    REPLY_INIT;
+    OUT_ARGUMENTS;
+
+    const dbus_bool_t b_ret = FALSE;
 
     ADD_BOOL( &b_ret );
     REPLY_SEND;
@@ -209,6 +222,7 @@ DBUS_METHOD( GetProperty )
     PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "SupportedUriSchemes", SupportedUriSchemes )
     PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "HasTrackList",        HasTrackList )
     PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "CanQuit",             CanQuit )
+    PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "CanRaise",            CanRaise )
     PROPERTY_MAPPING_END
 }
 
