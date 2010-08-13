@@ -48,6 +48,7 @@ static const char* psz_root_introspection_xml =
 "  </interface>\n"
 "  <interface name=\"org.mpris.MediaPlayer\">\n"
 "    <property name=\"Identity\" type=\"s\" access=\"read\" />\n"
+"    <property name=\"HasTrackList\" type=\"b\" access=\"read\" />\n"
 "    <property name=\"CanQuit\" type=\"b\" access=\"read\" />\n"
 "    <method name=\"Quit\" />\n"
 "  </interface>\n"
@@ -79,6 +80,18 @@ DBUS_METHOD( CanQuit )
     OUT_ARGUMENTS;
 
     const dbus_bool_t b_ret = TRUE;
+
+    ADD_BOOL( &b_ret );
+    REPLY_SEND;
+}
+
+DBUS_METHOD( HasTrackList )
+{
+    VLC_UNUSED( p_this );
+    REPLY_INIT;
+    OUT_ARGUMENTS;
+
+    const dbus_bool_t b_ret = FALSE;
 
     ADD_BOOL( &b_ret );
     REPLY_SEND;
@@ -129,8 +142,9 @@ DBUS_METHOD( GetProperty )
     }
 
     PROPERTY_MAPPING_BEGIN
-    PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "Identity", Identity )
-    PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "CanQuit",  CanQuit )
+    PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "Identity",     Identity )
+    PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "HasTrackList", HasTrackList )
+    PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "CanQuit",      CanQuit )
     PROPERTY_MAPPING_END
 }
 
