@@ -48,14 +48,12 @@ static const char* psz_root_introspection_xml =
 "  </interface>\n"
 "  <interface name=\"org.mpris.MediaPlayer\">\n"
 "    <property name=\"Identity\" type=\"s\" access=\"read\" />\n"
-"    <property name=\"Capabilities\" type=\"i\" access=\"read\" />\n"
-"    <property name=\"MprisVersion\" type=\"(qq)\" access=\"read\" />\n"
 "    <method name=\"Quit\" />\n"
 "  </interface>\n"
 "</node>\n"
 ;
 
-DBUS_METHOD( GetIdentity )
+DBUS_METHOD( Identity )
 {
     VLC_UNUSED(p_this);
     REPLY_INIT;
@@ -69,44 +67,6 @@ DBUS_METHOD( GetIdentity )
     }
     else
         return DBUS_HANDLER_RESULT_NEED_MEMORY;
-
-    REPLY_SEND;
-}
-
-DBUS_METHOD( GetMprisVersion )
-{ /*implemented version of the mpris spec */
-    REPLY_INIT;
-    OUT_ARGUMENTS;
-    VLC_UNUSED( p_this );
-    dbus_uint16_t i_major = DBUS_MPRIS_VERSION_MAJOR;
-    dbus_uint16_t i_minor = DBUS_MPRIS_VERSION_MINOR;
-    DBusMessageIter version;
-
-    if( !dbus_message_iter_open_container( &args, DBUS_TYPE_STRUCT, NULL,
-            &version ) )
-        return DBUS_HANDLER_RESULT_NEED_MEMORY;
-
-    if( !dbus_message_iter_append_basic( &version, DBUS_TYPE_UINT16,
-            &i_major ) )
-        return DBUS_HANDLER_RESULT_NEED_MEMORY;
-
-    if( !dbus_message_iter_append_basic( &version, DBUS_TYPE_UINT16,
-            &i_minor ) )
-        return DBUS_HANDLER_RESULT_NEED_MEMORY;
-
-    if( !dbus_message_iter_close_container( &args, &version ) )
-        return DBUS_HANDLER_RESULT_NEED_MEMORY;
-    REPLY_SEND;
-}
-
-DBUS_METHOD( GetCapabilities )
-{
-    REPLY_INIT;
-    OUT_ARGUMENTS;
-    VLC_UNUSED( p_this );
-
-    dbus_int32_t i_caps = ROOT_CAN_QUIT;
-    ADD_INT32( &i_caps );
 
     REPLY_SEND;
 }
@@ -156,9 +116,7 @@ DBUS_METHOD( GetProperty )
     }
 
     PROPERTY_MAPPING_BEGIN
-    PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "Identity",     GetIdentity )
-    PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "MprisVersion", GetMprisVersion )
-    PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "Capabilities", GetCapabilities )
+    PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "Identity", Identity )
     PROPERTY_MAPPING_END
 }
 

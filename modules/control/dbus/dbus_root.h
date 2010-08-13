@@ -29,23 +29,9 @@
 
 #include "dbus_common.h"
 
-/* MPRIS VERSION */
-#define DBUS_MPRIS_VERSION_MAJOR     2
-#define DBUS_MPRIS_VERSION_MINOR     0
-
 /* DBUS IDENTIFIERS */
 #define DBUS_MPRIS_ROOT_INTERFACE    "org.mpris.MediaPlayer"
 #define DBUS_MPRIS_ROOT_PATH         "/org/mpris/MediaPlayer"
-
-/* Root object capabilities */
-enum
-{
-    ROOT_CAPS_NONE = 0,
-    ROOT_CAN_MANAGE_TRACKLIST = 1 << 0,
-    ROOT_CAN_MANAGE_PLAYLISTS = 1 << 1,
-    ROOT_CAN_RAISE = 1 << 2,
-    ROOT_CAN_QUIT  = 1 << 3
-};
 
 /* Handle incoming dbus messages */
 DBusHandlerResult handle_root ( DBusConnection *p_conn,
