@@ -98,7 +98,7 @@ static const char* psz_player_introspection_xml =
 ;
 
 DBUS_METHOD( PositionGet )
-{ /* returns position in milliseconds */
+{ /* returns position in microseconds */
     REPLY_INIT;
     OUT_ARGUMENTS;
     dbus_int32_t i_pos;
@@ -109,7 +109,7 @@ DBUS_METHOD( PositionGet )
         i_pos = 0;
     else
     {
-        i_pos = var_GetTime( p_input, "time" ) / 1000;
+        i_pos = var_GetTime( p_input, "time" );
         vlc_object_release( p_input );
     }
     ADD_INT32( &i_pos );
@@ -117,7 +117,7 @@ DBUS_METHOD( PositionGet )
 }
 
 DBUS_METHOD( SetPosition )
-{ /* set position in milliseconds */
+{ /* set position in microseconds */
 
     REPLY_INIT;
     dbus_int32_t i_pos;
@@ -155,7 +155,7 @@ DBUS_METHOD( SetPosition )
 
             if( !strcmp( psz_trackid, psz_dbus_trackid ) )
             {
-                position.i_time = ( (mtime_t) i_pos ) * 1000;
+                position.i_time = (mtime_t) i_pos;
                 var_Set( p_input, "time", position );
             }
         }
@@ -193,7 +193,7 @@ DBUS_METHOD( Seek )
     if( p_input && var_GetBool( p_input, "can-seek" ) )
     {
         i_pos = var_GetTime( p_input, "time" );
-        newpos.i_time = ( (mtime_t) i_step ) * 1000 + i_pos;
+        newpos.i_time = (mtime_t) i_step + i_pos;
 
         if( newpos.i_time < 0 )
             newpos.i_time = 0;
