@@ -910,7 +910,7 @@ case "${SYS}" in
 if test "${enable_dbus}" != "no" -a "${SYS}" != "mingw32" -a "${SYS}" != "mingwce"
 then
   dnl api stable dbus
-  PKG_CHECK_MODULES(DBUS, dbus-1 >= 1.0.0,
+  PKG_CHECK_MODULES(DBUS, [dbus-1 >= 1.0.0, xcb, xcb-icccm],
     [ AC_DEFINE( HAVE_DBUS, 1, [Define if you have the D-BUS library] )
       VLC_ADD_LIBS([libvlccore],[$DBUS_LIBS])
       VLC_ADD_CFLAGS([libvlccore],[$DBUS_CFLAGS])
