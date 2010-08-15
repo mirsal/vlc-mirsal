@@ -67,16 +67,9 @@ DBUS_METHOD( Identity )
     VLC_UNUSED(p_this);
     REPLY_INIT;
     OUT_ARGUMENTS;
-    char *psz_identity;
+    char *psz_identity = VLC_IDENTITY;
 
-    if( asprintf( &psz_identity, "%s %s", PACKAGE, VERSION ) != -1 )
-    {
-        ADD_STRING( &psz_identity );
-        free( psz_identity );
-    }
-    else
-        return DBUS_HANDLER_RESULT_NEED_MEMORY;
-
+    ADD_STRING( &psz_identity );
     REPLY_SEND;
 }
 

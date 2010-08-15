@@ -29,6 +29,8 @@
 
 #include "dbus_common.h"
 
+#define VLC_IDENTITY _("VLC media player")
+
 /* DBUS IDENTIFIERS */
 #define DBUS_MPRIS_ROOT_INTERFACE    "org.mpris.MediaPlayer"
 #define DBUS_MPRIS_ROOT_PATH         "/org/mpris/MediaPlayer"
@@ -68,7 +70,6 @@ static const char* ppsz_supported_mime_types[] = {
     "audio/x-matroska",
     "application/xspf+xml"
 };
-
 
 static const DBusObjectPathVTable dbus_mpris_root_vtable = {
         NULL, handle_root, /* handler function */
