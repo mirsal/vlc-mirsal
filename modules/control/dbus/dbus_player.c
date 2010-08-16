@@ -60,6 +60,8 @@ static const char* psz_player_introspection_xml =
 "    <property name=\"Shuffle\" type=\"d\" access=\"readwrite\" />\n"
 "    <property name=\"Position\" type=\"i\" access=\"read\" />\n"
 "    <property name=\"Rate\" type=\"d\" access=\"readwrite\" />\n"
+"    <property name=\"MinimumRate\" type=\"d\" access=\"readwrite\" />\n"
+"    <property name=\"MaximumRate\" type=\"d\" access=\"readwrite\" />\n"
 "    <method name=\"Previous\" />\n"
 "    <method name=\"Next\" />\n"
 "    <method name=\"Stop\" />\n"
@@ -398,6 +400,28 @@ DBUS_METHOD( RateSet )
     REPLY_SEND;
 }
 
+DBUS_METHOD( MinimumRate )
+{
+    REPLY_INIT;
+    OUT_ARGUMENTS;
+
+    double d_min_rate = (double) INPUT_RATE_MIN / INPUT_RATE_DEFAULT;
+
+    ADD_DOUBLE( &d_min_rate );
+    REPLY_SEND;
+}
+
+DBUS_METHOD( MaximumRate )
+{
+    REPLY_INIT;
+    OUT_ARGUMENTS;
+
+    double d_max_rate = (double) INPUT_RATE_MAX / INPUT_RATE_DEFAULT;
+
+    ADD_DOUBLE( &d_max_rate );
+    REPLY_SEND;
+}
+
 DBUS_METHOD( LoopStatusGet )
 {
     REPLY_INIT;
@@ -575,6 +599,8 @@ DBUS_METHOD( GetProperty )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Shuffle", ShuffleGet )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Volume", VolumeGet )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Rate", RateGet )
+    PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "MinimumRate", MinimumRate )
+    PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "MaximumRate", MaximumRate )
     PROPERTY_MAPPING_END
 }
 
