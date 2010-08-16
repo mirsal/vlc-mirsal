@@ -33,6 +33,10 @@
 #define DBUS_MPRIS_PLAYER_INTERFACE    "org.mpris.MediaPlayer.Player"
 #define DBUS_MPRIS_PLAYER_PATH         "/org/mpris/MediaPlayer/Player"
 
+#define LOOP_STATUS_NONE  "None"
+#define LOOP_STATUS_TRACK "Track"
+#define LOOP_STATUS_PLAYLIST "Playlist"
+
 /* Handle incoming dbus messages */
 DBusHandlerResult handle_player ( DBusConnection *p_conn,
                                   DBusMessage *p_from,

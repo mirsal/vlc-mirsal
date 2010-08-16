@@ -54,6 +54,7 @@ static const char* psz_player_introspection_xml =
 "    <property name=\"Status\" type=\"(idbbb)\" access=\"read\" />\n"
 "    <property name=\"Metadata\" type=\"a{sv}\" access=\"read\" />\n"
 "    <property name=\"Capabilities\" type=\"i\" access=\"read\" />\n"
+"    <property name=\"LoopStatus\" type=\"s\" access=\"readwrite\" />\n"
 "    <property name=\"Volume\" type=\"d\" access=\"readwrite\" />\n"
 "    <property name=\"Shuffle\" type=\"d\" access=\"readwrite\" />\n"
 "    <property name=\"Position\" type=\"i\" access=\"read\" />\n"
@@ -391,6 +392,52 @@ DBUS_METHOD( SetLoop )
     REPLY_SEND;
 }
 
+DBUS_METHOD( LoopStatusGet )
+{
+    REPLY_INIT;
+    OUT_ARGUMENTS;
+
+    char *psz_loop_status;
+    if( var_GetBool( PL, "repeat" ) )
+        psz_loop_status = LOOP_STATUS_TRACK;
+    else if( var_GetBool( PL, "loop" ) )
+        psz_loop_status = LOOP_STATUS_PLAYLIST;
+    else
+        psz_loop_status = LOOP_STATUS_NONE;
+
+    ADD_STRING( &psz_loop_status );
+    REPLY_SEND;
+}
+
+DBUS_METHOD( LoopStatusSet )
+{
+    REPLY_INIT;
+    char *psz_loop_status;
+
+    if( VLC_SUCCESS != DemarshalSetPropertyValue( p_from, &psz_loop_status ) )
+        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+
+    if( !strcmp( psz_loop_status, LOOP_STATUS_NONE ) )
+    {
+        var_SetBool( PL, "loop",   FALSE );
+        var_SetBool( PL, "repeat", FALSE );
+    }
+    else if( !strcmp( psz_loop_status, LOOP_STATUS_TRACK ) )
+    {
+        var_SetBool( PL, "loop",   FALSE );
+        var_SetBool( PL, "repeat", TRUE  );
+    }
+    else if( !strcmp( psz_loop_status, LOOP_STATUS_PLAYLIST ) )
+    {
+        var_SetBool( PL, "loop",   TRUE );
+        var_SetBool( PL, "repeat", FALSE  );
+    }
+    else
+        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+
+    REPLY_SEND;
+}
+
 DBUS_METHOD( MetadataGet )
 {
     REPLY_INIT;
@@ -517,6 +564,7 @@ DBUS_METHOD( GetProperty )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Metadata", MetadataGet )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Capabilities", CapabilitiesGet )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Position", PositionGet )
+    PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "LoopStatus", LoopStatusGet )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Shuffle", ShuffleGet )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Volume", VolumeGet )
     PROPERTY_MAPPING_END
@@ -544,7 +592,7 @@ DBUS_METHOD( SetProperty )
     }
 
     PROPERTY_MAPPING_BEGIN
-//    PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "LoopStatus", LoopStatusSet )
+    PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "LoopStatus", LoopStatusSet )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Shuffle",    ShuffleSet )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Volume",     VolumeSet )
 //    PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Rate",       RateSet )
