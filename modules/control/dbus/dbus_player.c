@@ -64,12 +64,6 @@ static const char* psz_player_introspection_xml =
 "    <method name=\"Play\" />\n"
 "    <method name=\"Pause\" />\n"
 "    <method name=\"PlayPause\" />\n"
-"    <method name=\"SetRepeat\">\n"
-"      <arg type=\"b\" direction=\"in\" />\n"
-"    </method>\n"
-"    <method name=\"SetLoop\">\n"
-"      <arg type=\"b\" direction=\"in\" />\n"
-"    </method>\n"
 "    <method name=\"SetPosition\">\n"
 "      <arg type=\"s\" direction=\"in\" />\n"
 "      <arg type=\"i\" direction=\"in\" />\n"
@@ -316,32 +310,6 @@ DBUS_METHOD( PlayPause )
     REPLY_SEND;
 }
 
-DBUS_METHOD( SetRepeat )
-{
-    REPLY_INIT;
-    OUT_ARGUMENTS;
-
-    DBusError error;
-    dbus_bool_t b_repeat;
-
-    dbus_error_init( &error );
-    dbus_message_get_args( p_from, &error,
-            DBUS_TYPE_BOOLEAN, &b_repeat,
-            DBUS_TYPE_INVALID );
-
-    if( dbus_error_is_set( &error ) )
-    {
-        msg_Err( (vlc_object_t*) p_this, "D-Bus message reading : %s",
-                error.message );
-        dbus_error_free( &error );
-        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-    }
-
-    var_SetBool( PL, "repeat", ( b_repeat == TRUE ) );
-
-    REPLY_SEND;
-}
-
 DBUS_METHOD( ShuffleGet )
 {
     REPLY_INIT;
@@ -362,32 +330,6 @@ DBUS_METHOD( ShuffleSet )
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 
     var_SetBool( PL, "random", ( b_shuffle == TRUE ) );
-
-    REPLY_SEND;
-}
-
-DBUS_METHOD( SetLoop )
-{
-    REPLY_INIT;
-    OUT_ARGUMENTS;
-
-    DBusError error;
-    dbus_bool_t b_loop;
-
-    dbus_error_init( &error );
-    dbus_message_get_args( p_from, &error,
-            DBUS_TYPE_BOOLEAN, &b_loop,
-            DBUS_TYPE_INVALID );
-
-    if( dbus_error_is_set( &error ) )
-    {
-        msg_Err( (vlc_object_t*) p_this, "D-Bus message reading : %s",
-                error.message );
-        dbus_error_free( &error );
-        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-    }
-
-    var_SetBool( PL, "loop", ( b_loop == TRUE ) );
 
     REPLY_SEND;
 }
@@ -636,8 +578,6 @@ handle_player ( DBusConnection *p_conn, DBusMessage *p_from, void *p_this )
     METHOD_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Play",         Play );
     METHOD_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Pause",        Pause );
     METHOD_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "PlayPause",    PlayPause );
-    METHOD_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "SetRepeat",    SetRepeat );
-    METHOD_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "SetLoop",      SetLoop );
     METHOD_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "SetPosition",  SetPosition );
 
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
