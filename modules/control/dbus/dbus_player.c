@@ -51,7 +51,6 @@ static const char* psz_player_introspection_xml =
 "    </method>\n"
 "  </interface>\n"
 "  <interface name=\"org.mpris.MediaPlayer.Player\">\n"
-"    <property name=\"Status\" type=\"(idbbb)\" access=\"read\" />\n"
 "    <property name=\"Metadata\" type=\"a{sv}\" access=\"read\" />\n"
 "    <property name=\"Capabilities\" type=\"i\" access=\"read\" />\n"
 "    <property name=\"PlaybackStatus\" type=\"s\" access=\"read\" />\n"
@@ -251,22 +250,6 @@ DBUS_METHOD( Stop )
 { /* stop playing */
     REPLY_INIT;
     playlist_Stop( PL );
-    REPLY_SEND;
-}
-
-DBUS_METHOD( StatusGet )
-{ /* returns the current status as a struct of 4 ints */
-/*
-    First   0 = Playing, 1 = Paused, 2 = Stopped.
-    Second  0 = Playing linearly , 1 = Playing randomly.
-    Third   0 = Go to the next element once the current has finished playing , 1 = Repeat the current element
-    Fourth  0 = Stop playing once the last element has been played, 1 = Never give up playing *
- */
-    REPLY_INIT;
-    OUT_ARGUMENTS;
-
-    MarshalStatus( p_this, &args );
-
     REPLY_SEND;
 }
 
@@ -590,7 +573,6 @@ DBUS_METHOD( GetProperty )
     }
 
     PROPERTY_MAPPING_BEGIN
-    PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Status", StatusGet )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Metadata", Metadata )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Capabilities", CapabilitiesGet )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Position", Position )
