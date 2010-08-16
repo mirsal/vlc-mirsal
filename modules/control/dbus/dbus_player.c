@@ -69,9 +69,6 @@ static const char* psz_player_introspection_xml =
 "    <method name=\"SetLoop\">\n"
 "      <arg type=\"b\" direction=\"in\" />\n"
 "    </method>\n"
-"    <method name=\"AdjustVolume\">\n"
-"      <arg type=\"d\" direction=\"in\" />\n"
-"    </method>\n"
 "    <method name=\"SetPosition\">\n"
 "      <arg type=\"s\" direction=\"in\" />\n"
 "      <arg type=\"i\" direction=\"in\" />\n"
@@ -234,41 +231,6 @@ DBUS_METHOD( VolumeSet )
     audio_volume_t i_vol = round( d_vol );
     aout_VolumeSet( PL, i_vol );
 
-    REPLY_SEND;
-}
-
-DBUS_METHOD( AdjustVolume )
-{
-    REPLY_INIT;
-
-    DBusError error;
-    dbus_error_init( &error );
-
-    double d_step, d_new_vol;
-    audio_volume_t i_vol, i_new_vol;
-
-    dbus_message_get_args( p_from, &error,
-                           DBUS_TYPE_DOUBLE, &d_step,
-                           DBUS_TYPE_INVALID );
-
-    if( dbus_error_is_set( &error ) )
-    {
-        msg_Err( (vlc_object_t*) p_this, "D-Bus message reading : %s",
-                error.message );
-        dbus_error_free( &error );
-        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-    }
-
-    aout_VolumeGet( PL, &i_vol );
-    d_new_vol = ( d_step + ( (double) i_vol / AOUT_VOLUME_MAX ) );
-
-    if( d_new_vol > 1. )
-        d_new_vol = 1.;
-    else if( d_new_vol < 0. )
-        d_new_vol = 0.;
-
-    i_new_vol = round( d_new_vol * AOUT_VOLUME_MAX );
-    aout_VolumeSet( PL, i_new_vol );
     REPLY_SEND;
 }
 
@@ -628,7 +590,6 @@ handle_player ( DBusConnection *p_conn, DBusMessage *p_from, void *p_this )
     METHOD_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "PlayPause",    PlayPause );
     METHOD_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "SetRepeat",    SetRepeat );
     METHOD_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "SetLoop",      SetLoop );
-    METHOD_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "AdjustVolume", AdjustVolume );
     METHOD_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "SetPosition",  SetPosition );
 
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
