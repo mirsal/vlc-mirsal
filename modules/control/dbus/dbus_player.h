@@ -37,6 +37,10 @@
 #define LOOP_STATUS_TRACK "Track"
 #define LOOP_STATUS_PLAYLIST "Playlist"
 
+#define PLAYBACK_STATUS_STOPPED "Stopped"
+#define PLAYBACK_STATUS_PLAYING "Playing"
+#define PLAYBACK_STATUS_PAUSED  "Paused"
+
 /* Handle incoming dbus messages */
 DBusHandlerResult handle_player ( DBusConnection *p_conn,
                                   DBusMessage *p_from,

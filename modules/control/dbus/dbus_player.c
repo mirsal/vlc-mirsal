@@ -54,6 +54,7 @@ static const char* psz_player_introspection_xml =
 "    <property name=\"Status\" type=\"(idbbb)\" access=\"read\" />\n"
 "    <property name=\"Metadata\" type=\"a{sv}\" access=\"read\" />\n"
 "    <property name=\"Capabilities\" type=\"i\" access=\"read\" />\n"
+"    <property name=\"PlaybackStatus\" type=\"s\" access=\"read\" />\n"
 "    <property name=\"LoopStatus\" type=\"s\" access=\"readwrite\" />\n"
 "    <property name=\"Volume\" type=\"d\" access=\"readwrite\" />\n"
 "    <property name=\"Shuffle\" type=\"d\" access=\"readwrite\" />\n"
@@ -334,6 +335,28 @@ DBUS_METHOD( ShuffleSet )
     REPLY_SEND;
 }
 
+DBUS_METHOD( PlaybackStatus )
+{
+    REPLY_INIT;
+    OUT_ARGUMENTS;
+
+    input_thread_t *p_input;
+    char *psz_playback_status;
+    int   i_input_state;
+    if( ( p_input = playlist_CurrentInput( PL ) ) )
+    {
+        i_input_state = var_GetInteger( p_input, "state" );
+        psz_playback_status = ( i_input_state == PAUSE_S ) ?
+                    PLAYBACK_STATUS_PAUSED : PLAYBACK_STATUS_PLAYING;
+        vlc_object_release( (vlc_object_t*) p_input );
+    }
+    else
+        psz_playback_status = PLAYBACK_STATUS_STOPPED;
+
+    ADD_STRING( &psz_playback_status );
+    REPLY_SEND;
+}
+
 DBUS_METHOD( LoopStatusGet )
 {
     REPLY_INIT;
@@ -506,6 +529,7 @@ DBUS_METHOD( GetProperty )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Metadata", MetadataGet )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Capabilities", CapabilitiesGet )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Position", PositionGet )
+    PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "PlaybackStatus", PlaybackStatus )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "LoopStatus", LoopStatusGet )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Shuffle", ShuffleGet )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Volume", VolumeGet )
