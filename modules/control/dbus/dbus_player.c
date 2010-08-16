@@ -59,6 +59,7 @@ static const char* psz_player_introspection_xml =
 "    <property name=\"Volume\" type=\"d\" access=\"readwrite\" />\n"
 "    <property name=\"Shuffle\" type=\"d\" access=\"readwrite\" />\n"
 "    <property name=\"Position\" type=\"i\" access=\"read\" />\n"
+"    <property name=\"Rate\" type=\"d\" access=\"readwrite\" />\n"
 "    <method name=\"Previous\" />\n"
 "    <method name=\"Next\" />\n"
 "    <method name=\"Stop\" />\n"
@@ -357,6 +358,46 @@ DBUS_METHOD( PlaybackStatus )
     REPLY_SEND;
 }
 
+DBUS_METHOD( RateGet )
+{
+    REPLY_INIT;
+    OUT_ARGUMENTS;
+
+    double d_rate;
+    input_thread_t *p_input;
+    if( ( p_input = playlist_CurrentInput( PL ) ) )
+    {
+        d_rate = var_GetFloat( p_input, "rate" );
+        vlc_object_release( (vlc_object_t*) p_input );
+    }
+    else
+        d_rate = 0.;
+
+    ADD_DOUBLE( &d_rate );
+    REPLY_SEND;
+}
+
+DBUS_METHOD( RateSet )
+{
+    REPLY_INIT;
+
+    double d_rate;
+
+    if( VLC_SUCCESS != DemarshalSetPropertyValue( p_from, &d_rate ) )
+        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+
+    input_thread_t *p_input;
+    if( ( p_input = playlist_CurrentInput( PL ) ) )
+    {
+        var_SetFloat( p_input, "rate", (float) d_rate );
+        vlc_object_release( (vlc_object_t*) p_input );
+    }
+    else
+        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+
+    REPLY_SEND;
+}
+
 DBUS_METHOD( LoopStatusGet )
 {
     REPLY_INIT;
@@ -533,6 +574,7 @@ DBUS_METHOD( GetProperty )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "LoopStatus", LoopStatusGet )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Shuffle", ShuffleGet )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Volume", VolumeGet )
+    PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Rate", RateGet )
     PROPERTY_MAPPING_END
 }
 
@@ -561,7 +603,7 @@ DBUS_METHOD( SetProperty )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "LoopStatus", LoopStatusSet )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Shuffle",    ShuffleSet )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Volume",     VolumeSet )
-//    PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Rate",       RateSet )
+    PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Rate",       RateSet )
     PROPERTY_MAPPING_END
 }
 
