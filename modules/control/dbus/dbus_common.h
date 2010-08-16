@@ -120,6 +120,7 @@ enum
     PLAYBACK_STATE_STOPPED = 2
 };
 
+int DemarshalSetPropertyValue( DBusMessage *p_msg, void *p_arg );
 int GetInputMeta  ( input_item_t* p_input, DBusMessageIter *args );
 
 #endif //dbus-common.h

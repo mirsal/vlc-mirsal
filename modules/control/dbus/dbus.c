@@ -1014,6 +1014,35 @@ static int TrackChange( intf_thread_t *p_intf )
     return VLC_SUCCESS;
 }
 
+/**
+ * DemarshalSetPropertyValue() extracts the new property value from a
+ * org.freedesktop.DBus.Properties.Set method call message.
+ *
+ * @return int VLC_SUCCESS on success
+ * @param DBusMessage *p_msg a org.freedesktop.DBus.Properties.Set method call
+ * @param void *p_arg placeholder for the demarshalled value
+ */
+int DemarshalSetPropertyValue( DBusMessage *p_msg, void *p_arg )
+{
+    int  i_type;
+    bool b_valid_input = FALSE;
+    DBusMessageIter in_args, variant;
+    dbus_message_iter_init( p_msg, &in_args );
+
+    do
+    {
+        i_type = dbus_message_iter_get_arg_type( &in_args );
+        if( DBUS_TYPE_VARIANT == i_type )
+        {
+            dbus_message_iter_recurse( &in_args, &variant );
+            dbus_message_iter_get_basic( &variant, p_arg );
+            b_valid_input = TRUE;
+        }
+    } while( dbus_message_iter_next( &in_args ) );
+
+    return b_valid_input ? VLC_SUCCESS : VLC_EGENERIC;
+}
+
 /*****************************************************************************
  * GetInputMeta: Fill a DBusMessage with the given input item metadata
  *****************************************************************************/

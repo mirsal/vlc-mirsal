@@ -55,6 +55,7 @@ static const char* psz_player_introspection_xml =
 "    <property name=\"Metadata\" type=\"a{sv}\" access=\"read\" />\n"
 "    <property name=\"Capabilities\" type=\"i\" access=\"read\" />\n"
 "    <property name=\"Volume\" type=\"d\" access=\"readwrite\" />\n"
+"    <property name=\"Shuffle\" type=\"d\" access=\"readwrite\" />\n"
 "    <property name=\"Position\" type=\"i\" access=\"read\" />\n"
 "    <method name=\"Previous\" />\n"
 "    <method name=\"Next\" />\n"
@@ -62,9 +63,6 @@ static const char* psz_player_introspection_xml =
 "    <method name=\"Play\" />\n"
 "    <method name=\"Pause\" />\n"
 "    <method name=\"PlayPause\" />\n"
-"    <method name=\"SetShuffle\">\n"
-"      <arg type=\"b\" direction=\"in\" />\n"
-"    </method>\n"
 "    <method name=\"SetRepeat\">\n"
 "      <arg type=\"b\" direction=\"in\" />\n"
 "    </method>\n"
@@ -224,27 +222,15 @@ DBUS_METHOD( VolumeSet )
     REPLY_INIT;
     double d_dbus_vol;
 
-    DBusError error;
-    dbus_error_init( &error );
-
-    dbus_message_get_args( p_from, &error,
-            DBUS_TYPE_DOUBLE, &d_dbus_vol,
-            DBUS_TYPE_INVALID );
-
-    if( dbus_error_is_set( &error ) )
-    {
-        msg_Err( (vlc_object_t*) p_this, "D-Bus message reading : %s",
-                error.message );
-        dbus_error_free( &error );
+    if( VLC_SUCCESS != DemarshalSetPropertyValue( p_from, &d_dbus_vol ) )
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-    }
 
     if( d_dbus_vol > 1. )
         d_dbus_vol = 1.;
     else if( d_dbus_vol < 0. )
         d_dbus_vol = 0.;
 
-    double d_vol = ( (double) d_dbus_vol ) * AOUT_VOLUME_MAX;
+    double d_vol = d_dbus_vol * AOUT_VOLUME_MAX;
     audio_volume_t i_vol = round( d_vol );
     aout_VolumeSet( PL, i_vol );
 
@@ -393,26 +379,24 @@ DBUS_METHOD( SetRepeat )
     REPLY_SEND;
 }
 
-DBUS_METHOD( SetShuffle )
+DBUS_METHOD( ShuffleGet )
 {
     REPLY_INIT;
     OUT_ARGUMENTS;
 
-    DBusError error;
+    dbus_bool_t b_shuffle = var_GetBool( PL, "random" );
+    ADD_BOOL( &b_shuffle );
+
+    REPLY_SEND;
+}
+
+DBUS_METHOD( ShuffleSet )
+{
+    REPLY_INIT;
     dbus_bool_t b_shuffle;
 
-    dbus_error_init( &error );
-    dbus_message_get_args( p_from, &error,
-            DBUS_TYPE_BOOLEAN, &b_shuffle,
-            DBUS_TYPE_INVALID );
-
-    if( dbus_error_is_set( &error ) )
-    {
-        msg_Err( (vlc_object_t*) p_this, "D-Bus message reading : %s",
-                error.message );
-        dbus_error_free( &error );
+    if( VLC_SUCCESS != DemarshalSetPropertyValue( p_from, &b_shuffle ) )
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-    }
 
     var_SetBool( PL, "random", ( b_shuffle == TRUE ) );
 
@@ -571,7 +555,37 @@ DBUS_METHOD( GetProperty )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Metadata", MetadataGet )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Capabilities", CapabilitiesGet )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Position", PositionGet )
+    PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Shuffle", ShuffleGet )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Volume", VolumeGet )
+    PROPERTY_MAPPING_END
+}
+
+DBUS_METHOD( SetProperty )
+{
+    DBusError error;
+
+    char *psz_interface_name = NULL;
+    char *psz_property_name  = NULL;
+
+    dbus_error_init( &error );
+    dbus_message_get_args( p_from, &error,
+            DBUS_TYPE_STRING, &psz_interface_name,
+            DBUS_TYPE_STRING, &psz_property_name,
+            DBUS_TYPE_INVALID );
+
+    if( dbus_error_is_set( &error ) )
+    {
+        msg_Err( (vlc_object_t*) p_this, "D-Bus message reading : %s",
+                                         error.message );
+        dbus_error_free( &error );
+        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+    }
+
+    PROPERTY_MAPPING_BEGIN
+//    PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "LoopStatus", LoopStatusSet )
+    PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Shuffle",    ShuffleSet )
+    PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Volume",     VolumeSet )
+//    PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Rate",       RateSet )
     PROPERTY_MAPPING_END
 }
 
@@ -600,8 +614,8 @@ handle_player ( DBusConnection *p_conn, DBusMessage *p_from, void *p_this )
         return handle_introspect_player( p_conn, p_from, p_this );
 
     METHOD_FUNC( DBUS_INTERFACE_PROPERTIES,   "Get",        GetProperty );
-/*  METHOD_FUNC( DBUS_INTERFACE_PROPERTIES,   "Set",        SetProperty );
-    METHOD_FUNC( DBUS_INTERFACE_PROPERTIES,   "GetAll",     GetAllProperties );*/
+    METHOD_FUNC( DBUS_INTERFACE_PROPERTIES,   "Set",        SetProperty );
+/*  METHOD_FUNC( DBUS_INTERFACE_PROPERTIES,   "GetAll",     GetAllProperties );*/
 
     /* here D-Bus method names are associated to an handler */
 
@@ -614,7 +628,6 @@ handle_player ( DBusConnection *p_conn, DBusMessage *p_from, void *p_this )
     METHOD_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "PlayPause",    PlayPause );
     METHOD_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "SetRepeat",    SetRepeat );
     METHOD_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "SetLoop",      SetLoop );
-    METHOD_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "SetShuffle",   SetShuffle );
     METHOD_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "AdjustVolume", AdjustVolume );
     METHOD_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "SetPosition",  SetPosition );
 
