@@ -89,7 +89,7 @@ static const char* psz_player_introspection_xml =
 "</node>\n"
 ;
 
-DBUS_METHOD( PositionGet )
+DBUS_METHOD( Position )
 { /* returns position in microseconds */
     REPLY_INIT;
     OUT_ARGUMENTS;
@@ -444,7 +444,7 @@ DBUS_METHOD( LoopStatusSet )
     REPLY_SEND;
 }
 
-DBUS_METHOD( MetadataGet )
+DBUS_METHOD( Metadata )
 {
     REPLY_INIT;
     OUT_ARGUMENTS;
@@ -567,9 +567,9 @@ DBUS_METHOD( GetProperty )
 
     PROPERTY_MAPPING_BEGIN
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Status", StatusGet )
-    PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Metadata", MetadataGet )
+    PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Metadata", Metadata )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Capabilities", CapabilitiesGet )
-    PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Position", PositionGet )
+    PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Position", Position )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "PlaybackStatus", PlaybackStatus )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "LoopStatus", LoopStatusGet )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Shuffle", ShuffleGet )
