@@ -61,6 +61,7 @@ static const char* psz_player_introspection_xml =
 "    <property name=\"Rate\" type=\"d\" access=\"readwrite\" />\n"
 "    <property name=\"MinimumRate\" type=\"d\" access=\"readwrite\" />\n"
 "    <property name=\"MaximumRate\" type=\"d\" access=\"readwrite\" />\n"
+"    <property name=\"CanControl\" type=\"b\" access=\"read\" />\n"
 "    <property name=\"CanPlay\" type=\"b\" access=\"read\" />\n"
 "    <property name=\"CanPause\" type=\"b\" access=\"read\" />\n"
 "    <property name=\"CanSeek\" type=\"b\" access=\"read\" />\n"
@@ -331,6 +332,17 @@ DBUS_METHOD( CanPause )
     }
 
     ADD_BOOL( &b_can_pause );
+    REPLY_SEND;
+}
+
+DBUS_METHOD( CanControl )
+{
+    REPLY_INIT;
+    OUT_ARGUMENTS;
+
+    dbus_bool_t b_can_control = TRUE;
+
+    ADD_BOOL( &b_can_control );
     REPLY_SEND;
 }
 
@@ -638,6 +650,7 @@ DBUS_METHOD( GetProperty )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Rate", RateGet )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "MinimumRate", MinimumRate )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "MaximumRate", MaximumRate )
+    PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "CanControl", CanControl )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "CanPlay", CanPlay )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "CanPause", CanPause )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "CanSeek", CanSeek )
