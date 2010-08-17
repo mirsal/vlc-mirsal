@@ -61,6 +61,7 @@ static const char* psz_player_introspection_xml =
 "    <property name=\"Rate\" type=\"d\" access=\"readwrite\" />\n"
 "    <property name=\"MinimumRate\" type=\"d\" access=\"readwrite\" />\n"
 "    <property name=\"MaximumRate\" type=\"d\" access=\"readwrite\" />\n"
+"    <property name=\"CanPlay\" type=\"b\" access=\"read\" />\n"
 "    <method name=\"Previous\" />\n"
 "    <method name=\"Next\" />\n"
 "    <method name=\"Stop\" />\n"
@@ -294,6 +295,22 @@ DBUS_METHOD( PlayPause )
     if( p_input )
         vlc_object_release( p_input );
 
+    REPLY_SEND;
+}
+
+DBUS_METHOD( CanPlay )
+{
+    REPLY_INIT;
+    OUT_ARGUMENTS;
+
+    dbus_bool_t b_can_play;
+    playlist_t *p_playlist = PL;
+
+    PL_LOCK;
+    b_can_play = PL->current.i_size > 0;
+    PL_UNLOCK;
+
+    ADD_BOOL( &b_can_play );
     REPLY_SEND;
 }
 
@@ -583,6 +600,7 @@ DBUS_METHOD( GetProperty )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Rate", RateGet )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "MinimumRate", MinimumRate )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "MaximumRate", MaximumRate )
+    PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "CanPlay", CanPlay )
     PROPERTY_MAPPING_END
 }
 
