@@ -1080,13 +1080,13 @@ int GetInputMeta( input_item_t* p_input,
     dbus_int64_t i_length = i_mtime / 1000;
     char *psz_trackid;
 
-    if( -1 == asprintf( &psz_trackid, "%d", p_input->i_id ) )
+    if( -1 == asprintf( &psz_trackid, MPRIS_TRACKID_FORMAT, p_input->i_id ) )
         return VLC_ENOMEM;
 
     const char* ppsz_meta_items[] =
     {
-    /* Official MPRIS metas */
-    "trackid", "location", "title", "artist", "album", "tracknumber", "time", "mtime",
+    /* MPRIS metas */
+    "mpris:trackid", "location", "title", "artist", "album", "tracknumber", "time", "mtime",
     "genre", "rating", "date", "arturl", "mb track id",
     "audio-bitrate", "audio-samplerate", "video-bitrate",
     /* VLC specifics metas */
@@ -1097,7 +1097,7 @@ int GetInputMeta( input_item_t* p_input,
 
     dbus_message_iter_open_container( args, DBUS_TYPE_ARRAY, "{sv}", &dict );
 
-    ADD_META( 0, DBUS_TYPE_STRING, psz_trackid );
+    ADD_META( 0, DBUS_TYPE_OBJECT_PATH, psz_trackid );
     ADD_VLC_META_STRING( 1,  URI );
     ADD_VLC_META_STRING( 2,  Title );
     ADD_VLC_META_STRING( 3,  Artist );

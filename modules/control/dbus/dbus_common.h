@@ -81,6 +81,8 @@
 #define ADD_INT32( i ) DBUS_ADD( DBUS_TYPE_INT32, i )
 #define ADD_BYTE( b ) DBUS_ADD( DBUS_TYPE_BYTE, b )
 
+#define MPRIS_TRACKID_FORMAT "/org/videolan/vlc/playlist/%d"
+
 struct intf_sys_t
 {
     DBusConnection *p_conn;

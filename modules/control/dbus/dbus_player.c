@@ -128,8 +128,8 @@ DBUS_METHOD( SetPosition )
     dbus_error_init( &error );
 
     dbus_message_get_args( p_from, &error,
-            DBUS_TYPE_STRING, &psz_dbus_trackid,
-            DBUS_TYPE_INT32, &i_pos,
+            DBUS_TYPE_OBJECT_PATH, &psz_dbus_trackid,
+            DBUS_TYPE_INT64, &i_pos,
             DBUS_TYPE_INVALID );
 
     if( dbus_error_is_set( &error ) )
@@ -146,7 +146,9 @@ DBUS_METHOD( SetPosition )
     {
         if( ( p_item = input_GetItem( p_input ) ) )
         {
-            if( -1 == asprintf( &psz_trackid, "%d", p_item->i_id ) )
+            if( -1 == asprintf( &psz_trackid,
+                                MPRIS_TRACKID_FORMAT,
+                                p_item->i_id ) )
             {
                 vlc_object_release( p_input );
                 return DBUS_HANDLER_RESULT_NEED_MEMORY;
