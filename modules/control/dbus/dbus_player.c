@@ -62,6 +62,7 @@ static const char* psz_player_introspection_xml =
 "    <property name=\"MinimumRate\" type=\"d\" access=\"readwrite\" />\n"
 "    <property name=\"MaximumRate\" type=\"d\" access=\"readwrite\" />\n"
 "    <property name=\"CanPlay\" type=\"b\" access=\"read\" />\n"
+"    <property name=\"CanPause\" type=\"b\" access=\"read\" />\n"
 "    <method name=\"Previous\" />\n"
 "    <method name=\"Next\" />\n"
 "    <method name=\"Stop\" />\n"
@@ -311,6 +312,24 @@ DBUS_METHOD( CanPlay )
     PL_UNLOCK;
 
     ADD_BOOL( &b_can_play );
+    REPLY_SEND;
+}
+
+DBUS_METHOD( CanPause )
+{
+    REPLY_INIT;
+    OUT_ARGUMENTS;
+
+    dbus_bool_t b_can_pause = FALSE;
+    input_thread_t *p_input = playlist_CurrentInput( PL );
+
+    if( p_input )
+    {
+        b_can_pause = var_GetBool( p_input, "can-pause" );
+        vlc_object_release( p_input );
+    }
+
+    ADD_BOOL( &b_can_pause );
     REPLY_SEND;
 }
 
@@ -601,6 +620,7 @@ DBUS_METHOD( GetProperty )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "MinimumRate", MinimumRate )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "MaximumRate", MaximumRate )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "CanPlay", CanPlay )
+    PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "CanPause", CanPause )
     PROPERTY_MAPPING_END
 }
 
