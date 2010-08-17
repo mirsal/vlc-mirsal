@@ -52,7 +52,6 @@ static const char* psz_player_introspection_xml =
 "  </interface>\n"
 "  <interface name=\"org.mpris.MediaPlayer.Player\">\n"
 "    <property name=\"Metadata\" type=\"a{sv}\" access=\"read\" />\n"
-"    <property name=\"Capabilities\" type=\"i\" access=\"read\" />\n"
 "    <property name=\"PlaybackStatus\" type=\"s\" access=\"read\" />\n"
 "    <property name=\"LoopStatus\" type=\"s\" access=\"readwrite\" />\n"
 "    <property name=\"Volume\" type=\"d\" access=\"readwrite\" />\n"
@@ -532,16 +531,6 @@ DBUS_METHOD( Metadata )
     REPLY_SEND;
 }
 
-DBUS_METHOD( CapabilitiesGet )
-{
-    REPLY_INIT;
-    OUT_ARGUMENTS;
-
-    ADD_INT32( &INTF->p_sys->i_player_caps );
-
-    REPLY_SEND;
-}
-
 /*****************************************************************************
  * StatusChanged: Player status change signal
  *****************************************************************************/
@@ -641,7 +630,6 @@ DBUS_METHOD( GetProperty )
 
     PROPERTY_MAPPING_BEGIN
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Metadata", Metadata )
-    PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Capabilities", CapabilitiesGet )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Position", Position )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "PlaybackStatus", PlaybackStatus )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "LoopStatus", LoopStatusGet )
