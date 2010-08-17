@@ -70,6 +70,9 @@ static const char* psz_player_introspection_xml =
 "    <method name=\"Play\" />\n"
 "    <method name=\"Pause\" />\n"
 "    <method name=\"PlayPause\" />\n"
+"    <method name=\"OpenUri\">\n"
+"      <arg type=\"s\" direction=\"in\" />\n"
+"    </method>\n"
 "    <method name=\"SetPosition\">\n"
 "      <arg type=\"s\" direction=\"in\" />\n"
 "      <arg type=\"i\" direction=\"in\" />\n"
@@ -296,6 +299,33 @@ DBUS_METHOD( PlayPause )
 
     if( p_input )
         vlc_object_release( p_input );
+
+    REPLY_SEND;
+}
+
+DBUS_METHOD( OpenUri )
+{
+    REPLY_INIT;
+
+    char *psz_mrl;
+    DBusError error;
+    dbus_error_init( &error );
+
+    dbus_message_get_args( p_from, &error,
+            DBUS_TYPE_STRING, &psz_mrl,
+            DBUS_TYPE_INVALID );
+
+    if( dbus_error_is_set( &error ) )
+    {
+        msg_Err( (vlc_object_t*) p_this, "D-Bus message reading : %s",
+                error.message );
+        dbus_error_free( &error );
+        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+    }
+
+    playlist_Add( PL, psz_mrl, NULL,
+                  PLAYLIST_APPEND | PLAYLIST_GO,
+                  PLAYLIST_END, true, false );
 
     REPLY_SEND;
 }
@@ -711,6 +741,7 @@ handle_player ( DBusConnection *p_conn, DBusMessage *p_from, void *p_this )
     METHOD_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Play",         Play );
     METHOD_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Pause",        Pause );
     METHOD_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "PlayPause",    PlayPause );
+    METHOD_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "OpenUri",      OpenUri );
     METHOD_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "SetPosition",  SetPosition );
 
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
