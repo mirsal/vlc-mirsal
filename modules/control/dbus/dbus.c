@@ -847,6 +847,53 @@ static void   wakeup_main_loop( void *p_data )
     }
 }
 
+/* InputIntfEventCallback() fills a callback_info_t data structure in response
+ * to an "intf-event" input event.
+ *
+ * Caution: This function executes in the input thread
+ *
+ * This function must be called with p_sys->lock locked
+ *
+ * @return int VLC_SUCCESS on success, VLC_E* on error
+ * @param intf_thread_t *p_intf the interface thread
+ * @param input_thread_t *p_input This input thread
+ * @param const int i_event input event type
+ * @param callback_info_t *p_info Location of the callback info to fill
+ */
+static int InputIntfEventCallback( intf_thread_t   *p_intf,
+                                   input_thread_t  *p_input,
+                                   const int        i_event,
+                                   callback_info_t *p_info )
+{
+    dbus_int32_t i_state = PLAYBACK_STATE_INVALID;
+    assert(!p_info->signal);
+
+    switch( i_event )
+    {
+        case INPUT_EVENT_DEAD:
+        case INPUT_EVENT_ABORT:
+            i_state = PLAYBACK_STATE_STOPPED;
+            break;
+        case INPUT_EVENT_STATE:
+            i_state = ( var_GetInteger( p_input, "state" ) == PAUSE_S ) ?
+                PLAYBACK_STATE_PAUSED : PLAYBACK_STATE_PLAYING;
+            break;
+        case INPUT_EVENT_ITEM_META:
+            p_info->signal = SIGNAL_INPUT_METADATA;
+            return VLC_SUCCESS;
+        default:
+            return VLC_EGENERIC;
+    }
+
+    if( i_state != p_intf->p_sys->i_playing_state )
+    {
+        p_intf->p_sys->i_playing_state = i_state;
+        p_info->signal = SIGNAL_STATE;
+    }
+
+    return p_info->signal ? VLC_SUCCESS : VLC_EGENERIC;
+}
+
 // Get all the callbacks
 static int AllCallback( vlc_object_t *p_this, const char *psz_var,
                         vlc_value_t oldval, vlc_value_t newval, void *p_data )
@@ -889,32 +936,14 @@ static int AllCallback( vlc_object_t *p_this, const char *psz_var,
 
     else if( !strcmp( "intf-event", psz_var ) )
     {
-        dbus_int32_t i_state = PLAYBACK_STATE_INVALID;
-
-        if( INPUT_EVENT_DEAD == newval.i_int ||
-            INPUT_EVENT_ABORT == newval.i_int )
-        {
-            i_state = PLAYBACK_STATE_STOPPED;
-        }
-        else if( INPUT_EVENT_STATE == newval.i_int )
-            i_state = ( var_GetInteger( p_this, "state" ) == PAUSE_S ) ?
-                    PLAYBACK_STATE_PAUSED : PLAYBACK_STATE_PLAYING;
-        else if( INPUT_EVENT_ITEM_META == newval.i_int )
-            info->signal = SIGNAL_INPUT_METADATA;
-
-        if( PLAYBACK_STATE_INVALID != i_state &&
-            i_state != p_intf->p_sys->i_playing_state )
-        {
-            p_intf->p_sys->i_playing_state = i_state;
-            info->signal = SIGNAL_STATE;
-        }
-
-        if( !info->signal )
+        int i_res;
+        i_res = InputIntfEventCallback( p_intf, p_this, newval.i_int, info );
+        if( VLC_SUCCESS != i_res )
         {
             vlc_mutex_unlock( &p_intf->p_sys->lock );
             free( info );
 
-            return VLC_EGENERIC;
+            return i_res;
         }
     }
 
