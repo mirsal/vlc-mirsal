@@ -92,6 +92,9 @@ static const char* psz_player_introspection_xml =
 "    <signal name=\"MetadataChanged\">\n"
 "      <arg type=\"a{sv}\" />\n"
 "    </signal>\n"
+"    <signal name=\"Seeked\">\n"
+"      <arg type=\"x\" />\n"
+"    </signal>\n"
 "  </interface>\n"
 "</node>\n"
 ;
@@ -632,6 +635,31 @@ DBUS_SIGNAL( MetadataChangedSignal )
     SIGNAL_SEND;
 }
 
+/******************************************************************************
+ * Seeked: non-linear playback signal
+ *****************************************************************************/
+DBUS_SIGNAL( SeekedSignal )
+{
+    SIGNAL_INIT( DBUS_MPRIS_PLAYER_INTERFACE,
+                 DBUS_MPRIS_PLAYER_PATH,
+                 "Seeked" );
+
+    OUT_ARGUMENTS;
+
+    dbus_int64_t i_pos = 0;
+    intf_thread_t *p_intf = (intf_thread_t*) p_data;
+    input_thread_t *p_input = playlist_CurrentInput( p_intf->p_sys->p_playlist );
+
+    if( p_input )
+    {
+        i_pos = var_GetTime( p_input, "time" );
+        vlc_object_release( p_input );
+    }
+
+    ADD_INT64( &i_pos );
+    SIGNAL_SEND;
+}
+
 #define PROPERTY_MAPPING_BEGIN if( 0 ) {}
 #define PROPERTY_FUNC( interface, property, function ) \
     else if( !strcmp( psz_interface_name, interface ) && \
@@ -796,6 +824,18 @@ int PlayerCapsChangedEmit( intf_thread_t * p_intf )
         return VLC_SUCCESS;
 
     CapabilitiesChangedSignal( p_intf->p_sys->p_conn, p_intf );
+    return VLC_SUCCESS;
+}
+
+/*****************************************************************************
+ * SeekedEmit: Emits the Seeked signal
+ *****************************************************************************/
+int SeekedEmit( intf_thread_t * p_intf )
+{
+    if( p_intf->p_sys->b_dead )
+        return VLC_SUCCESS;
+
+    SeekedSignal( p_intf->p_sys->p_conn, p_intf );
     return VLC_SUCCESS;
 }
 

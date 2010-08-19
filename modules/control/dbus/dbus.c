@@ -74,6 +74,7 @@ typedef struct
 {
     int signal;
     int i_node;
+    int i_item;
 } callback_info_t;
 
 typedef struct
@@ -584,6 +585,21 @@ static void ProcessEvents( intf_thread_t *p_intf,
             }
             break;
         }
+        case SIGNAL_SEEK:
+        {
+            input_thread_t *p_input;
+            input_item_t *p_item;
+            p_input = playlist_CurrentInput( p_intf->p_sys->p_playlist );
+            if( p_input )
+            {
+                p_item = input_GetItem( p_input );
+                vlc_object_release( p_input );
+
+                if( p_item && ( p_item->i_id == p_events[i]->i_item ) )
+                    SeekedEmit( p_intf );
+            }
+            break;
+        }
         default:
             assert(0);
         }
@@ -867,6 +883,8 @@ static int InputIntfEventCallback( intf_thread_t   *p_intf,
 {
     dbus_int32_t i_state = PLAYBACK_STATE_INVALID;
     assert(!p_info->signal);
+    mtime_t i_now = mdate(), i_pos, i_projected_pos, i_interval;
+    float f_current_rate, f_computed_rate;
 
     switch( i_event )
     {
@@ -881,6 +899,23 @@ static int InputIntfEventCallback( intf_thread_t   *p_intf,
         case INPUT_EVENT_ITEM_META:
             p_info->signal = SIGNAL_INPUT_METADATA;
             return VLC_SUCCESS;
+        case INPUT_EVENT_POSITION:
+            /* Detect seeks
+             * XXX: This is way more convoluted than it should be... */
+            if( !p_intf->p_sys->i_last_input_pos_event ||
+                !( var_GetInteger( p_input, "state" ) == PLAYING_S ) )
+                break;
+            i_pos = var_GetTime( p_input, "time" );
+            f_current_rate = var_GetFloat( p_input, "rate" );
+            i_interval = ( i_now - p_intf->p_sys->i_last_input_pos_event );
+            i_projected_pos = p_intf->p_sys->i_last_input_pos + ( i_interval * f_current_rate );
+            p_intf->p_sys->i_last_input_pos_event = i_now;
+            p_intf->p_sys->i_last_input_pos = i_pos;
+            if( ( i_pos - i_projected_pos ) < SEEK_THRESHOLD )
+                break;
+            p_info->signal = SIGNAL_SEEK;
+            p_info->i_item = input_GetItem( p_input )->i_id;
+            break;
         default:
             return VLC_EGENERIC;
     }

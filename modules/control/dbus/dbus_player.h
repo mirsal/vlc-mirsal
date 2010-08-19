@@ -73,6 +73,7 @@ int PlayerStatusChangedEmit     ( intf_thread_t * );
 int PlayerCapsChangedEmit ( intf_thread_t * );
 int PlayerMetadataChangedEmit( intf_thread_t*, input_item_t* );
 int TrackChangedEmit      ( intf_thread_t *, input_item_t * );
+int SeekedEmit( intf_thread_t * );
 
 void UpdatePlayerCaps( intf_thread_t * );
 

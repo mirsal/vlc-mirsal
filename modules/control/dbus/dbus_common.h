@@ -79,6 +79,7 @@
 #define ADD_DOUBLE( d ) DBUS_ADD( DBUS_TYPE_DOUBLE, d )
 #define ADD_BOOL( b ) DBUS_ADD( DBUS_TYPE_BOOLEAN, b )
 #define ADD_INT32( i ) DBUS_ADD( DBUS_TYPE_INT32, i )
+#define ADD_INT64( i ) DBUS_ADD( DBUS_TYPE_INT64, i )
 #define ADD_BYTE( b ) DBUS_ADD( DBUS_TYPE_BYTE, b )
 
 #define MPRIS_TRACKID_FORMAT "/org/videolan/vlc/playlist/%d"
@@ -97,6 +98,8 @@ struct intf_sys_t
     int             p_pipe_fds[2];
     vlc_mutex_t     lock;
     input_thread_t *p_input;
+    mtime_t         i_last_input_pos; /* Only access it from the input thread */
+    mtime_t         i_last_input_pos_event; /* idem */
     bool            b_unique;
 };
 
@@ -111,7 +114,8 @@ enum
     SIGNAL_REPEAT,
     SIGNAL_LOOP,
     SIGNAL_STATE,
-    SIGNAL_INPUT_METADATA
+    SIGNAL_INPUT_METADATA,
+    SIGNAL_SEEK
 };
 
 enum

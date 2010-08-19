@@ -27,6 +27,7 @@
 #ifndef _VLC_DBUS_H
 #define _VLC_DBUS_H
 
+#define SEEK_THRESHOLD 1000 /* µsec */
 #define DBUS_MPRIS_BUS_NAME "org.mpris.mediaplayers.vlc"
 
 #endif //dbus.h
