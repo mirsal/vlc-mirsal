@@ -58,6 +58,7 @@
 #include <vlc_meta.h>
 #include <vlc_mtime.h>
 #include <vlc_fs.h>
+#include <vlc_aout.h>
 
 #include <assert.h>
 #include <string.h>
@@ -249,6 +250,8 @@ static int Open( vlc_object_t *p_this )
 
     var_AddCallback( p_playlist, "item-current", AllCallback, p_intf );
     var_AddCallback( p_playlist, "intf-change", AllCallback, p_intf );
+    var_AddCallback( p_playlist, "volume-change", AllCallback, p_intf );
+    var_AddCallback( p_playlist, "volume-muted", AllCallback, p_intf );
     var_AddCallback( p_playlist, "playlist-item-append", AllCallback, p_intf );
     var_AddCallback( p_playlist, "playlist-item-deleted", AllCallback, p_intf );
     var_AddCallback( p_playlist, "random", AllCallback, p_intf );
@@ -302,6 +305,8 @@ static void Close   ( vlc_object_t *p_this )
 
     var_DelCallback( p_playlist, "item-current", AllCallback, p_intf );
     var_DelCallback( p_playlist, "intf-change", AllCallback, p_intf );
+    var_DelCallback( p_playlist, "volume-change", AllCallback, p_intf );
+    var_DelCallback( p_playlist, "volume-muted", AllCallback, p_intf );
     var_DelCallback( p_playlist, "playlist-item-append", AllCallback, p_intf );
     var_DelCallback( p_playlist, "playlist-item-deleted", AllCallback, p_intf );
     var_DelCallback( p_playlist, "random", AllCallback, p_intf );
@@ -311,6 +316,8 @@ static void Close   ( vlc_object_t *p_this )
     if( p_sys->p_input )
     {
         var_DelCallback( p_sys->p_input, "intf-event", AllCallback, p_intf );
+        var_DelCallback( p_sys->p_input, "can-pause", AllCallback, p_intf );
+        var_DelCallback( p_sys->p_input, "can-seek", AllCallback, p_intf );
         vlc_object_release( p_sys->p_input );
     }
 
@@ -548,32 +555,52 @@ static int UpdateTimeouts( intf_thread_t *p_intf, mtime_t i_loop_interval )
 static void ProcessEvents( intf_thread_t *p_intf,
                            callback_info_t **p_events, int i_events )
 {
-    UpdatePlayerCaps( p_intf );
+    playlist_t *p_playlist = p_intf->p_sys->p_playlist;
+    bool        b_can_play = p_intf->p_sys->b_can_play;
+
+    vlc_dictionary_t player_properties;
+    vlc_dictionary_init( &player_properties, 0 );
+
     for( int i = 0; i < i_events; i++ )
     {
         switch( p_events[i]->signal )
         {
         case SIGNAL_ITEM_CURRENT:
             TrackChange( p_intf );
+            vlc_dictionary_insert( &player_properties, "Metadata", NULL );
             break;
         case SIGNAL_INTF_CHANGE:
         case SIGNAL_PLAYLIST_ITEM_APPEND:
         case SIGNAL_PLAYLIST_ITEM_DELETED:
-            TrackListChangeEmit( p_intf,
-                                 p_events[i]->signal,
-                                 p_events[i]->i_node );
+            PL_LOCK;
+            b_can_play = p_playlist->current.i_size > 0;
+            PL_UNLOCK;
+            if( b_can_play != p_intf->p_sys->b_can_play )
+            {
+                p_intf->p_sys->b_can_play = b_can_play;
+                vlc_dictionary_insert( &player_properties, "CanPlay", NULL );
+            }
+            break;
+        case SIGNAL_VOLUME_MUTED:
+        case SIGNAL_VOLUME_CHANGE:
+            vlc_dictionary_insert( &player_properties, "Volume", NULL );
             break;
         case SIGNAL_RANDOM:
+            vlc_dictionary_insert( &player_properties, "Shuffle", NULL );
+            break;
         case SIGNAL_REPEAT:
         case SIGNAL_LOOP:
-            PlayerStatusChangedEmit( p_intf );
+            vlc_dictionary_insert( &player_properties, "LoopStatus", NULL );
             break;
         case SIGNAL_STATE:
-            StateChange( p_intf );
+            vlc_dictionary_insert( &player_properties, "PlaybackStatus", NULL );
+            break;
+        case SIGNAL_RATE:
+            vlc_dictionary_insert( &player_properties, "Rate", NULL );
             break;
         case SIGNAL_INPUT_METADATA:
         {
-            input_thread_t *p_input = playlist_CurrentInput( p_intf->p_sys->p_playlist );
+            input_thread_t *p_input = playlist_CurrentInput( p_playlist );
             input_item_t   *p_item;
             if( p_input )
             {
@@ -581,10 +608,17 @@ static void ProcessEvents( intf_thread_t *p_intf,
                 vlc_object_release( p_input );
 
                 if( p_item )
-                    PlayerMetadataChangedEmit( p_intf, p_item );
+                    vlc_dictionary_insert( &player_properties,
+                                           "Metadata", NULL );
             }
             break;
         }
+        case SIGNAL_CAN_SEEK:
+            vlc_dictionary_insert( &player_properties, "CanSeek", NULL );
+            break;
+        case SIGNAL_CAN_PAUSE:
+            vlc_dictionary_insert( &player_properties, "CanPause", NULL );
+            break;
         case SIGNAL_SEEK:
         {
             input_thread_t *p_input;
@@ -605,6 +639,11 @@ static void ProcessEvents( intf_thread_t *p_intf,
         }
         free( p_events[i] );
     }
+
+    if( vlc_dictionary_keys_count( &player_properties ) )
+        PlayerPropertiesChangedEmit( p_intf, &player_properties );
+
+    vlc_dictionary_clear( &player_properties, NULL, NULL );
 }
 
 /**
@@ -893,11 +932,24 @@ static int InputIntfEventCallback( intf_thread_t   *p_intf,
             i_state = PLAYBACK_STATE_STOPPED;
             break;
         case INPUT_EVENT_STATE:
-            i_state = ( var_GetInteger( p_input, "state" ) == PAUSE_S ) ?
-                PLAYBACK_STATE_PAUSED : PLAYBACK_STATE_PLAYING;
+            switch( var_GetInteger( p_input, "state" ) )
+            {
+                case OPENING_S:
+                case PLAYING_S:
+                    i_state = PLAYBACK_STATE_PLAYING;
+                    break;
+                case PAUSE_S:
+                    i_state = PLAYBACK_STATE_PAUSED;
+                    break;
+                default:
+                    i_state = PLAYBACK_STATE_STOPPED;
+            }
             break;
         case INPUT_EVENT_ITEM_META:
             p_info->signal = SIGNAL_INPUT_METADATA;
+            return VLC_SUCCESS;
+        case INPUT_EVENT_RATE:
+            p_info->signal = SIGNAL_RATE;
             return VLC_SUCCESS;
         case INPUT_EVENT_POSITION:
             /* Detect seeks
@@ -920,7 +972,8 @@ static int InputIntfEventCallback( intf_thread_t   *p_intf,
             return VLC_EGENERIC;
     }
 
-    if( i_state != p_intf->p_sys->i_playing_state )
+    if( i_state != PLAYBACK_STATE_INVALID &&
+        i_state != p_intf->p_sys->i_playing_state )
     {
         p_intf->p_sys->i_playing_state = i_state;
         p_info->signal = SIGNAL_STATE;
@@ -947,6 +1000,12 @@ static int AllCallback( vlc_object_t *p_this, const char *psz_var,
     // Wich event is it ?
     if( !strcmp( "item-current", psz_var ) )
         info->signal = SIGNAL_ITEM_CURRENT;
+
+    else if( !strcmp( "volume-change", psz_var ) )
+        info->signal = SIGNAL_VOLUME_CHANGE;
+
+    else if( !strcmp( "volume-muted", psz_var ) )
+        info->signal = SIGNAL_VOLUME_MUTED;
 
     else if( !strcmp( "intf-change", psz_var ) )
         info->signal = SIGNAL_INTF_CHANGE;
@@ -981,6 +1040,12 @@ static int AllCallback( vlc_object_t *p_this, const char *psz_var,
             return i_res;
         }
     }
+
+    else if( !strcmp( "can-seek", psz_var ) )
+        info->signal = SIGNAL_CAN_SEEK;
+
+    else if( !strcmp( "can-pause", psz_var ) )
+        info->signal = SIGNAL_CAN_PAUSE;
 
     else
         assert(0);
@@ -1047,6 +1112,8 @@ static int TrackChange( intf_thread_t *p_intf )
     if( p_sys->p_input )
     {
         var_DelCallback( p_sys->p_input, "intf-event", AllCallback, p_intf );
+        var_DelCallback( p_sys->p_input, "can-pause", AllCallback, p_intf );
+        var_DelCallback( p_sys->p_input, "can-seek", AllCallback, p_intf );
         vlc_object_release( p_sys->p_input );
         p_sys->p_input = NULL;
     }
@@ -1067,13 +1134,12 @@ static int TrackChange( intf_thread_t *p_intf )
     }
 
     if( input_item_IsPreparsed( p_item ) )
-    {
         p_sys->b_meta_read = true;
-        TrackChangedEmit( p_intf, p_item );
-    }
 
     p_sys->p_input = p_input;
     var_AddCallback( p_input, "intf-event", AllCallback, p_intf );
+    var_AddCallback( p_input, "can-pause", AllCallback, p_intf );
+    var_AddCallback( p_input, "can-seek", AllCallback, p_intf );
 
     return VLC_SUCCESS;
 }

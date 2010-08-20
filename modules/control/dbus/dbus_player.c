@@ -50,6 +50,23 @@ static const char* psz_player_introspection_xml =
 "      <arg name=\"data\" direction=\"out\" type=\"s\"/>\n"
 "    </method>\n"
 "  </interface>\n"
+"  <interface name=\"org.freedesktop.DBus.Properties\">\n"
+"    <method name=\"Get\">\n"
+"      <arg direction=\"in\" type=\"s\"/>\n"
+"      <arg direction=\"in\" type=\"s\"/>\n"
+"      <arg direction=\"out\" type=\"v\"/>\n"
+"    </method>\n"
+"    <method name=\"Set\">\n"
+"      <arg direction=\"in\" type=\"s\"/>\n"
+"      <arg direction=\"in\" type=\"s\"/>\n"
+"      <arg direction=\"in\" type=\"v\"/>\n"
+"    </method>\n"
+"    <signal name=\"PropertiesChanged\">\n"
+"      <arg type=\"s\"/>\n"
+"      <arg type=\"a{sv}\"/>\n"
+"      <arg type=\"as\"/>\n"
+"    </signal>\n"
+"  </interface>\n"
 "  <interface name=\"org.mpris.MediaPlayer.Player\">\n"
 "    <property name=\"Metadata\" type=\"a{sv}\" access=\"read\" />\n"
 "    <property name=\"PlaybackStatus\" type=\"s\" access=\"read\" />\n"
@@ -211,15 +228,24 @@ DBUS_METHOD( Seek )
     REPLY_SEND;
 }
 
+static void
+MarshalVolume( intf_thread_t *p_intf, DBusMessageIter *container )
+{
+    audio_volume_t i_vol = aout_VolumeGet( PL );
+
+    /* A volume of 1.0 represents a sensible maximum, ie: 0dB */
+    double d_vol = (double) i_vol / ( AOUT_VOLUME_MAX >> 2 );
+
+    dbus_message_iter_append_basic( container, DBUS_TYPE_DOUBLE, &d_vol );
+}
+
 DBUS_METHOD( VolumeGet )
 {
     REPLY_INIT;
     OUT_ARGUMENTS;
 
-    audio_volume_t i_vol = aout_VolumeGet( PL );
-    double d_vol = (double) i_vol / AOUT_VOLUME_MAX;
+    MarshalVolume( p_this, &args );
 
-    ADD_DOUBLE( &d_vol );
     REPLY_SEND;
 }
 
@@ -335,29 +361,29 @@ DBUS_METHOD( OpenUri )
     REPLY_SEND;
 }
 
+static void
+MarshalCanPlay( intf_thread_t *p_intf, DBusMessageIter *container )
+{
+    dbus_bool_t b_can_play = p_intf->p_sys->b_can_play;
+    dbus_message_iter_append_basic( container, DBUS_TYPE_BOOLEAN, &b_can_play );
+}
+
 DBUS_METHOD( CanPlay )
 {
     REPLY_INIT;
     OUT_ARGUMENTS;
 
-    dbus_bool_t b_can_play;
-    playlist_t *p_playlist = PL;
+    MarshalCanPlay( p_this, &args );
 
-    PL_LOCK;
-    b_can_play = PL->current.i_size > 0;
-    PL_UNLOCK;
-
-    ADD_BOOL( &b_can_play );
     REPLY_SEND;
 }
 
-DBUS_METHOD( CanPause )
+static void
+MarshalCanPause( intf_thread_t *p_intf, DBusMessageIter *container )
 {
-    REPLY_INIT;
-    OUT_ARGUMENTS;
-
     dbus_bool_t b_can_pause = FALSE;
-    input_thread_t *p_input = playlist_CurrentInput( PL );
+    input_thread_t *p_input;
+    p_input = playlist_CurrentInput( p_intf->p_sys->p_playlist );
 
     if( p_input )
     {
@@ -365,7 +391,17 @@ DBUS_METHOD( CanPause )
         vlc_object_release( p_input );
     }
 
-    ADD_BOOL( &b_can_pause );
+    dbus_message_iter_append_basic( container, DBUS_TYPE_BOOLEAN,
+                                    &b_can_pause );
+}
+
+DBUS_METHOD( CanPause )
+{
+    REPLY_INIT;
+    OUT_ARGUMENTS;
+
+    MarshalCanPause( p_this, &args );
+
     REPLY_SEND;
 }
 
@@ -380,13 +416,12 @@ DBUS_METHOD( CanControl )
     REPLY_SEND;
 }
 
-DBUS_METHOD( CanSeek )
+static void
+MarshalCanSeek( intf_thread_t *p_intf, DBusMessageIter *container )
 {
-    REPLY_INIT;
-    OUT_ARGUMENTS;
-
     dbus_bool_t b_can_seek = FALSE;
-    input_thread_t *p_input = playlist_CurrentInput( PL );
+    input_thread_t *p_input;
+    p_input = playlist_CurrentInput( p_intf->p_sys->p_playlist );
 
     if( p_input )
     {
@@ -394,8 +429,24 @@ DBUS_METHOD( CanSeek )
         vlc_object_release( p_input );
     }
 
-    ADD_BOOL( &b_can_seek );
+    dbus_message_iter_append_basic( container, DBUS_TYPE_BOOLEAN, &b_can_seek );
+}
+
+DBUS_METHOD( CanSeek )
+{
+    REPLY_INIT;
+    OUT_ARGUMENTS;
+
+    MarshalCanSeek( p_this, &args );
+
     REPLY_SEND;
+}
+
+static void
+MarshalShuffle( intf_thread_t *p_intf, DBusMessageIter *container )
+{
+    dbus_bool_t b_shuffle = var_GetBool( p_intf->p_sys->p_playlist, "random" );
+    dbus_message_iter_append_basic( container, DBUS_TYPE_BOOLEAN, &b_shuffle );
 }
 
 DBUS_METHOD( ShuffleGet )
@@ -403,8 +454,7 @@ DBUS_METHOD( ShuffleGet )
     REPLY_INIT;
     OUT_ARGUMENTS;
 
-    dbus_bool_t b_shuffle = var_GetBool( PL, "random" );
-    ADD_BOOL( &b_shuffle );
+    MarshalShuffle( p_this, &args );
 
     REPLY_SEND;
 }
@@ -422,36 +472,51 @@ DBUS_METHOD( ShuffleSet )
     REPLY_SEND;
 }
 
-DBUS_METHOD( PlaybackStatus )
+static void
+MarshalPlaybackStatus( intf_thread_t *p_intf, DBusMessageIter *container )
 {
-    REPLY_INIT;
-    OUT_ARGUMENTS;
-
     input_thread_t *p_input;
     char *psz_playback_status;
-    int   i_input_state;
-    if( ( p_input = playlist_CurrentInput( PL ) ) )
+    if( ( p_input = playlist_CurrentInput( p_intf->p_sys->p_playlist ) ) )
     {
-        i_input_state = var_GetInteger( p_input, "state" );
-        psz_playback_status = ( i_input_state == PAUSE_S ) ?
-                    PLAYBACK_STATUS_PAUSED : PLAYBACK_STATUS_PLAYING;
+        switch( var_GetInteger( p_input, "state" ) )
+        {
+            case OPENING_S:
+            case PLAYING_S:
+                psz_playback_status = PLAYBACK_STATUS_PLAYING;
+                break;
+            case PAUSE_S:
+                psz_playback_status = PLAYBACK_STATUS_PAUSED;
+                break;
+            default:
+                psz_playback_status = PLAYBACK_STATUS_STOPPED;
+        }
+
         vlc_object_release( (vlc_object_t*) p_input );
     }
     else
         psz_playback_status = PLAYBACK_STATUS_STOPPED;
 
-    ADD_STRING( &psz_playback_status );
-    REPLY_SEND;
+    dbus_message_iter_append_basic( container, DBUS_TYPE_STRING,
+                                    &psz_playback_status );
 }
 
-DBUS_METHOD( RateGet )
+DBUS_METHOD( PlaybackStatus )
 {
     REPLY_INIT;
     OUT_ARGUMENTS;
 
+    MarshalPlaybackStatus( p_this, &args );
+
+    REPLY_SEND;
+}
+
+static void
+MarshalRate( intf_thread_t *p_intf, DBusMessageIter *container )
+{
     double d_rate;
     input_thread_t *p_input;
-    if( ( p_input = playlist_CurrentInput( PL ) ) )
+    if( ( p_input = playlist_CurrentInput( p_intf->p_sys->p_playlist ) ) )
     {
         d_rate = var_GetFloat( p_input, "rate" );
         vlc_object_release( (vlc_object_t*) p_input );
@@ -459,7 +524,16 @@ DBUS_METHOD( RateGet )
     else
         d_rate = 0.;
 
-    ADD_DOUBLE( &d_rate );
+    dbus_message_iter_append_basic( container, DBUS_TYPE_DOUBLE, &d_rate );
+}
+
+DBUS_METHOD( RateGet )
+{
+    REPLY_INIT;
+    OUT_ARGUMENTS;
+
+    MarshalRate( p_this, &args );
+
     REPLY_SEND;
 }
 
@@ -506,20 +580,28 @@ DBUS_METHOD( MaximumRate )
     REPLY_SEND;
 }
 
+static void
+MarshalLoopStatus( intf_thread_t *p_intf, DBusMessageIter *container )
+{
+    char *psz_loop_status;
+    if( var_GetBool( p_intf->p_sys->p_playlist, "repeat" ) )
+        psz_loop_status = LOOP_STATUS_TRACK;
+    else if( var_GetBool( p_intf->p_sys->p_playlist, "loop" ) )
+        psz_loop_status = LOOP_STATUS_PLAYLIST;
+    else
+        psz_loop_status = LOOP_STATUS_NONE;
+
+    dbus_message_iter_append_basic( container, DBUS_TYPE_STRING,
+                                    &psz_loop_status );
+}
+
 DBUS_METHOD( LoopStatusGet )
 {
     REPLY_INIT;
     OUT_ARGUMENTS;
 
-    char *psz_loop_status;
-    if( var_GetBool( PL, "repeat" ) )
-        psz_loop_status = LOOP_STATUS_TRACK;
-    else if( var_GetBool( PL, "loop" ) )
-        psz_loop_status = LOOP_STATUS_PLAYLIST;
-    else
-        psz_loop_status = LOOP_STATUS_NONE;
+    MarshalLoopStatus( p_this, &args );
 
-    ADD_STRING( &psz_loop_status );
     REPLY_SEND;
 }
 
@@ -838,6 +920,148 @@ int SeekedEmit( intf_thread_t * p_intf )
     SeekedSignal( p_intf->p_sys->p_conn, p_intf );
     return VLC_SUCCESS;
 }
+
+/**
+ * PropertiesChangedSignal() synthetizes and sends the
+ * org.freedesktop.DBus.Properties.PropertiesChanged signal
+ */
+static DBusHandlerResult
+PropertiesChangedSignal( intf_thread_t    *p_intf,
+                         vlc_dictionary_t *p_changed_properties )
+{
+    DBusConnection  *p_conn = p_intf->p_sys->p_conn;
+    DBusMessageIter changed_properties, invalidated_properties, entry, variant;
+    const char *psz_interface_name = DBUS_MPRIS_PLAYER_INTERFACE;
+    char **ppsz_properties = NULL;
+    int i_properties = 0;
+
+    SIGNAL_INIT( DBUS_INTERFACE_PROPERTIES,
+                 DBUS_MPRIS_PLAYER_PATH,
+                 "PropertiesChanged" );
+
+    OUT_ARGUMENTS;
+    ADD_STRING( &psz_interface_name );
+    dbus_message_iter_open_container( &args, DBUS_TYPE_ARRAY, "{sv}",
+                                      &changed_properties );
+
+    i_properties = vlc_dictionary_keys_count( p_changed_properties );
+    ppsz_properties = vlc_dictionary_all_keys( p_changed_properties );
+
+    for( int i = 0; i < i_properties; i++ )
+    {
+        dbus_message_iter_open_container( &changed_properties,
+                                          DBUS_TYPE_DICT_ENTRY, NULL,
+                                          &entry );
+
+        dbus_message_iter_append_basic( &entry, DBUS_TYPE_STRING,
+                                        &ppsz_properties[i] );
+
+        if( !strcmp( ppsz_properties[i], "Metadata" ) )
+        {
+            input_thread_t *p_input;
+            p_input = playlist_CurrentInput( p_intf->p_sys->p_playlist );
+
+            dbus_message_iter_open_container( &entry,
+                                              DBUS_TYPE_VARIANT, "a{sv}",
+                                              &variant );
+
+            if( p_input )
+            {
+                input_item_t *p_item = input_GetItem( p_input );
+                GetInputMeta( p_item, &variant );
+                vlc_object_release( p_input );
+            }
+
+            dbus_message_iter_close_container( &entry, &variant );
+        }
+        else if( !strcmp( ppsz_properties[i], "PlaybackStatus" ) )
+        {
+            dbus_message_iter_open_container( &entry,
+                                              DBUS_TYPE_VARIANT, "s",
+                                              &variant );
+            MarshalPlaybackStatus( p_intf, &variant );
+            dbus_message_iter_close_container( &entry, &variant );
+        }
+        else if( !strcmp( ppsz_properties[i], "LoopStatus" ) )
+        {
+            dbus_message_iter_open_container( &entry,
+                                              DBUS_TYPE_VARIANT, "s",
+                                              &variant );
+            MarshalLoopStatus( p_intf, &variant );
+            dbus_message_iter_close_container( &entry, &variant );
+        }
+        else if( !strcmp( ppsz_properties[i], "Rate" ) )
+        {
+            dbus_message_iter_open_container( &entry,
+                                              DBUS_TYPE_VARIANT, "d",
+                                              &variant );
+            MarshalRate( p_intf, &variant );
+            dbus_message_iter_close_container( &entry, &variant );
+        }
+        else if( !strcmp( ppsz_properties[i], "Shuffle" ) )
+        {
+            dbus_message_iter_open_container( &entry,
+                                              DBUS_TYPE_VARIANT, "b",
+                                              &variant );
+            MarshalShuffle( p_intf, &variant );
+            dbus_message_iter_close_container( &entry, &variant );
+        }
+        else if( !strcmp( ppsz_properties[i], "Volume" ) )
+        {
+            dbus_message_iter_open_container( &entry,
+                                              DBUS_TYPE_VARIANT, "d",
+                                              &variant );
+            MarshalVolume( p_intf, &variant );
+            dbus_message_iter_close_container( &entry, &variant );
+        }
+        else if( !strcmp( ppsz_properties[i], "CanSeek" ) )
+        {
+            dbus_message_iter_open_container( &entry,
+                                              DBUS_TYPE_VARIANT, "b",
+                                              &variant );
+            MarshalCanSeek( p_intf, &variant );
+            dbus_message_iter_close_container( &entry, &variant );
+        }
+        else if( !strcmp( ppsz_properties[i], "CanPlay" ) )
+        {
+            dbus_message_iter_open_container( &entry,
+                                              DBUS_TYPE_VARIANT, "b",
+                                              &variant );
+            MarshalCanPlay( p_intf, &variant );
+            dbus_message_iter_close_container( &entry, &variant );
+        }
+        else if( !strcmp( ppsz_properties[i], "CanPause" ) )
+        {
+            dbus_message_iter_open_container( &entry,
+                                              DBUS_TYPE_VARIANT, "b",
+                                              &variant );
+            MarshalCanPause( p_intf, &variant );
+            dbus_message_iter_close_container( &entry, &variant );
+        }
+        dbus_message_iter_close_container( &changed_properties, &entry );
+    }
+
+    dbus_message_iter_close_container( &args, &changed_properties );
+    dbus_message_iter_open_container( &args, DBUS_TYPE_ARRAY, "s",
+                                      &invalidated_properties );
+    dbus_message_iter_close_container( &args, &invalidated_properties );
+
+    SIGNAL_SEND;
+}
+
+/*****************************************************************************
+ * PropertiesChangedEmit: Emits the Seeked signal
+ *****************************************************************************/
+int PlayerPropertiesChangedEmit( intf_thread_t    * p_intf,
+                                 vlc_dictionary_t * p_changed_properties )
+{
+    if( p_intf->p_sys->b_dead )
+        return VLC_SUCCESS;
+
+    PropertiesChangedSignal( p_intf, p_changed_properties );
+    return VLC_SUCCESS;
+}
+
 
 /**
  * MarshalStatus() fills a DBus message container with the media player status

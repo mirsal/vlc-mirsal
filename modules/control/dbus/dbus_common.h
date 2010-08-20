@@ -29,6 +29,7 @@
 
 #include <vlc_common.h>
 #include <vlc_interface.h>
+#include <vlc_aout.h>
 #include <dbus/dbus.h>
 
 /* MACROS */
@@ -91,6 +92,7 @@ struct intf_sys_t
     bool            b_meta_read;
     dbus_int32_t    i_player_caps;
     dbus_int32_t    i_playing_state;
+    bool            b_can_play;
     bool            b_dead;
     vlc_array_t    *p_events;
     vlc_array_t    *p_timeouts;
@@ -114,8 +116,13 @@ enum
     SIGNAL_REPEAT,
     SIGNAL_LOOP,
     SIGNAL_STATE,
+    SIGNAL_RATE,
     SIGNAL_INPUT_METADATA,
-    SIGNAL_SEEK
+    SIGNAL_SEEK,
+    SIGNAL_CAN_SEEK,
+    SIGNAL_CAN_PAUSE,
+    SIGNAL_VOLUME_CHANGE,
+    SIGNAL_VOLUME_MUTED
 };
 
 enum
