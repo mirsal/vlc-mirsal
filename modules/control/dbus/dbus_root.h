@@ -32,8 +32,7 @@
 #define VLC_IDENTITY _("VLC media player")
 
 /* DBUS IDENTIFIERS */
-#define DBUS_MPRIS_ROOT_INTERFACE    "org.mpris.MediaPlayer"
-#define DBUS_MPRIS_ROOT_PATH         "/org/mpris/MediaPlayer"
+#define DBUS_MPRIS_ROOT_INTERFACE    "org.mpris.MediaPlayer2"
 
 /* Handle incoming dbus messages */
 DBusHandlerResult handle_root ( DBusConnection *p_conn,
@@ -69,11 +68,6 @@ static const char* ppsz_supported_mime_types[] = {
     "video/x-matroska",
     "audio/x-matroska",
     "application/xspf+xml"
-};
-
-static const DBusObjectPathVTable dbus_mpris_root_vtable = {
-        NULL, handle_root, /* handler function */
-        NULL, NULL, NULL, NULL
 };
 
 void UpdateRootCaps( intf_thread_t *p_intf );

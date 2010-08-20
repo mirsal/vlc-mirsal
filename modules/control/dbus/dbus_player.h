@@ -30,8 +30,7 @@
 #include <vlc_interface.h>
 #include "dbus_common.h"
 
-#define DBUS_MPRIS_PLAYER_INTERFACE    "org.mpris.MediaPlayer.Player"
-#define DBUS_MPRIS_PLAYER_PATH         "/org/mpris/MediaPlayer/Player"
+#define DBUS_MPRIS_PLAYER_INTERFACE    "org.mpris.MediaPlayer2.Player"
 
 #define LOOP_STATUS_NONE  "None"
 #define LOOP_STATUS_TRACK "Track"
@@ -45,11 +44,6 @@
 DBusHandlerResult handle_player ( DBusConnection *p_conn,
                                   DBusMessage *p_from,
                                   void *p_this );
-
-static const DBusObjectPathVTable dbus_mpris_player_vtable = {
-        NULL, handle_player, /* handler function */
-        NULL, NULL, NULL, NULL
-};
 
 /* Player capabilities */
 enum

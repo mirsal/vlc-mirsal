@@ -32,6 +32,8 @@
 #include <vlc_aout.h>
 #include <dbus/dbus.h>
 
+#define DBUS_MPRIS_OBJECT_PATH "/org/mpris/MediaPlayer2"
+
 /* MACROS */
 
 #define INTF ((intf_thread_t *)p_this)

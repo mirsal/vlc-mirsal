@@ -648,82 +648,13 @@ DBUS_METHOD( Metadata )
     REPLY_SEND;
 }
 
-/*****************************************************************************
- * StatusChanged: Player status change signal
- *****************************************************************************/
-
-DBUS_SIGNAL( StatusChangedSignal )
-{ /* send the updated status info on the bus */
-    SIGNAL_INIT( DBUS_MPRIS_PLAYER_INTERFACE,
-                 DBUS_MPRIS_PLAYER_PATH,
-                 "StatusChanged" );
-
-    OUT_ARGUMENTS;
-
-    /* we're called from a callback of input_thread_t, so it can not be
-     * destroyed before we return */
-    MarshalStatus( (intf_thread_t*) p_data, &args );
-
-    SIGNAL_SEND;
-}
-
-/*****************************************************************************
- * TrackChanged: Playlist item change callback
- *****************************************************************************/
-
-DBUS_SIGNAL( TrackChangedSignal )
-{ /* emit the metadata of the new item */
-    SIGNAL_INIT( DBUS_MPRIS_PLAYER_INTERFACE,
-                 DBUS_MPRIS_PLAYER_PATH,
-                 "TrackChanged" );
-
-    OUT_ARGUMENTS;
-
-    input_item_t *p_item = (input_item_t*) p_data;
-    GetInputMeta ( p_item, &args );
-
-    SIGNAL_SEND;
-}
-
-/******************************************************************************
- * CapabilitiesChanged: player capabilities change signal
- *****************************************************************************/
-DBUS_SIGNAL( CapabilitiesChangedSignal )
-{
-    SIGNAL_INIT( DBUS_MPRIS_PLAYER_INTERFACE,
-                 DBUS_MPRIS_PLAYER_PATH,
-                 "CapsChanged" );
-
-    OUT_ARGUMENTS;
-
-    ADD_INT32( &((intf_thread_t*)p_data)->p_sys->i_player_caps );
-    SIGNAL_SEND;
-}
-
-/******************************************************************************
- * CapabilitiesChanged: player capabilities change signal
- *****************************************************************************/
-DBUS_SIGNAL( MetadataChangedSignal )
-{
-    SIGNAL_INIT( DBUS_MPRIS_PLAYER_INTERFACE,
-                 DBUS_MPRIS_PLAYER_PATH,
-                 "MetadataChanged" );
-
-    OUT_ARGUMENTS;
-
-    input_item_t *p_item = (input_item_t*) p_data;
-    GetInputMeta ( p_item, &args );
-
-    SIGNAL_SEND;
-}
-
 /******************************************************************************
  * Seeked: non-linear playback signal
  *****************************************************************************/
 DBUS_SIGNAL( SeekedSignal )
 {
     SIGNAL_INIT( DBUS_MPRIS_PLAYER_INTERFACE,
-                 DBUS_MPRIS_PLAYER_PATH,
+                 DBUS_MPRIS_OBJECT_PATH,
                  "Seeked" );
 
     OUT_ARGUMENTS;
@@ -862,54 +793,6 @@ handle_player ( DBusConnection *p_conn, DBusMessage *p_from, void *p_this )
 #undef METHOD_FUNC
 
 /*****************************************************************************
- * StatusChangedEmit: Emits the StatusChanged signal
- *****************************************************************************/
-int PlayerStatusChangedEmit( intf_thread_t * p_intf )
-{
-    if( p_intf->p_sys->b_dead )
-        return VLC_SUCCESS;
-
-    StatusChangedSignal( p_intf->p_sys->p_conn, p_intf );
-    return VLC_SUCCESS;
-}
-
-/*****************************************************************************
- * TrackChangedEmit: Emits the TrackChanged signal
- *****************************************************************************/
-int TrackChangedEmit( intf_thread_t * p_intf, input_item_t* p_item )
-{
-    if( p_intf->p_sys->b_dead )
-        return VLC_SUCCESS;
-
-    TrackChangedSignal( p_intf->p_sys->p_conn, p_item );
-    return VLC_SUCCESS;
-}
-
-/*****************************************************************************
- * PlayerMetadataChangedEmit: Emits the MetadataChanged signal
- *****************************************************************************/
-int PlayerMetadataChangedEmit( intf_thread_t * p_intf, input_item_t* p_item )
-{
-    if( p_intf->p_sys->b_dead )
-        return VLC_SUCCESS;
-
-    MetadataChangedSignal( p_intf->p_sys->p_conn, p_item );
-    return VLC_SUCCESS;
-}
-
-/*****************************************************************************
- * PlayerCapsChangedEmit: Emits the CapabilitiesChanged signal
- *****************************************************************************/
-int PlayerCapsChangedEmit( intf_thread_t * p_intf )
-{
-    if( p_intf->p_sys->b_dead )
-        return VLC_SUCCESS;
-
-    CapabilitiesChangedSignal( p_intf->p_sys->p_conn, p_intf );
-    return VLC_SUCCESS;
-}
-
-/*****************************************************************************
  * SeekedEmit: Emits the Seeked signal
  *****************************************************************************/
 int SeekedEmit( intf_thread_t * p_intf )
@@ -936,7 +819,7 @@ PropertiesChangedSignal( intf_thread_t    *p_intf,
     int i_properties = 0;
 
     SIGNAL_INIT( DBUS_INTERFACE_PROPERTIES,
-                 DBUS_MPRIS_PLAYER_PATH,
+                 DBUS_MPRIS_OBJECT_PATH,
                  "PropertiesChanged" );
 
     OUT_ARGUMENTS;
@@ -1060,89 +943,4 @@ int PlayerPropertiesChangedEmit( intf_thread_t    * p_intf,
 
     PropertiesChangedSignal( p_intf, p_changed_properties );
     return VLC_SUCCESS;
-}
-
-
-/**
- * MarshalStatus() fills a DBus message container with the media player status
- *
- * This function must be called with p_sys->lock locked
- *
- * @return VLC_SUCCESS on success
- * @param intf_thread_t *p_intf this interface thread state
- * @param DBusMessageIter *args An iterator over the container to fill
- */
-static int MarshalStatus( intf_thread_t* p_intf, DBusMessageIter* args )
-{
-    DBusMessageIter status;
-    dbus_int32_t i_state;
-    double d_rate;
-    dbus_bool_t b_shuffle, b_repeat, b_endless;
-    playlist_t* p_playlist = p_intf->p_sys->p_playlist;
-
-    vlc_mutex_lock( &p_intf->p_sys->lock );
-    i_state = p_intf->p_sys->i_playing_state;
-    vlc_mutex_unlock( &p_intf->p_sys->lock );
-
-    d_rate = ( i_state == PLAYBACK_STATE_PLAYING ) ? 1. : 0.;
-
-    b_shuffle = var_CreateGetBool( p_playlist, "random" );
-    b_repeat  = var_CreateGetBool( p_playlist, "repeat" );
-    b_endless = b_repeat ? TRUE : var_CreateGetBool( p_playlist, "loop" );
-
-    dbus_message_iter_open_container( args, DBUS_TYPE_STRUCT, NULL, &status );
-    dbus_message_iter_append_basic( &status, DBUS_TYPE_INT32, &i_state );
-    dbus_message_iter_append_basic( &status, DBUS_TYPE_DOUBLE, &d_rate );
-    dbus_message_iter_append_basic( &status, DBUS_TYPE_BOOLEAN, &b_shuffle );
-    dbus_message_iter_append_basic( &status, DBUS_TYPE_BOOLEAN, &b_repeat );
-    dbus_message_iter_append_basic( &status, DBUS_TYPE_BOOLEAN, &b_endless );
-    dbus_message_iter_close_container( args, &status );
-
-    return VLC_SUCCESS;
-}
-
-/**
- * UpdatePlayerCaps() updates the player capabilities and sends a
- * CapabilitiesChanged signal if needed
- *
- * This function must be called with the playlist unlocked
- *
- * @param intf_thread_t *p_intf This interface thread state
- */
-void UpdatePlayerCaps( intf_thread_t* p_intf )
-{
-    intf_sys_t* p_sys      = p_intf->p_sys;
-    playlist_t* p_playlist = p_sys->p_playlist;
-
-    dbus_int32_t i_caps    = PLAYER_CAN_REPEAT |
-                             PLAYER_CAN_LOOP |
-                             PLAYER_CAN_SHUFFLE;
-
-    PL_LOCK;
-    if( p_playlist->current.i_size > 0 )
-        i_caps |= PLAYER_CAN_PLAY | PLAYER_CAN_GO_PREVIOUS | PLAYER_CAN_GO_NEXT;
-    PL_UNLOCK;
-
-    input_thread_t* p_input = playlist_CurrentInput( p_playlist );
-    if( p_input )
-    {
-        i_caps |= PLAYER_CAN_PROVIDE_POSITION;
-
-        /* XXX: if UpdatePlayerCaps() is called too early, these are
-         * unconditionnaly true */
-        if( var_GetBool( p_input, "can-pause" ) )
-            i_caps |= PLAYER_CAN_PAUSE;
-        if( var_GetBool( p_input, "can-seek" ) )
-            i_caps |= PLAYER_CAN_SEEK;
-        vlc_object_release( p_input );
-    }
-
-    if( p_sys->b_meta_read )
-        i_caps |= PLAYER_CAN_PROVIDE_METADATA;
-
-    if( i_caps != p_intf->p_sys->i_player_caps )
-    {
-        p_sys->i_player_caps = i_caps;
-        PlayerCapsChangedEmit( p_intf );
-    }
 }

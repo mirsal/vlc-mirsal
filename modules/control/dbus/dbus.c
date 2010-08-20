@@ -227,13 +227,9 @@ static int Open( vlc_object_t *p_this )
     msg_Info( p_intf, "listening on dbus as: %s", psz_service_name );
     free( psz_service_name );
 
-    /* we register the objects */
-    dbus_connection_register_object_path( p_conn, DBUS_MPRIS_ROOT_PATH,
-            &dbus_mpris_root_vtable, p_this );
-    dbus_connection_register_object_path( p_conn, DBUS_MPRIS_PLAYER_PATH,
-            &dbus_mpris_player_vtable, p_this );
-    dbus_connection_register_object_path( p_conn, DBUS_MPRIS_TRACKLIST_PATH,
-            &dbus_mpris_tracklist_vtable, p_this );
+    /* Register the entry point object path */
+    dbus_connection_register_object_path( p_conn, DBUS_MPRIS_OBJECT_PATH,
+            &dbus_mpris_vtable, p_this );
 
     dbus_connection_flush( p_conn );
 
@@ -774,6 +770,45 @@ static void DispatchDBusMessages( intf_thread_t *p_intf )
     }
 }
 
+/**
+ * MPRISEntryPoint() routes incoming messages to their respective interface
+ * implementation.
+ *
+ * This function is called during dbus_connection_dispatch()
+ */
+static DBusHandlerResult
+MPRISEntryPoint ( DBusConnection *p_conn, DBusMessage *p_from, void *p_this )
+{
+    const char *psz_interface = dbus_message_get_interface( p_from );
+    DBusError error;
+
+    if( !strcmp( psz_interface, DBUS_INTERFACE_INTROSPECTABLE ) ||
+        !strcmp( psz_interface, DBUS_INTERFACE_PROPERTIES ) )
+    {
+        dbus_error_init( &error );
+        dbus_message_get_args( p_from, &error,
+                               DBUS_TYPE_STRING, &psz_interface,
+                               DBUS_TYPE_INVALID );
+
+        if( dbus_error_is_set( &error ) )
+        {
+            msg_Err( (vlc_object_t*) p_this, "D-Bus message reading : %s",
+                                             error.message );
+            dbus_error_free( &error );
+            return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+        }
+
+        msg_Dbg( (vlc_object_t*) p_this, "Routing D-Bus method call to %s", psz_interface );
+    }
+
+    if( !strcmp( psz_interface, DBUS_MPRIS_ROOT_INTERFACE ) )
+        return handle_root( p_conn, p_from, p_this );
+    if( !strcmp( psz_interface, DBUS_MPRIS_PLAYER_INTERFACE ) )
+        return handle_player( p_conn, p_from, p_this );
+
+    return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+}
+
 /*****************************************************************************
  * Run: main loop
  *****************************************************************************/
@@ -782,8 +817,6 @@ static void Run          ( intf_thread_t *p_intf )
 {
     intf_sys_t    *p_sys = p_intf->p_sys;
     mtime_t        i_last_run = mdate();
-
-    UpdatePlayerCaps( p_intf );
 
     for( ;; )
     {
@@ -883,7 +916,6 @@ static void Run          ( intf_thread_t *p_intf )
 
         ProcessTimeouts( p_intf, p_timeouts, i_timeouts );
         DispatchDBusMessages( p_intf );
-        UpdatePlayerCaps( p_intf );
 
         vlc_restorecancel( canc );
     }
