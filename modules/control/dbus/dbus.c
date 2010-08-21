@@ -995,7 +995,7 @@ static int InputIntfEventCallback( intf_thread_t   *p_intf,
             i_projected_pos = p_intf->p_sys->i_last_input_pos + ( i_interval * f_current_rate );
             p_intf->p_sys->i_last_input_pos_event = i_now;
             p_intf->p_sys->i_last_input_pos = i_pos;
-            if( ( i_pos - i_projected_pos ) < SEEK_THRESHOLD )
+            if( ABS( i_pos - i_projected_pos ) < SEEK_THRESHOLD )
                 break;
             p_info->signal = SIGNAL_SEEK;
             p_info->i_item = input_GetItem( p_input )->i_id;
