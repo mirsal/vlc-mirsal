@@ -569,7 +569,7 @@ static void ProcessEvents( intf_thread_t *p_intf,
         case SIGNAL_PLAYLIST_ITEM_APPEND:
         case SIGNAL_PLAYLIST_ITEM_DELETED:
             PL_LOCK;
-            b_can_play = p_playlist->current.i_size > 0;
+            b_can_play = playlist_CurrentSize( p_playlist ) > 0;
             PL_UNLOCK;
             if( b_can_play != p_intf->p_sys->b_can_play )
             {
