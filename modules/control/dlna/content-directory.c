@@ -62,8 +62,11 @@ content_directory_t* content_directory_init( vlc_object_t* p_parent,
         webserver_t* p_webserver, dlna_t* p_libdlna, char* psz_upnp_base_url )
 {
     content_directory_t* p_this = malloc( sizeof( content_directory_t ) );
+    if( !p_this ) return NULL;
 
     p_this->p_handlers = malloc( sizeof( vlc_dictionary_t ) );
+    if( !p_this->p_handlers ) return NULL;
+
     vlc_dictionary_init( p_this->p_handlers, 1 );
     vlc_dictionary_insert( p_this->p_handlers, "Browse", &handle_browse );
     vlc_dictionary_insert( p_this->p_handlers, "GetSearchCapabilities",
@@ -173,7 +176,6 @@ static didl_t* browse_direct_children( vlc_object_t* p_this,
 {
     didl_t* p_didl = didl_init( p_this );
     playlist_t* p_playlist = NULL;
-    int i;
     
     if( i_object_id != 0 )
     {
@@ -187,7 +189,7 @@ static didl_t* browse_direct_children( vlc_object_t* p_this,
     if( !i_start_index && !i_requested_count )
         i_requested_count = p_playlist->current.i_size;
 
-    for( i=0; (i < p_playlist->current.i_size && i < (i_start_index + i_requested_count)); ++i )
+    for( int i=0; (i < p_playlist->current.i_size && i < (i_start_index + i_requested_count)); ++i )
         didl_add_item( p_didl, p_playlist->current.p_elems[i]->p_input->i_id,
             "object.item.audioItem",
             p_playlist->current.p_elems[i]->p_input->psz_name,
