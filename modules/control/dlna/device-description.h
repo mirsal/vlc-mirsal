@@ -24,14 +24,16 @@
 #ifndef _MEDIASERVER_H
 #define _MEDIASERVER_H
 
+#include <vlc_common.h>
+
 #define MEDIASERVER_DESCRIPTION_URL "/MediaServer.xml"
 
 #define FRIENDLY_NAME     "VLC media player"
-#define MANUFACTURER      "The VideoLAN team"
+#define MANUFACTURER      "VideoLAN"
 #define MANUFACTURER_URL  "http://www.videolan.org"
 #define MODEL_DESCRIPTION "VLC media player"
 #define MODEL_NAME        "vlc"
-#define MODEL_NUMBER      "0.9.0"
+#define MODEL_NUMBER      PACKAGE_VERSION
 #define MODEL_URL         "http://www.videolan.org/vlc"
 #define SERIAL_NUMBER     "0"
 #define UUID              "0"
