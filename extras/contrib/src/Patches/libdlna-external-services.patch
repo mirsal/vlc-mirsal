@@ -1,0 +1,213 @@
+diff -r e8b1e6c4db46 src/avts.h
+--- a/src/avts.h	Mon Aug 11 12:08:05 2008 +0200
++++ b/src/avts.h	Wed Aug 20 15:06:24 2008 +0200
+@@ -159,11 +159,11 @@
+ 
+ #define AVTS_LOCATION "/services/avts.xml"
+ 
+-#define AVTS_SERVICE_ID   "urn:upnp-org:serviceId:ContentDirectory"
+-#define AVTS_SERVICE_TYPE "urn:schemas-upnp-org:service:ContentDirectory:1"
++#define AVTS_SERVICE_ID   "urn:upnp-org:serviceId:AVTransport"
++#define AVTS_SERVICE_TYPE "urn:schemas-upnp-org:service:AVTransport:1"
+ 
+-#define AVTS_URL              "avts.xml"
+-#define AVTS_CONTROL_URL      "avts_control"
+-#define AVTS_EVENT_URL        "avts_event"
++#define AVTS_URL              "/services/avts.xml"
++#define AVTS_CONTROL_URL      "/services/avts_control"
++#define AVTS_EVENT_URL        "/services/avts_event"
+ 
+ #endif /* AVTS_H */
+diff -r e8b1e6c4db46 src/cds.h
+--- a/src/cds.h	Mon Aug 11 12:08:05 2008 +0200
++++ b/src/cds.h	Wed Aug 20 15:06:24 2008 +0200
+@@ -272,8 +272,8 @@
+ #define CDS_SERVICE_ID   "urn:upnp-org:serviceId:ContentDirectory"
+ #define CDS_SERVICE_TYPE "urn:schemas-upnp-org:service:ContentDirectory:1"
+ 
+-#define CDS_URL              "cds.xml"
+-#define CDS_CONTROL_URL      "cds_control"
+-#define CDS_EVENT_URL        "cds_event"
++#define CDS_URL              "/services/cds.xml"
++#define CDS_CONTROL_URL      "/services/cds_control"
++#define CDS_EVENT_URL        "/services/cds_event"
+ 
+ #endif /* CDS_H */
+diff -r e8b1e6c4db46 src/cms.h
+--- a/src/cms.h	Mon Aug 11 12:08:05 2008 +0200
++++ b/src/cms.h	Wed Aug 20 15:06:24 2008 +0200
+@@ -163,8 +163,8 @@
+ #define CMS_SERVICE_ID   "urn:upnp-org:serviceId:ConnectionManager"
+ #define CMS_SERVICE_TYPE "urn:schemas-upnp-org:service:ConnectionManager:1"
+ 
+-#define CMS_URL              "cms.xml"
+-#define CMS_CONTROL_URL      "cms_control"
+-#define CMS_EVENT_URL        "cms_event"
++#define CMS_URL              "/services/cms.xml"
++#define CMS_CONTROL_URL      "/services/cms_control"
++#define CMS_EVENT_URL        "/services/cms_event"
+ 
+ #endif /* CMS_H */
+diff -r e8b1e6c4db46 src/dlna.h
+--- a/src/dlna.h	Mon Aug 11 12:08:05 2008 +0200
++++ b/src/dlna.h	Wed Aug 20 15:06:24 2008 +0200
+@@ -444,13 +444,46 @@
+ } dlna_service_type_t;
+ 
+ /**
++ * Opaque structure that represents a UPnP service.
++ */
++typedef struct upnp_service_s upnp_service_t;
++
++/**
++ * Initialize a custom UPnP service.
++ * 
++ * @param[in] id the UPnP serviceId
++ * @param[in] type the UPnP serviceType
++ * @param[in] scpd_url the UPnP service description URL
++ * @param[in] control_url the UPnP service control URL
++ * @param[in] event_url the UPnP service event URL
++ *
++ * @return a pointer to an initialized upnp_service_t
++ */
++upnp_service_t* dlna_service_init (const char *id,
++                                   const char *type,
++                                   const char *scpd_url,
++                                   const char *control_url,
++                                   const char *event_url);
++
++/**
+  * Register a known DLNA/UPnP Service to be used by the device.
+- *   This is automatically done for all mandatory services at device init.
++ *   This is automatically done for all mandatory services at device init,
++ *   replacing the custom ones.
+  *
+  * @param[in] dlna  The DLNA library's controller.
+  * @param[in] srv   The service type to be registered.
+  */
+ void dlna_service_register (dlna_t *dlna, dlna_service_type_t srv);
++
++/**
++ * Register an external UPnP service,
++ *     This allows to build device descriptions with externally managed services
++ * 
++ * @param[in] dlna The DLNA library's controller.
++ * @param[in] service The service to be registered (must be initialized)
++ */
++
++void dlna_service_register_external (dlna_t* dlna, upnp_service_t* service);
+ 
+ /***************************************************************************/
+ /*                                                                         */
+diff -r e8b1e6c4db46 src/dlna_internals.h
+--- a/src/dlna_internals.h	Mon Aug 11 12:08:05 2008 +0200
++++ b/src/dlna_internals.h	Wed Aug 20 15:06:24 2008 +0200
+@@ -74,7 +74,6 @@
+ vfs_item_t *vfs_get_item_by_name (dlna_t *dlna, char *name);
+ void vfs_item_free (dlna_t *dlna, vfs_item_t *item);
+ 
+-typedef struct upnp_service_s         upnp_service_t;
+ typedef struct upnp_action_event_s    upnp_action_event_t;
+ typedef struct upnp_service_action_s  upnp_service_action_t;
+ 
+diff -r e8b1e6c4db46 src/msr.h
+--- a/src/msr.h	Mon Aug 11 12:08:05 2008 +0200
++++ b/src/msr.h	Wed Aug 20 15:06:24 2008 +0200
+@@ -119,8 +119,8 @@
+ #define MSR_SERVICE_ID "urn:microsoft.com:serviceId:X_MS_MediaReceiverRegistrar"
+ #define MSR_SERVICE_TYPE "urn:microsoft.com:service:X_MS_MediaReceiverRegistrar:1"
+ 
+-#define MSR_URL              "msr.xml"
+-#define MSR_CONTROL_URL      "msr_control"
+-#define MSR_EVENT_URL        "msr_event"
++#define MSR_URL              "/services/msr.xml"
++#define MSR_CONTROL_URL      "/services/msr_control"
++#define MSR_EVENT_URL        "/services/msr_event"
+ 
+ #endif /* MSR_H */
+diff -r e8b1e6c4db46 src/services.c
+--- a/src/services.c	Mon Aug 11 12:08:05 2008 +0200
++++ b/src/services.c	Wed Aug 20 15:06:24 2008 +0200
+@@ -30,6 +30,36 @@
+ extern upnp_service_action_t cds_service_actions[];
+ extern upnp_service_action_t avts_service_actions[];
+ extern upnp_service_action_t msr_service_actions[];
++
++static void dlna_service_free (dlna_t *dlna, upnp_service_t *service);
++
++upnp_service_t* dlna_service_init (const char *id,
++                                   const char *type,
++                                   const char *scpd_url,
++                                   const char *control_url,
++                                   const char *event_url)
++{
++    upnp_service_t* service;
++    service = calloc (1, sizeof (upnp_service_t));
++    service->id = strdup (id);
++    service->type = strdup (type);
++    service->scpd_url = strdup (scpd_url);
++    service->control_url = strdup (control_url);
++    service->event_url = strdup (event_url);
++
++    return service;
++}
++
++void
++dlna_service_register_external (dlna_t* dlna, upnp_service_t* service)
++{
++    upnp_service_t* tmp = NULL;
++
++    if (tmp = dlna_service_find (dlna, service->id))
++        dlna_service_free (dlna, tmp);
++    
++    HASH_ADD_STR (dlna->services, id, service);
++}
+ 
+ void
+ dlna_service_register (dlna_t *dlna, dlna_service_type_t srv)
+@@ -128,14 +158,11 @@
+   case DLNA_SERVICE_MS_REGISTAR:
+     srv_id = MSR_SERVICE_ID;
+     break;
++  default: return;
+   }
+ 
+-  for (service = dlna->services; service; service = service->hh.next)
+-    if (service->id && srv_id && !strcmp (service->id, srv_id))
+-    {
++  if (service = dlna_service_find (dlna, srv_id))
+       dlna_service_free (dlna, service);
+-      break;
+-    }
+ }
+ 
+ void
+diff -r e8b1e6c4db46 src/upnp_dms.c
+--- a/src/upnp_dms.c	Mon Aug 11 12:08:05 2008 +0200
++++ b/src/upnp_dms.c	Wed Aug 20 15:06:24 2008 +0200
+@@ -57,9 +57,9 @@
+ "      <service>" \
+ "        <serviceType>%s</serviceType>" \
+ "        <serviceId>%s</serviceId>" \
+-"        <SCPDURL>%s/%s</SCPDURL>" \
+-"        <controlURL>%s/%s</controlURL>" \
+-"        <eventSubURL>%s/%s</eventSubURL>" \
++"        <SCPDURL>%s</SCPDURL>" \
++"        <controlURL>%s</controlURL>" \
++"        <eventSubURL>%s</eventSubURL>" \
+ "      </service>" \
+ 
+ char *
+@@ -95,9 +95,9 @@
+   for (service = dlna->services; service; service = service->hh.next)
+     buffer_appendf (b, DLNA_SERVICE_DESCRIPTION,
+                     service->type, service->id,
+-                    SERVICES_VIRTUAL_DIR, service->scpd_url,
+-                    SERVICES_VIRTUAL_DIR, service->control_url,
+-                    SERVICES_VIRTUAL_DIR, service->event_url);
++                    service->scpd_url,
++                    service->control_url,
++                    service->event_url);
+ 
+   buffer_append (b, DLNA_DMS_DESCRIPTION_FOOTER);
+ 
