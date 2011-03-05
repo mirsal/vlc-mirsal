@@ -3531,6 +3531,11 @@ dnl
 dnl libsamplerate plugin
 dnl
 PKG_ENABLE_MODULES_VLC([SAMPLERATE], [], [samplerate], [Resampler with libsamplerate], [auto])
+dnl  UPnP and DLNA Plugins
+dnl
+PKG_ENABLE_MODULES_VLC([UPNP], [upnp], [libupnp], [Intel UPnp SDK],[auto])
+VLC_ADD_CXXFLAGS([upnp],[${UPNP_CFLAGS}])
+PKG_ENABLE_MODULES_VLC([DLNA], [dlna], [libupnp libdlna], [libdlna based a/v server])
 
 dnl
 dnl  OS/2 KAI plugin
@@ -4205,6 +4210,7 @@ AC_CONFIG_FILES([
   modules/control/Makefile
   modules/control/dbus/Makefile
   modules/control/globalhotkeys/Makefile
+  modules/control/dlna/Makefile
   modules/demux/Makefile
   modules/demux/asf/Makefile
   modules/demux/avformat/Makefile
