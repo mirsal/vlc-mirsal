@@ -332,6 +332,7 @@ $Id$
  * udev: udev probing module
  * ugly_resampler: Ugly audio resampler
  * upnp: libupnp UPNP service discovery
+ * dlna: UPnP A/V Media Server
  * v4l2: Video 4 Linux 2 input module
  * vc1: VC-1 Video demuxer
  * vcd: input module for accessing Video CDs

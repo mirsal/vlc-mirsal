@@ -1,0 +1,14 @@
+SOURCES_dlna = \
+        device-description.h \
+        didl.h \
+        didl.c \
+        service.h \
+        service.c \
+        content-directory.h \
+        content-directory.c \
+        connection-manager.h \
+        connection-manager.c \
+        webserver.h \
+        webserver.c \
+        upnp.c \
+        $(NULL)
