@@ -49,8 +49,11 @@ connection_manager_t* connection_manager_init( vlc_object_t* p_parent,
         webserver_t* p_webserver, dlna_t* p_libdlna, char* psz_upnp_base_url )
 {
     connection_manager_t* p_this = malloc( sizeof( connection_manager_t ) );
+    if( !p_this ) return NULL;
 
     p_this->p_handlers = malloc( sizeof( vlc_dictionary_t ) );
+    if( !p_this->p_handlers ) return NULL;
+
     vlc_dictionary_init( p_this->p_handlers, 1 );
     vlc_dictionary_insert( p_this->p_handlers, "GetCurrentConnectionIDs",
             &handle_get_connection_ids );
