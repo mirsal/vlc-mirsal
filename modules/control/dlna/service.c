@@ -41,12 +41,12 @@ service_t* service_init( vlc_object_t* p_parent, webserver_t* p_webserver,
     p_this->p_parent = p_parent;
     p_this->psz_description = strdup( psz_description );
     
-    asprintf( &p_this->psz_description_url,
-            "/services/%s/scpd.xml", psz_service_name );
-    asprintf( &p_this->psz_control_url, "%s/services/%s/control",
-            psz_upnp_base_url, psz_service_name );
-    asprintf( &p_this->psz_event_url, "%s/services/%s/event",
-            psz_upnp_base_url, psz_service_name );
+    if ( asprintf( &p_this->psz_description_url,
+            "/services/%s/scpd.xml", psz_service_name ) == -1 ) return NULL;
+    if ( asprintf( &p_this->psz_control_url, "%s/services/%s/control",
+            psz_upnp_base_url, psz_service_name ) == -1) return NULL;
+    if ( asprintf( &p_this->psz_event_url, "%s/services/%s/event",
+            psz_upnp_base_url, psz_service_name ) == -1) return NULL;
 
     p_this->psz_type = strdup( psz_type );
     p_this->psz_id = strdup( psz_id );

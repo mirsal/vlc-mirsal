@@ -77,6 +77,9 @@ content_directory_t* content_directory_init( vlc_object_t* p_parent,
             p_this->p_handlers, psz_upnp_base_url, "ContentDirectory",
             CDS_DESCRIPTION, CDS_SERVICE_TYPE, CDS_SERVICE_ID );
 
+    if( !p_this->p_service )
+        return NULL;
+
     p_this->i_update_id = 1;
 
     return p_this;
