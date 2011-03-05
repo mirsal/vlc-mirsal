@@ -133,8 +133,15 @@ static int Open( vlc_object_t* p_this )
 
     p_sys->p_content_directory = content_directory_init( p_this,
             p_sys->p_webserver, p_sys->p_libdlna, p_sys->psz_upnp_base_url );
+
+    if( !p_sys->p_content_directory )
+        return VLC_EGENERIC;
+
     p_sys->p_connection_manager = connection_manager_init( p_this,
             p_sys->p_webserver, p_sys->p_libdlna, p_sys->psz_upnp_base_url );
+
+    if( !p_sys->p_connection_manager )
+        return VLC_EGENERIC;
 
     p_sys->p_device_description =
         webserver_register_service( p_sys->p_webserver,

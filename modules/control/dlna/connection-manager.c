@@ -63,6 +63,9 @@ connection_manager_t* connection_manager_init( vlc_object_t* p_parent,
             p_this->p_handlers, psz_upnp_base_url, "ConnectionManager",
             CMS_DESCRIPTION, CMS_SERVICE_TYPE, CMS_SERVICE_ID );
 
+    if( !p_this->p_service )
+        return NULL;
+
     return p_this;
 }
 
