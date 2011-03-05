@@ -3515,10 +3515,11 @@ dnl
 PKG_ENABLE_MODULES_VLC([JACK], [jack access_jack], [jack], [JACK audio I/O modules],[auto])
 
 dnl
-dnl UPnP Plugin (Intel SDK)
+dnl  UPnP and DLNA Plugins
 dnl
 PKG_ENABLE_MODULES_VLC([UPNP], [upnp], [libupnp], [Intel UPnp SDK],[auto])
 VLC_ADD_CXXFLAGS([upnp],[${UPNP_CFLAGS}])
+PKG_ENABLE_MODULES_VLC([DLNA], [dlna], [libupnp libdlna], [libdlna based a/v server])
 
 dnl
 dnl  Interface plugins
@@ -4244,6 +4245,7 @@ AC_CONFIG_FILES([
   modules/control/http/Makefile
   modules/control/dbus/Makefile
   modules/control/globalhotkeys/Makefile
+  modules/control/dlna/Makefile
   modules/demux/Makefile
   modules/demux/asf/Makefile
   modules/demux/avformat/Makefile
