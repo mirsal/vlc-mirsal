@@ -56,7 +56,7 @@ struct _didl_t
     vlc_object_t* p_parent;
 
     size_t i_size;
-    int i_items;
+    size_t i_items;
     bool b_consistant;
     bool b_finalized;
 };
@@ -75,7 +75,10 @@ static char* didl_append_string( didl_t* p_didl, const char* psz )
         return NULL;
 
     i_psz_size = strlen( psz ); 
-    p_didl->psz_xml = realloc( p_didl->psz_xml, p_didl->i_size + i_psz_size+1 );
+    p_didl->psz_xml = realloc( p_didl->psz_xml, p_didl->i_size + i_psz_size + 1 );
+    if( !p_didl->psz_xml )
+        return NULL;
+
     strcat( p_didl->psz_xml, psz );
     p_didl->i_size += i_psz_size;
 
@@ -86,7 +89,6 @@ static char* didl_appendf( didl_t* p_didl, const char* psz_format, ... )
 {
     va_list va_args;
     char* psz, *psz_ret;
-    int i_len;
     
     if( !p_didl || !psz_format || p_didl->b_finalized )
         return NULL;
@@ -184,7 +186,7 @@ int didl_count( didl_t* p_didl )
     return p_didl->i_items;
 }
 
-void didl_add_container( didl_t* p_didl, int i_items )
+void didl_add_container( didl_t* p_didl, size_t i_items )
 {
     if( !p_didl || p_didl->b_finalized )
         return;

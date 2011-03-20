@@ -470,6 +470,9 @@ void MediaServer::parseDeviceDescription( IXML_Document* p_doc,
                         {
                             p_server->setContentDirectoryEventURL( psz_url );
                             p_server->subscribeToContentDirectory();
+                        } else
+                        {
+                            msg_Dbg( p_sd, "%s, %d: failed to ResolveURL '%s', '%s', '%s'", __FILE__, __LINE__, psz_s1, psz_s2, psz_url );
                         }
 
                         free( psz_url );
@@ -486,6 +489,9 @@ void MediaServer::parseDeviceDescription( IXML_Document* p_doc,
                         {
                             p_server->setContentDirectoryControlURL( psz_url );
                             p_server->fetchContents();
+                        } else
+                        {
+                            msg_Dbg( p_sd, "%s, %d: failed to ResolveURL '%s', '%s', '%s'", __FILE__, __LINE__, psz_s1, psz_s2, psz_url );
                         }
 
                         free( psz_url );
@@ -588,6 +594,8 @@ IXML_Document* MediaServer::_browseAction( const char* psz_object_id_,
     IXML_Document* p_action = 0;
     IXML_Document* p_response = 0;
     const char* psz_url = getContentDirectoryControlURL();
+
+    msg_Dbg( _p_sd, "psz_url is '%s%'", psz_url );
 
     if ( !psz_url )
     {

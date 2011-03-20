@@ -36,7 +36,7 @@ char* didl_print( didl_t* p_didl );
 
 int didl_count( didl_t* p_didl );
 
-void didl_add_container( didl_t* p_didl, int i_items );
+void didl_add_container( didl_t* p_didl, size_t i_items );
 void didl_add_item( didl_t* p_didl, int i_id, char* psz_upnp_class,
         char* psz_title, char* psz_protocol_info, char* psz_url );
 
