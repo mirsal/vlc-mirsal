@@ -2489,7 +2489,7 @@ ifdef HAVE_WIN32
 else
 .libupnp: libupnp
 endif
-	(cd $<; $(HOSTCC) ./configure $(HOSTCONF) --prefix=$(PREFIX) --disable-samples --without-documentation --enable-static --disable-webserver CFLAGS="$(CFLAGS) -O3 -DUPNP_STATIC_LIB $(LIBUPNP_ECFLAGS)" && make && make install)
+	(cd $<; $(HOSTCC) ./configure $(HOSTCONF) --prefix=$(PREFIX) --disable-samples --without-documentation --enable-static CFLAGS="$(CFLAGS) -O3 -DUPNP_STATIC_LIB $(LIBUPNP_ECFLAGS)" && make && make install)
 	touch $@
 
 CLEAN_FILE += .libupnp
@@ -2640,10 +2640,10 @@ libdlna-$(DLNA_VERSION).tar.bz2:
 libdlna: libdlna-$(DLNA_VERSION).tar.bz2
 	$(EXTRACT_BZ2)
 	patch -p0 < Patches/libdlna-no-tags.patch
-	patch -p0 < Patches/libdlna-external-services.patch
+	patch -d libdlna -p1 < Patches/libdlna-external-services.patch
 
 .libdlna: libdlna
-	(cd $<; CFLAGS="$(CFLAGS) -O3" $(HOSTCC) ./configure --prefix=$(PREFIX) --disable-shared --enable-static --disable-sqlite && make && make install)
+	(cd $<; CFLAGS="$(CFLAGS) -O3" $(HOSTCC) ./configure --prefix=$(PREFIX) --disable-shared --enable-static --disable-sqlite && make lib && make install)
 	touch $@
 
 CLEAN_FILE += .libdlna

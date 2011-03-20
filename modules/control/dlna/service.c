@@ -24,6 +24,7 @@
 #define _GNU_SOURCE
 
 #include <vlc_common.h>
+#include <vlc_messages.h>
 #include <dlna.h>
 #include "service.h"
 #include "webserver.h"
@@ -37,16 +38,29 @@ service_t* service_init( vlc_object_t* p_parent, webserver_t* p_webserver,
         const char* psz_description, const char* psz_type, const char* psz_id )
 {
     service_t* p_this = (service_t*) calloc( 1, sizeof( service_t ) );
+    if( !p_this ) return NULL;
 
     p_this->p_parent = p_parent;
     p_this->psz_description = strdup( psz_description );
     
     if ( asprintf( &p_this->psz_description_url,
-            "/services/%s/scpd.xml", psz_service_name ) == -1 ) return NULL;
+            "/services/%s/scpd.xml", psz_service_name ) == -1 )
+    {
+        free( p_this->psz_description_url );
+        return NULL;
+    }
     if ( asprintf( &p_this->psz_control_url, "%s/services/%s/control",
-            psz_upnp_base_url, psz_service_name ) == -1) return NULL;
+            psz_upnp_base_url, psz_service_name ) == -1)
+    {
+        free( p_this->psz_control_url );
+        return NULL;
+    }
     if ( asprintf( &p_this->psz_event_url, "%s/services/%s/event",
-            psz_upnp_base_url, psz_service_name ) == -1) return NULL;
+            psz_upnp_base_url, psz_service_name ) == -1)
+    {
+        free( p_this-> psz_event_url );
+        return NULL;
+    }
 
     p_this->psz_type = strdup( psz_type );
     p_this->psz_id = strdup( psz_id );
@@ -55,6 +69,8 @@ service_t* service_init( vlc_object_t* p_parent, webserver_t* p_webserver,
 
     p_this->p_webserver_service = webserver_register_service( p_webserver,
             p_this->psz_description_url, p_this->psz_description );
+
+    msg_Dbg( p_parent, "psz control url is: %s", p_this->psz_control_url );
 
     p_this->p_dlna_service = dlna_service_init ( p_this->psz_id,
             p_this->psz_type, p_this->psz_description_url,

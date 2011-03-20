@@ -69,14 +69,8 @@ webserver_t* webserver_init( vlc_object_t* p_parent,
 
     p_this->p_parent = p_parent;
 
-    /*FIXME: ugly */
-    if (i_port)
-        p_this->p_host = httpd_HostNew( p_parent, psz_host, i_port );
-    else do
-    {
-        i_port = rand() % 64511 + 1024;
-        p_this->p_host = httpd_HostNew( p_parent, psz_host, i_port );
-    }
+    p_this->p_host = httpd_HostNew( p_parent, psz_host, i_port );
+
     while (!p_this->p_host);
 
     if (!p_this->p_host)

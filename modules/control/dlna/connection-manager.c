@@ -52,7 +52,11 @@ connection_manager_t* connection_manager_init( vlc_object_t* p_parent,
     if( !p_this ) return NULL;
 
     p_this->p_handlers = malloc( sizeof( vlc_dictionary_t ) );
-    if( !p_this->p_handlers ) return NULL;
+    if( !p_this->p_handlers )
+    {
+        free ( p_this );
+        return NULL;
+    }
 
     vlc_dictionary_init( p_this->p_handlers, 1 );
     vlc_dictionary_insert( p_this->p_handlers, "GetCurrentConnectionIDs",

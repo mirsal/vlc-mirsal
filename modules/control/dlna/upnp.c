@@ -28,6 +28,7 @@
 #include <vlc_common.h>
 #include <vlc_plugin.h>
 #include <vlc_interface.h>
+#include <vlc_rand.h>
 
 #include <upnp/upnp.h>
 #include <upnp/upnptools.h>
@@ -84,7 +85,7 @@ static int Open( vlc_object_t* p_this )
 {
     intf_thread_t   *p_intf = (intf_thread_t*)p_this;
     intf_sys_t      *p_sys  = calloc( 1, sizeof( intf_sys_t ) );
-    int              e;
+    int             i_errorcode;
 
     if( !p_sys )
         return VLC_ENOMEM;
@@ -92,9 +93,10 @@ static int Open( vlc_object_t* p_this )
     p_intf->pf_run = Run;
     p_intf->p_sys = p_sys;
 
-    if( (e = UpnpInit( NULL, 0 )) != UPNP_E_SUCCESS )
+
+    if( (i_errorcode = UpnpInit( NULL, 0 )) != UPNP_E_SUCCESS )
     {
-        msg_Err( p_this, "%s", UpnpGetErrorMessage( e ));
+        msg_Err( p_this, "%s", UpnpGetErrorMessage( i_errorcode ));
         free( p_sys );
         return VLC_EGENERIC;
     }
@@ -104,8 +106,11 @@ static int Open( vlc_object_t* p_this )
     
     p_sys->p_libdlna = dlna_init();
 
+    // increase debug for libdlna for testing purposes
+    dlna_set_verbosity( p_sys->p_libdlna, DLNA_MSG_WARNING );
+
     if( !(p_sys->p_webserver = webserver_init( p_this, 
-                    UpnpGetServerIpAddress(), 0 )) )
+                    UpnpGetServerIpAddress(), 0 ) ) )
     {
         msg_Err( p_this, "Webserver initialization failed" );
         free( p_sys );
@@ -166,7 +171,10 @@ static void Close( vlc_object_t *p_this )
     connection_manager_destroy( p_sys->p_connection_manager );
     webserver_unregister_service( p_sys->p_device_description );
     webserver_destroy( p_sys->p_webserver ); 
-    UpnpFinish();
+    if( UPNP_E_FINISH == UpnpFinish() )
+    {
+        msg_Dbg( p_intf, "UPnP SDK is already terminated or it is not initialized" );
+    }
     dlna_uninit( p_sys->p_libdlna );
     free( p_sys->psz_upnp_base_url );
     free( p_sys );
@@ -205,7 +213,6 @@ static void dispatch_action_request( intf_thread_t* p_intf,
 {
     intf_sys_t* p_sys = p_intf->p_sys;
     service_t* p_cds = *(service_t**) p_intf->p_sys->p_content_directory;
-    service_t* p_cms = *(service_t**) p_intf->p_sys->p_connection_manager;
     service_request_handler_t pf_request_handler = NULL;
 
     msg_Dbg( (vlc_object_t*) p_intf,
@@ -238,7 +245,7 @@ static void dispatch_action_request( intf_thread_t* p_intf,
 
 static void Run( intf_thread_t *p_intf )
 {
-    int e;
+    int i_errorcode;
     intf_sys_t* p_sys = p_intf->p_sys;
     char* psz_url;
     
@@ -247,17 +254,17 @@ static void Run( intf_thread_t *p_intf )
                  MEDIASERVER_DESCRIPTION_URL ) == -1 )
         return;
 
-    if ((e = UpnpRegisterRootDevice(
+    if ((i_errorcode = UpnpRegisterRootDevice(
             psz_url,
             dispatch_event, (void*) p_intf,
             p_sys->p_device_handle )) != UPNP_E_SUCCESS)
-        msg_Err( p_intf, "%s", UpnpGetErrorMessage( e ));
+        msg_Err( p_intf, "%s", UpnpGetErrorMessage( i_errorcode ));
 
     free( psz_url );
 
-    if ((e = UpnpSendAdvertisement( *p_sys->p_device_handle, 1800 )) != 
+    if ((i_errorcode = UpnpSendAdvertisement( *p_sys->p_device_handle, 1800 )) != 
             UPNP_E_SUCCESS )
-        msg_Err( p_intf, "%s", UpnpGetErrorMessage( e ));
+        msg_Err( p_intf, "%s", UpnpGetErrorMessage( i_errorcode ));
 
     while( vlc_object_alive( p_intf ) )
     {

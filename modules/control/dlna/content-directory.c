@@ -29,6 +29,8 @@
 #    include "config.h"
 #endif
 
+#include <assert.h>
+
 #include <vlc_common.h>
 #include <vlc_playlist.h>
 
@@ -53,8 +55,6 @@ static void handle_get_system_update_id( void* ev, void* user_data );
 static didl_t* browse_metadata( vlc_object_t* p_this, int i_object_id );
 static didl_t* browse_direct_children( vlc_object_t* p_this, int i_object_id,
        int i_start_index, int i_requested_count );
-static int get_request_int_value( struct Upnp_Action_Request* p_ar,
-                                  const char* psz_key );
 static char* get_request_string_value( struct Upnp_Action_Request* p_ar,
                                        const char* psz_key );
 
@@ -65,7 +65,11 @@ content_directory_t* content_directory_init( vlc_object_t* p_parent,
     if( !p_this ) return NULL;
 
     p_this->p_handlers = malloc( sizeof( vlc_dictionary_t ) );
-    if( !p_this->p_handlers ) return NULL;
+    if( !p_this->p_handlers )
+    {
+        free( p_this );
+        return NULL;
+    }
 
     vlc_dictionary_init( p_this->p_handlers, 1 );
     vlc_dictionary_insert( p_this->p_handlers, "Browse", &handle_browse );
@@ -96,21 +100,6 @@ void content_directory_destroy( content_directory_t* p_this )
     free( p_this );
 }
 
-static int get_request_int_value( struct Upnp_Action_Request* p_ar,
-                                  const char* psz_key )
-{
-    int ret;
-    char* psz_object_id = get_request_string_value( p_ar, psz_key );
- 
-    if( !psz_object_id )
-        return -1;
- 
-    ret = atoi( psz_object_id );
-    free( psz_object_id );
-
-    return ret;
-}
-
 static char* get_request_string_value( struct Upnp_Action_Request* p_ar,
                                        const char* psz_key )
 {
@@ -130,9 +119,11 @@ static char* get_request_string_value( struct Upnp_Action_Request* p_ar,
 
     p_node = ixmlNode_getFirstChild( p_node );
     psz_value = (char*) ixmlNode_getNodeValue( p_node );
-     
+
     if( !psz_value )
         return NULL;
+
+//    free( p_node );
 
     return strdup( psz_value );
 }
@@ -170,7 +161,6 @@ static didl_t* browse_metadata( vlc_object_t* p_this, int i_object_id )
     
     return p_didl;
 }
-
 static didl_t* browse_direct_children( vlc_object_t* p_this,
         int i_object_id, int i_start_index, int i_requested_count )
 {
@@ -189,7 +179,9 @@ static didl_t* browse_direct_children( vlc_object_t* p_this,
     if( !i_start_index && !i_requested_count )
         i_requested_count = p_playlist->current.i_size;
 
-    for( int i=0; (i < p_playlist->current.i_size && i < (i_start_index + i_requested_count)); ++i )
+    for( int i=0;
+            (i < p_playlist->current.i_size && i < (i_start_index + i_requested_count));
+            ++i )
         didl_add_item( p_didl, p_playlist->current.p_elems[i]->p_input->i_id,
             "object.item.audioItem",
             p_playlist->current.p_elems[i]->p_input->psz_name,
@@ -212,9 +204,11 @@ static void handle_browse( void* ev, void* user_data )
     service_t* p_cds = *(service_t**) p_this;
     struct Upnp_Action_Request* p_ar = (struct Upnp_Action_Request*) ev;
     char* psz_browse_flag = get_request_string_value( p_ar, "BrowseFlag" );
-    int i_object_id = get_request_int_value( p_ar, "ObjectID" );
-    int i_start_index = get_request_int_value( p_ar, "StartingIndex" );
-    int i_requested_count = get_request_int_value( p_ar, "RequestedCount" );
+    if( !psz_browse_flag ) return;
+
+    int i_object_id = atoi( get_request_string_value( p_ar, "ObjectID" ) );
+    int i_start_index = atoi( get_request_string_value( p_ar, "StartingIndex" ) );
+    int i_requested_count = atoi( get_request_string_value( p_ar, "RequestedCount" ) );
 
     if( !strcmp( psz_browse_flag, "BrowseMetadata" ) )
         p_result = browse_metadata( p_cds->p_parent, i_object_id );
@@ -223,7 +217,7 @@ static void handle_browse( void* ev, void* user_data )
         p_result = browse_direct_children( p_cds->p_parent, i_object_id,
                i_start_index, i_requested_count );
     
-//    assert( ixmlNode_appendChild( (IXML_Node*) psz_didl, (IXML_Node*) p_cds->p_parent ) == IXML_SUCCESS );
+    //assert( ixmlNode_appendChild( (IXML_Node*) psz_didl, (IXML_Node*) p_cds->p_parent ) == IXML_SUCCESS );
 
     psz_didl = didl_print( p_result );
     if( psz_didl )
@@ -290,7 +284,8 @@ static void handle_get_system_update_id( void* ev, void* user_data )
     struct Upnp_Action_Request* p_ar = (struct Upnp_Action_Request*) ev;
     char* psz_update_id;
 
-    asprintf( &psz_update_id, "%d", p_this->i_update_id );
+    if( asprintf( &psz_update_id, "%d", p_this->i_update_id ) == -1 )
+        return;
 
     UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
             p_this->p_service->psz_type, "Id", psz_update_id );

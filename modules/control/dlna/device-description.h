@@ -35,7 +35,7 @@
 #define MODEL_NAME        "vlc"
 #define MODEL_NUMBER      PACKAGE_VERSION
 #define MODEL_URL         "http://www.videolan.org/vlc"
-#define SERIAL_NUMBER     "0"
+#define SERIAL_NUMBER     PACKAGE_VERSION
 #define UUID              "0"
 #define PRESENTATION_URL  "http://www.videolan.org/vlc"
 
