@@ -28,7 +28,6 @@
 #include <vlc_common.h>
 #include <vlc_plugin.h>
 #include <vlc_interface.h>
-#include <vlc_rand.h>
 
 #include <upnp/upnp.h>
 #include <upnp/upnptools.h>
@@ -107,10 +106,13 @@ static int Open( vlc_object_t* p_this )
     p_sys->p_libdlna = dlna_init();
 
     // increase debug for libdlna for testing purposes
-    dlna_set_verbosity( p_sys->p_libdlna, DLNA_MSG_WARNING );
+    dlna_set_verbosity( p_sys->p_libdlna, DLNA_MSG_INFO );
 
+    // FIXME: we should really ask to launch with port 0, so kernel would
+    // choose the first open port. It's not supported in VLC, so we hope for
+    // the best.
     if( !(p_sys->p_webserver = webserver_init( p_this, 
-                    UpnpGetServerIpAddress(), 0 ) ) )
+                    UpnpGetServerIpAddress(), UpnpGetServerPort() + 1 ) ) )
     {
         msg_Err( p_this, "Webserver initialization failed" );
         free( p_sys );
@@ -133,20 +135,26 @@ static int Open( vlc_object_t* p_this )
     dlna_device_set_model_number( p_sys->p_libdlna, MODEL_NUMBER );
     dlna_device_set_model_url( p_sys->p_libdlna, MODEL_URL );
     dlna_device_set_serial_number( p_sys->p_libdlna, SERIAL_NUMBER );
-    dlna_device_set_uuid( p_sys->p_libdlna, UUID ); //XXX: should be generated
+    dlna_device_set_uuid( p_sys->p_libdlna, UUID ); //FIXME: should be generated!
     dlna_device_set_presentation_url( p_sys->p_libdlna, PRESENTATION_URL );
 
     p_sys->p_content_directory = content_directory_init( p_this,
             p_sys->p_webserver, p_sys->p_libdlna, p_sys->psz_upnp_base_url );
 
     if( !p_sys->p_content_directory )
+    {
+        free( p_sys );
         return VLC_EGENERIC;
+    }
 
     p_sys->p_connection_manager = connection_manager_init( p_this,
             p_sys->p_webserver, p_sys->p_libdlna, p_sys->psz_upnp_base_url );
 
     if( !p_sys->p_connection_manager )
+    {
+        free( p_sys );
         return VLC_EGENERIC;
+    }
 
     p_sys->p_device_description =
         webserver_register_service( p_sys->p_webserver,
@@ -154,6 +162,11 @@ static int Open( vlc_object_t* p_this )
                 dlna_dms_description_get( p_sys->p_libdlna ) ); 
 
     p_sys->p_device_handle = malloc( sizeof( UpnpDevice_Handle ) );
+    if( !p_sys->p_device_handle )
+    {
+        free( p_sys );
+        return VLC_ENOMEM;
+    }
 
     return VLC_SUCCESS;
 }
@@ -177,6 +190,7 @@ static void Close( vlc_object_t *p_this )
     }
     dlna_uninit( p_sys->p_libdlna );
     free( p_sys->psz_upnp_base_url );
+    free( p_sys->p_device_handle );
     free( p_sys );
 }
 
