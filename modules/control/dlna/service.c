@@ -46,19 +46,16 @@ service_t* service_init( vlc_object_t* p_parent, webserver_t* p_webserver,
     if ( asprintf( &p_this->psz_description_url,
             "/services/%s/scpd.xml", psz_service_name ) == -1 )
     {
-        free( p_this->psz_description_url );
         return NULL;
     }
     if ( asprintf( &p_this->psz_control_url, "%s/services/%s/control",
             psz_upnp_base_url, psz_service_name ) == -1)
     {
-        free( p_this->psz_control_url );
         return NULL;
     }
     if ( asprintf( &p_this->psz_event_url, "%s/services/%s/event",
             psz_upnp_base_url, psz_service_name ) == -1)
     {
-        free( p_this-> psz_event_url );
         return NULL;
     }
 

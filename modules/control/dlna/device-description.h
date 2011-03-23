@@ -36,7 +36,7 @@
 #define MODEL_NUMBER      PACKAGE_VERSION
 #define MODEL_URL         "http://www.videolan.org/vlc"
 #define SERIAL_NUMBER     PACKAGE_VERSION
-#define UUID              "0"
+#define UUID              "deadfade-deaf-babe-face-feedcafecaca"
 #define PRESENTATION_URL  "http://www.videolan.org/vlc"
 
 #endif //!mediaserver.h

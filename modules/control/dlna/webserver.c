@@ -65,8 +65,6 @@ webserver_t* webserver_init( vlc_object_t* p_parent,
 {
     webserver_t* p_this = (webserver_t*) malloc( sizeof( webserver_t ) );
     
-    srand( time( NULL ) );
-
     p_this->p_parent = p_parent;
 
     p_this->p_host = httpd_HostNew( p_parent, psz_host, i_port );

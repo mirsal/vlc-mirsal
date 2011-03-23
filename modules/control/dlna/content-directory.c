@@ -123,8 +123,6 @@ static char* get_request_string_value( struct Upnp_Action_Request* p_ar,
     if( !psz_value )
         return NULL;
 
-//    free( p_node );
-
     return strdup( psz_value );
 }
 
@@ -136,7 +134,6 @@ static didl_t* browse_metadata( vlc_object_t* p_this, int i_object_id )
     
     if( i_object_id == 0 )
     {
-//        pl_Release( p_this );
         didl_add_container( p_didl, p_playlist->current.i_size );
         didl_finalize( p_didl );
         return p_didl;
@@ -144,17 +141,17 @@ static didl_t* browse_metadata( vlc_object_t* p_this, int i_object_id )
 
     if( !(p_item = playlist_ItemGetById( p_playlist, i_object_id )) )
     {
-//        pl_Release( p_this );
         didl_finalize( p_didl );
         return p_didl;
     }
 
+    // FIXME: as we send this list to remote user, we need to provide
+    // http://style URL here, not the one we got from playlist!
     didl_add_item( p_didl, p_item->i_id, "object.item.audioItem",
         p_item->p_input->psz_name,
         "http-get:*:audio/mpeg:DLNA.ORG_PN=MP3;DLNA.ORG_OP=01",
         p_item->p_input->psz_uri );
 
-//    pl_Release( p_this );
     didl_finalize( p_didl );
 
     msg_Dbg( p_this, "DIDL: %s", didl_print( p_didl ) );
@@ -182,13 +179,14 @@ static didl_t* browse_direct_children( vlc_object_t* p_this,
     for( int i=0;
             (i < p_playlist->current.i_size && i < (i_start_index + i_requested_count));
             ++i )
+    {
         didl_add_item( p_didl, p_playlist->current.p_elems[i]->p_input->i_id,
-            "object.item.audioItem",
-            p_playlist->current.p_elems[i]->p_input->psz_name,
-            "http-get:*:audio/mpeg:DLNA.ORG_PN=MP3;DLNA.ORG_OP=01",
-            p_playlist->current.p_elems[i]->p_input->psz_uri );
+                "object.item.audioItem",
+                p_playlist->current.p_elems[i]->p_input->psz_name,
+                "http-get:*:audio/mpeg:DLNA.ORG_PN=MP3;DLNA.ORG_OP=01",
+                p_playlist->current.p_elems[i]->p_input->psz_uri );
+    }
     PL_UNLOCK;
-//    pl_Release( p_this );
     didl_finalize( p_didl );
 
     msg_Dbg( p_this, "Direct Children DIDL: %s", didl_print( p_didl ) );
@@ -217,6 +215,9 @@ static void handle_browse( void* ev, void* user_data )
         p_result = browse_direct_children( p_cds->p_parent, i_object_id,
                i_start_index, i_requested_count );
     
+    msg_Dbg( p_this->p_service->p_parent, "psz_didl is: %s ", ixmlPrintNode( (IXML_Node*) psz_didl ) );
+    msg_Dbg( p_this->p_service->p_parent, "p_cd->p_parent is: %s ", ixmlPrintNode( (IXML_Node*) p_cds->p_parent ) );
+
     //assert( ixmlNode_appendChild( (IXML_Node*) psz_didl, (IXML_Node*) p_cds->p_parent ) == IXML_SUCCESS );
 
     psz_didl = didl_print( p_result );
@@ -249,7 +250,7 @@ static void handle_browse( void* ev, void* user_data )
     
     didl_destroy( p_result );
     
-    msg_Dbg( p_this->p_service->p_parent, "UPnP Action response: %s",
+    msg_Dbg( p_this->p_service->p_parent, "UPnP Action response in handle_browse: %s",
             ixmlPrintDocument( p_ar->ActionResult ) );
 }
 

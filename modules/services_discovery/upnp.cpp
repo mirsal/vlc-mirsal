@@ -552,7 +552,7 @@ IXML_Document* MediaServer::_browseAction( const char* psz_object_id_,
     IXML_Document* p_response = 0;
     const char* psz_url = getContentDirectoryControlURL();
 
-    msg_Dbg( _p_sd, "psz_url is '%s%'", psz_url );
+    msg_Dbg( _p_sd, "psz_url is '%s'", psz_url );
 
     if ( !psz_url )
     {
