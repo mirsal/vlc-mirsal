@@ -67,7 +67,9 @@ service_t* service_init( vlc_object_t* p_parent, webserver_t* p_webserver,
     p_this->p_webserver_service = webserver_register_service( p_webserver,
             p_this->psz_description_url, p_this->psz_description );
 
-    msg_Dbg( p_parent, "psz control url is: %s", p_this->psz_control_url );
+    msg_Dbg( p_parent, "Description URL: '%s'", p_this->psz_description_url );
+    msg_Dbg( p_parent, "Control URL: '%s'", p_this->psz_control_url );
+    msg_Dbg( p_parent, "Event URL: '%s'", p_this->psz_event_url );
 
     p_this->p_dlna_service = dlna_service_init ( p_this->psz_id,
             p_this->psz_type, p_this->psz_description_url,

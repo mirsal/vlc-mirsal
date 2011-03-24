@@ -80,7 +80,7 @@ webserver_t* webserver_init( vlc_object_t* p_parent,
     p_this->psz_hostname = strdup( psz_host );
     p_this->i_port = i_port;
 
-    msg_Info( p_parent, "httpd running on %s",
+    msg_Info( p_parent, "httpd running on '%s'",
             webserver_get_base_url( p_this ) );
 
     return p_this;

@@ -214,10 +214,10 @@ static void handle_subscription_request( intf_thread_t* p_intf,
 {
     intf_sys_t* p_sys = p_intf->p_sys;
     service_t* p_cds = *(service_t**) p_sys->p_content_directory;
-    msg_Dbg( p_intf, "Handling subscription request to service %s",
-               p_req->ServiceId );
+    msg_Dbg( p_intf, "Handling subscription request from '%s' to service '%s'",
+            p_req->UDN, p_req->ServiceId );
     if (!strcmp( p_cds->psz_id, p_req->ServiceId ))
-        UpnpAcceptSubscription( p_sys->p_device_handle,
+        UpnpAcceptSubscription( *p_sys->p_device_handle,
                 "urn:schemas-upnp-org:device:MediaServer:1", p_cds->psz_id,
                 NULL, NULL, 0, "12345" );
 }
@@ -230,8 +230,8 @@ static void dispatch_action_request( intf_thread_t* p_intf,
     service_request_handler_t pf_request_handler = NULL;
 
     msg_Dbg( (vlc_object_t*) p_intf,
-            "Dispatching %s action request to service %s",
-            ar->ActionName, ar->ServiceID );
+            "Dispatching '%s' action request to service '%s' from '%s'",
+            ar->ActionName, ar->ServiceID, ar->DevUDN );
     
     if( !strcmp( p_cds->psz_id, ar->ServiceID ) )
     {
@@ -272,13 +272,13 @@ static void Run( intf_thread_t *p_intf )
             psz_url,
             dispatch_event, (void*) p_intf,
             p_sys->p_device_handle )) != UPNP_E_SUCCESS)
-        msg_Err( p_intf, "%s", UpnpGetErrorMessage( i_errorcode ));
+        msg_Err( p_intf, "Failed to register root device: '%s'", UpnpGetErrorMessage( i_errorcode ));
 
     free( psz_url );
 
     if ((i_errorcode = UpnpSendAdvertisement( *p_sys->p_device_handle, 1800 )) != 
             UPNP_E_SUCCESS )
-        msg_Err( p_intf, "%s", UpnpGetErrorMessage( i_errorcode ));
+        msg_Err( p_intf, "Failed to send UPnP advertisement: '%s'", UpnpGetErrorMessage( i_errorcode ));
 
     while( vlc_object_alive( p_intf ) )
     {

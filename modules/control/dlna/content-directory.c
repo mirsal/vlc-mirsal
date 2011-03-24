@@ -148,9 +148,9 @@ static didl_t* browse_metadata( vlc_object_t* p_this, int i_object_id )
     // FIXME: as we send this list to remote user, we need to provide
     // http://style URL here, not the one we got from playlist!
     didl_add_item( p_didl, p_item->i_id, "object.item.audioItem",
-        p_item->p_input->psz_name,
-        "http-get:*:audio/mpeg:DLNA.ORG_PN=MP3;DLNA.ORG_OP=01",
-        p_item->p_input->psz_uri );
+            p_item->p_input->psz_name,
+            "http-get:*:audio/mpeg:DLNA.ORG_PN=MP3;DLNA.ORG_OP=01",
+            p_item->p_input->psz_uri );
 
     didl_finalize( p_didl );
 
@@ -215,11 +215,6 @@ static void handle_browse( void* ev, void* user_data )
         p_result = browse_direct_children( p_cds->p_parent, i_object_id,
                i_start_index, i_requested_count );
     
-    msg_Dbg( p_this->p_service->p_parent, "psz_didl is: %s ", ixmlPrintNode( (IXML_Node*) psz_didl ) );
-    msg_Dbg( p_this->p_service->p_parent, "p_cd->p_parent is: %s ", ixmlPrintNode( (IXML_Node*) p_cds->p_parent ) );
-
-    //assert( ixmlNode_appendChild( (IXML_Node*) psz_didl, (IXML_Node*) p_cds->p_parent ) == IXML_SUCCESS );
-
     psz_didl = didl_print( p_result );
     if( psz_didl )
     {
