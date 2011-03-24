@@ -85,6 +85,8 @@ static int Open( vlc_object_t* p_this )
     intf_thread_t   *p_intf = (intf_thread_t*)p_this;
     intf_sys_t      *p_sys  = calloc( 1, sizeof( intf_sys_t ) );
     int             i_errorcode;
+    char            psz_hostname[256];
+    char*           psz_friendlyname;
 
     if( !p_sys )
         return VLC_ENOMEM;
@@ -127,7 +129,15 @@ static int Open( vlc_object_t* p_this )
         return VLC_ENOMEM;
     }
 
-    dlna_device_set_friendly_name( p_sys->p_libdlna, FRIENDLY_NAME );
+    gethostname( psz_hostname, sizeof (psz_hostname) );
+    if ( asprintf( &psz_friendlyname, "VLC on %s", psz_hostname ) == -1 )
+    {
+        free( p_sys );
+        return VLC_ENOMEM;
+    }
+
+    msg_Dbg( p_this, "setting friendly name to %s", psz_friendlyname );
+    dlna_device_set_friendly_name( p_sys->p_libdlna, psz_friendlyname );
     dlna_device_set_manufacturer( p_sys->p_libdlna, MANUFACTURER );
     dlna_device_set_manufacturer_url( p_sys->p_libdlna, MANUFACTURER_URL );
     dlna_device_set_model_description( p_sys->p_libdlna, MODEL_DESCRIPTION );
