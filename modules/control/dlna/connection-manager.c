@@ -92,8 +92,8 @@ static void handle_get_protocol_info( void* ev, void* user_data )
     UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
             p_this->p_service->psz_type, "Source", "http-get:*:*:*" );
 
-    msg_Dbg( p_this->p_service->p_parent, "UPnP Action response: %s",
-            ixmlPrintDocument( p_ar->ActionResult ) );
+    msg_Dbg( p_this->p_service->p_parent, "%s:%d: UPnP Action response: '%s'",
+            __FILE__, __LINE__, ixmlPrintDocument( p_ar->ActionResult ) );
 
 }
 
@@ -105,8 +105,8 @@ static void handle_get_connection_ids( void* ev, void* user_data )
     UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
             p_this->p_service->psz_type, "ConnectionIDs", "0" );
 
-    msg_Dbg( p_this->p_service->p_parent, "UPnP Action response: %s",
-            ixmlPrintDocument( p_ar->ActionResult ) );
+    msg_Dbg( p_this->p_service->p_parent, "%s:%d: UPnP Action response: '%s'",
+            __FILE__, __LINE__, ixmlPrintDocument( p_ar->ActionResult ) );
 
 }
 
@@ -130,7 +130,7 @@ static void handle_get_connection_info( void* ev, void* user_data )
     UpnpAddToActionResponse( &p_ar->ActionResult, p_ar->ActionName,
             p_this->p_service->psz_type, "Status", "Unknown" );
 
-    msg_Dbg( p_this->p_service->p_parent, "UPnP Action response: %s",
-            ixmlPrintDocument( p_ar->ActionResult ) );
+    msg_Dbg( p_this->p_service->p_parent, "%s:%d: UPnP Action response: '%s'",
+            __FILE__, __LINE__, ixmlPrintDocument( p_ar->ActionResult ) );
 
 }
