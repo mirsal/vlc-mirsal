@@ -44,7 +44,6 @@
 
 static int  Open    ( vlc_object_t * );
 static void Close   ( vlc_object_t * );
-static void Run     ( intf_thread_t * );
 
 static int dispatch_event( Upnp_EventType event_type, void* ev, void* cookie );
 static void handle_subscription_request( intf_thread_t* p_intf,
@@ -87,11 +86,12 @@ static int Open( vlc_object_t* p_this )
     int             i_errorcode;
     char            psz_hostname[256];
     char*           psz_friendlyname;
+    char*           psz_url;
 
     if( !p_sys )
         return VLC_ENOMEM;
 
-    p_intf->pf_run = Run;
+    p_intf->pf_run = NULL;
     p_intf->p_sys = p_sys;
 
 
@@ -178,6 +178,25 @@ static int Open( vlc_object_t* p_this )
         return VLC_ENOMEM;
     }
 
+    if( asprintf( &psz_url,
+                "%s%s", webserver_get_base_url( p_sys->p_webserver ),
+                 MEDIASERVER_DESCRIPTION_URL ) == -1 )
+    {
+        free( p_sys );
+        return VLC_ENOMEM;
+    }
+
+    i_errorcode = UpnpRegisterRootDevice( psz_url, dispatch_event,
+            (void*) p_intf, p_sys->p_device_handle );
+    if( i_errorcode != UPNP_E_SUCCESS )
+        msg_Err( p_intf, "Failed to register root device: '%s'", UpnpGetErrorMessage( i_errorcode ));
+
+    free( psz_url );
+
+    i_errorcode = UpnpSendAdvertisement( *p_sys->p_device_handle, 1800 );
+    if( i_errorcode !=  UPNP_E_SUCCESS )
+        msg_Err( p_intf, "Failed to send UPnP advertisement: '%s'", UpnpGetErrorMessage( i_errorcode ));
+
     return VLC_SUCCESS;
 }
 
@@ -193,7 +212,9 @@ static void Close( vlc_object_t *p_this )
     content_directory_destroy( p_sys->p_content_directory );
     connection_manager_destroy( p_sys->p_connection_manager );
     webserver_unregister_service( p_sys->p_device_description );
-    webserver_destroy( p_sys->p_webserver ); 
+    webserver_destroy( p_sys->p_webserver );
+
+    UpnpUnRegisterRootDevice( *p_sys->p_device_handle );
     if( UPNP_E_FINISH == UpnpFinish() )
     {
         msg_Dbg( p_intf, "UPnP SDK is already terminated or it is not initialized" );
@@ -263,37 +284,3 @@ static void dispatch_action_request( intf_thread_t* p_intf,
     }
 }
 
-/*****************************************************************************
- * Run: main loop
- *****************************************************************************/
-
-static void Run( intf_thread_t *p_intf )
-{
-    int i_errorcode;
-    intf_sys_t* p_sys = p_intf->p_sys;
-    char* psz_url;
-    
-    if( asprintf( &psz_url,
-                "%s%s", webserver_get_base_url( p_sys->p_webserver ),
-                 MEDIASERVER_DESCRIPTION_URL ) == -1 )
-        return;
-
-    if ((i_errorcode = UpnpRegisterRootDevice(
-            psz_url,
-            dispatch_event, (void*) p_intf,
-            p_sys->p_device_handle )) != UPNP_E_SUCCESS)
-        msg_Err( p_intf, "Failed to register root device: '%s'", UpnpGetErrorMessage( i_errorcode ));
-
-    free( psz_url );
-
-    if ((i_errorcode = UpnpSendAdvertisement( *p_sys->p_device_handle, 1800 )) != 
-            UPNP_E_SUCCESS )
-        msg_Err( p_intf, "Failed to send UPnP advertisement: '%s'", UpnpGetErrorMessage( i_errorcode ));
-
-    while( vlc_object_alive( p_intf ) )
-    {
-        msleep( INTF_IDLE_SLEEP );
-    }
-    
-    UpnpUnRegisterRootDevice( *p_sys->p_device_handle );
-}
