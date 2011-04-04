@@ -28,8 +28,6 @@
 #include <vlc_common.h>
 #include <vlc_httpd.h>
 
-#include <dlna.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 
