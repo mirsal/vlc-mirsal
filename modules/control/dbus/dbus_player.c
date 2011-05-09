@@ -44,18 +44,29 @@ DBUS_METHOD( Position )
 { /* returns position in microseconds */
     REPLY_INIT;
     OUT_ARGUMENTS;
+    DBusMessageIter v;
     dbus_int32_t i_pos;
+
+    if( !dbus_message_iter_open_container( &args, DBUS_TYPE_VARIANT, "i", &v ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
 
     input_thread_t *p_input = playlist_CurrentInput( PL );
 
     if( !p_input )
         i_pos = 0;
+
     else
     {
         i_pos = var_GetTime( p_input, "time" );
         vlc_object_release( p_input );
     }
-    ADD_INT32( &i_pos );
+
+    if( !dbus_message_iter_append_basic( &v, DBUS_TYPE_INT32, &i_pos ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
+
+    if( !dbus_message_iter_close_container( &args, &v ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
+
     REPLY_SEND;
 }
 
@@ -168,7 +179,15 @@ DBUS_METHOD( VolumeGet )
     REPLY_INIT;
     OUT_ARGUMENTS;
 
-    MarshalVolume( p_this, &args );
+    DBusMessageIter v;
+
+    if( !dbus_message_iter_open_container( &args, DBUS_TYPE_VARIANT, "d", &v ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
+
+    MarshalVolume( p_this, &v );
+
+    if( !dbus_message_iter_close_container( &args, &v ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
 
     REPLY_SEND;
 }
@@ -302,7 +321,15 @@ DBUS_METHOD( CanPlay )
     REPLY_INIT;
     OUT_ARGUMENTS;
 
-    MarshalCanPlay( p_this, &args );
+    DBusMessageIter v;
+
+    if( !dbus_message_iter_open_container( &args, DBUS_TYPE_VARIANT, "b", &v ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
+
+    MarshalCanPlay( p_this, &v );
+
+    if( !dbus_message_iter_close_container( &args, &v ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
 
     REPLY_SEND;
 }
@@ -329,7 +356,15 @@ DBUS_METHOD( CanPause )
     REPLY_INIT;
     OUT_ARGUMENTS;
 
-    MarshalCanPause( p_this, &args );
+    DBusMessageIter v;
+
+    if( !dbus_message_iter_open_container( &args, DBUS_TYPE_VARIANT, "b", &v ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
+
+    MarshalCanPause( p_this, &v );
+
+    if( !dbus_message_iter_close_container( &args, &v ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
 
     REPLY_SEND;
 }
@@ -339,9 +374,20 @@ DBUS_METHOD( CanControl )
     REPLY_INIT;
     OUT_ARGUMENTS;
 
+    DBusMessageIter v;
     dbus_bool_t b_can_control = TRUE;
 
-    ADD_BOOL( &b_can_control );
+    if( !dbus_message_iter_open_container( &args, DBUS_TYPE_VARIANT,
+                                           "b", &v ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
+
+    if( !dbus_message_iter_append_basic( &v, DBUS_TYPE_BOOLEAN,
+                                         &b_can_control ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
+
+    if( !dbus_message_iter_close_container( &args, &v ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
+
     REPLY_SEND;
 }
 
@@ -366,7 +412,12 @@ DBUS_METHOD( CanSeek )
     REPLY_INIT;
     OUT_ARGUMENTS;
 
-    MarshalCanSeek( p_this, &args );
+    DBusMessageIter v;
+
+    if( !dbus_message_iter_open_container( &args, DBUS_TYPE_VARIANT, "b", &v ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
+
+    MarshalCanSeek( p_this, &v );
 
     REPLY_SEND;
 }
@@ -383,7 +434,15 @@ DBUS_METHOD( ShuffleGet )
     REPLY_INIT;
     OUT_ARGUMENTS;
 
-    MarshalShuffle( p_this, &args );
+    DBusMessageIter v;
+
+    if( !dbus_message_iter_open_container( &args, DBUS_TYPE_VARIANT, "b", &v ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
+
+    MarshalShuffle( p_this, &v );
+
+    if( !dbus_message_iter_close_container( &args, &v ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
 
     REPLY_SEND;
 }
@@ -435,7 +494,15 @@ DBUS_METHOD( PlaybackStatus )
     REPLY_INIT;
     OUT_ARGUMENTS;
 
-    MarshalPlaybackStatus( p_this, &args );
+    DBusMessageIter v;
+
+    if( !dbus_message_iter_open_container( &args, DBUS_TYPE_VARIANT, "s", &v ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
+
+    MarshalPlaybackStatus( p_this, &v );
+
+    if( !dbus_message_iter_close_container( &args, &v ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
 
     REPLY_SEND;
 }
@@ -461,7 +528,15 @@ DBUS_METHOD( RateGet )
     REPLY_INIT;
     OUT_ARGUMENTS;
 
-    MarshalRate( p_this, &args );
+    DBusMessageIter v;
+
+    if( !dbus_message_iter_open_container( &args, DBUS_TYPE_VARIANT, "d", &v ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
+
+    MarshalRate( p_this, &v );
+
+    if( !dbus_message_iter_close_container( &args, &v ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
 
     REPLY_SEND;
 }
@@ -492,9 +567,18 @@ DBUS_METHOD( MinimumRate )
     REPLY_INIT;
     OUT_ARGUMENTS;
 
+    DBusMessageIter v;
     double d_min_rate = (double) INPUT_RATE_MIN / INPUT_RATE_DEFAULT;
 
-    ADD_DOUBLE( &d_min_rate );
+    if( !dbus_message_iter_open_container( &args, DBUS_TYPE_VARIANT, "d", &v ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
+
+    if( !dbus_message_iter_append_basic( &v, DBUS_TYPE_DOUBLE, &d_min_rate ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
+
+    if( !dbus_message_iter_close_container( &args, &v ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
+
     REPLY_SEND;
 }
 
@@ -503,9 +587,18 @@ DBUS_METHOD( MaximumRate )
     REPLY_INIT;
     OUT_ARGUMENTS;
 
+    DBusMessageIter v;
     double d_max_rate = (double) INPUT_RATE_MAX / INPUT_RATE_DEFAULT;
 
-    ADD_DOUBLE( &d_max_rate );
+    if( !dbus_message_iter_open_container( &args, DBUS_TYPE_VARIANT, "d", &v ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
+
+    if( !dbus_message_iter_append_basic( &v, DBUS_TYPE_DOUBLE, &d_max_rate ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
+
+    if( !dbus_message_iter_close_container( &args, &v ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
+
     REPLY_SEND;
 }
 
@@ -529,7 +622,15 @@ DBUS_METHOD( LoopStatusGet )
     REPLY_INIT;
     OUT_ARGUMENTS;
 
-    MarshalLoopStatus( p_this, &args );
+    DBusMessageIter v;
+
+    if( !dbus_message_iter_open_container( &args, DBUS_TYPE_VARIANT, "s", &v ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
+
+    MarshalLoopStatus( p_this, &v );
+
+    if( !dbus_message_iter_close_container( &args, &v ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
 
     REPLY_SEND;
 }
@@ -567,13 +668,25 @@ DBUS_METHOD( Metadata )
 {
     REPLY_INIT;
     OUT_ARGUMENTS;
+
+    DBusMessageIter v;
     playlist_t *p_playlist = PL;
+
+    if( !dbus_message_iter_open_container( &args, DBUS_TYPE_VARIANT,
+                                           "a{sv}", &v ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
 
     PL_LOCK;
     playlist_item_t* p_item =  playlist_CurrentPlayingItem( p_playlist );
+
     if( p_item )
-        GetInputMeta( p_item->p_input, &args );
+        GetInputMeta( p_item->p_input, &v );
+
     PL_UNLOCK;
+
+    if ( !dbus_message_iter_close_container( &args, &v ) )
+        return DBUS_HANDLER_RESULT_NEED_MEMORY;
+
     REPLY_SEND;
 }
 
