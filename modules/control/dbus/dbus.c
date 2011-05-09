@@ -780,6 +780,8 @@ static DBusHandlerResult
 MPRISEntryPoint ( DBusConnection *p_conn, DBusMessage *p_from, void *p_this )
 {
     const char *psz_interface = dbus_message_get_interface( p_from );
+    const char *psz_method    = dbus_message_get_member( p_from );
+
     DBusError error;
 
     if( !strcmp( psz_interface, DBUS_INTERFACE_INTROSPECTABLE ) ||
@@ -792,13 +794,16 @@ MPRISEntryPoint ( DBusConnection *p_conn, DBusMessage *p_from, void *p_this )
 
         if( dbus_error_is_set( &error ) )
         {
-            msg_Err( (vlc_object_t*) p_this, "D-Bus message reading : %s",
+            msg_Err( (vlc_object_t*) p_this, "D-Bus error on %s.%s: %s",
+                                             psz_interface, psz_method,
                                              error.message );
             dbus_error_free( &error );
             return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
         }
 
-        msg_Dbg( (vlc_object_t*) p_this, "Routing D-Bus method call to %s", psz_interface );
+        msg_Dbg( (vlc_object_t*) p_this, "Routing %s.%s D-Bus method call to %s",
+                                         psz_interface, psz_method,
+                                         psz_interface );
     }
 
     if( !strcmp( psz_interface, DBUS_MPRIS_ROOT_INTERFACE ) )
