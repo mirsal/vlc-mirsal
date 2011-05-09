@@ -680,15 +680,6 @@ DBUS_METHOD( SetProperty )
 #undef PROPERTY_GET_FUNC
 #undef PROPERTY_MAPPING_END
 
-DBUS_METHOD( handle_introspect_player )
-{
-    VLC_UNUSED(p_this);
-    REPLY_INIT;
-    OUT_ARGUMENTS;
-    ADD_STRING( &psz_player_introspection_xml );
-    REPLY_SEND;
-}
-
 #define METHOD_FUNC( interface, method, function ) \
     else if( dbus_message_is_method_call( p_from, interface, method ) )\
         return function( p_conn, p_from, p_this )
@@ -696,10 +687,7 @@ DBUS_METHOD( handle_introspect_player )
 DBusHandlerResult
 handle_player ( DBusConnection *p_conn, DBusMessage *p_from, void *p_this )
 {
-    if( dbus_message_is_method_call( p_from,
-                DBUS_INTERFACE_INTROSPECTABLE, "Introspect" ) )
-        return handle_introspect_player( p_conn, p_from, p_this );
-
+    if(0);
     METHOD_FUNC( DBUS_INTERFACE_PROPERTIES,   "Get",        GetProperty );
     METHOD_FUNC( DBUS_INTERFACE_PROPERTIES,   "Set",        SetProperty );
 /*  METHOD_FUNC( DBUS_INTERFACE_PROPERTIES,   "GetAll",     GetAllProperties );*/
