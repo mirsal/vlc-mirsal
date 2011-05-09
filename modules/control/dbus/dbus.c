@@ -780,16 +780,20 @@ static void DispatchDBusMessages( intf_thread_t *p_intf )
 static DBusHandlerResult
 MPRISEntryPoint ( DBusConnection *p_conn, DBusMessage *p_from, void *p_this )
 {
+    char *psz_target_interface;
     const char *psz_interface = dbus_message_get_interface( p_from );
     const char *psz_method    = dbus_message_get_member( p_from );
 
     DBusError error;
 
-    if( !strcmp( psz_interface, DBUS_INTERFACE_PROPERTIES ) )
+    if( strcmp( psz_interface, DBUS_INTERFACE_PROPERTIES ) )
+        psz_target_interface = psz_interface;
+
+    else
     {
         dbus_error_init( &error );
         dbus_message_get_args( p_from, &error,
-                               DBUS_TYPE_STRING, &psz_interface,
+                               DBUS_TYPE_STRING, &psz_target_interface,
                                DBUS_TYPE_INVALID );
 
         if( dbus_error_is_set( &error ) )
@@ -802,16 +806,17 @@ MPRISEntryPoint ( DBusConnection *p_conn, DBusMessage *p_from, void *p_this )
         }
     }
 
-    msg_Dbg( (vlc_object_t*) p_this, "Routing %s.%s D-Bus method call",
-                                     psz_interface, psz_method );
+    msg_Dbg( (vlc_object_t*) p_this, "Routing %s.%s D-Bus method call to %s",
+                                     psz_interface, psz_method,
+                                     psz_target_interface );
 
-    if( !strcmp( psz_interface, DBUS_INTERFACE_INTROSPECTABLE ) )
+    if( !strcmp( psz_target_interface, DBUS_INTERFACE_INTROSPECTABLE ) )
         return handle_introspect( p_conn, p_from, p_this );
 
-    if( !strcmp( psz_interface, DBUS_MPRIS_ROOT_INTERFACE ) )
+    if( !strcmp( psz_target_interface, DBUS_MPRIS_ROOT_INTERFACE ) )
         return handle_root( p_conn, p_from, p_this );
 
-    if( !strcmp( psz_interface, DBUS_MPRIS_PLAYER_INTERFACE ) )
+    if( !strcmp( psz_target_interface, DBUS_MPRIS_PLAYER_INTERFACE ) )
         return handle_player( p_conn, p_from, p_this );
 
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
