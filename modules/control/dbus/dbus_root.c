@@ -311,6 +311,9 @@ DBUS_METHOD( GetProperty )
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
     }
 
+    msg_Dbg( (vlc_object_t*) p_this, "Getting property %s",
+                                     psz_property_name );
+
     PROPERTY_MAPPING_BEGIN
     PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "Identity",            Identity )
     PROPERTY_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "DesktopEntry",        DesktopEntry )
@@ -326,20 +329,22 @@ DBUS_METHOD( GetProperty )
 #undef PROPERTY_GET_FUNC
 #undef PROPERTY_MAPPING_END
 
+#define METHOD_MAPPING_BEGIN if( 0 ) {}
 #define METHOD_FUNC( interface, method, function ) \
     else if( dbus_message_is_method_call( p_from, interface, method ) )\
         return function( p_conn, p_from, p_this )
+#define METHOD_MAPPING_END return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 
 DBusHandlerResult
 handle_root ( DBusConnection *p_conn, DBusMessage *p_from, void *p_this )
 {
-    if(0);
-
+    METHOD_MAPPING_BEGIN
     METHOD_FUNC( DBUS_INTERFACE_PROPERTIES, "Get",          GetProperty );
     METHOD_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "Raise",        Raise );
     METHOD_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "Quit",         Quit );
-
-    return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+    METHOD_MAPPING_END
 }
 
+#undef METHOD_MAPPING_BEGIN
 #undef METHOD_FUNC
+#undef METHOD_MAPPING_END

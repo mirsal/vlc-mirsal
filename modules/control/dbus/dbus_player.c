@@ -630,6 +630,9 @@ DBUS_METHOD( GetProperty )
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
     }
 
+    msg_Dbg( (vlc_object_t*) p_this, "Getting property %s",
+                                     psz_property_name );
+
     PROPERTY_MAPPING_BEGIN
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Metadata", Metadata )
     PROPERTY_FUNC( DBUS_MPRIS_PLAYER_INTERFACE, "Position", Position )
