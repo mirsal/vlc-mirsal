@@ -36,48 +36,6 @@
 #include "dbus_tracklist.h"
 #include "dbus_common.h"
 
-
-const char* psz_tracklist_introspection_xml =
-"<!DOCTYPE node PUBLIC \"-//freedesktop//DTD D-BUS Object Introspection 1.0//EN\"\n"
-"\"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd\">\n"
-"<node>"
-"  <interface name=\"org.freedesktop.DBus.Introspectable\">\n"
-"    <method name=\"Introspect\">\n"
-"      <arg name=\"data\" direction=\"out\" type=\"s\"/>\n"
-"    </method>\n"
-"  </interface>\n"
-"  <interface name=\"org.mpris.MediaPlayer.TrackList\">\n"
-"    <method name=\"AddTrack\">\n"
-"      <arg type=\"s\" direction=\"in\" />\n"
-"      <arg type=\"b\" direction=\"in\" />\n"
-"      <arg type=\"i\" direction=\"out\" />\n"
-"    </method>\n"
-"    <method name=\"DelTrack\">\n"
-"      <arg type=\"i\" direction=\"in\" />\n"
-"    </method>\n"
-"    <method name=\"GetMetadata\">\n"
-"      <arg type=\"i\" direction=\"in\" />\n"
-"      <arg type=\"a{sv}\" direction=\"out\" />\n"
-"    </method>\n"
-"    <method name=\"GetCurrentTrack\">\n"
-"      <arg type=\"i\" direction=\"out\" />\n"
-"    </method>\n"
-"    <method name=\"GetLength\">\n"
-"      <arg type=#include <vlc_common.h>\"i\" direction=\"out\" />\n"
-"    </method>\n"
-"    <method name=\"SetLoop\">\n"
-"      <arg type=\"b\" direction=\"in\" />\n"
-"    </method>\n"
-"    <method name=\"SetRandom\">\n"
-"      <arg type=\"b\" direction=\"in\" />\n"
-"    </method>\n"
-"    <signal name=\"TrackListChange\">\n"
-"      <arg type=\"i\" />\n"
-"    </signal>\n"
-"  </interface>\n"
-"</node>\n"
-;
-
 DBUS_METHOD( AddTrack )
 { /* add the string to the playlist, and play it if the boolean is true */
     REPLY_INIT;

@@ -37,39 +37,14 @@
 #include "dbus_root.h"
 #include "dbus_common.h"
 
-/* XML data to answer org.freedesktop.DBus.Introspectable.Introspect requests */
-static const char* psz_root_introspection_xml =
-"<!DOCTYPE node PUBLIC \"-//freedesktop//DTD D-BUS Object Introspection 1.0//EN\"\n"
-"\"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd\">\n"
-"<node>\n"
-"  <node name=\"Player\"/>\n"
-"  <node name=\"TrackList\"/>\n"
-"  <interface name=\"org.freedesktop.DBus.Introspectable\">\n"
-"    <method name=\"Introspect\">\n"
-"      <arg name=\"data\" direction=\"out\" type=\"s\"/>\n"
-"    </method>\n"
-"  </interface>\n"
-"  <interface name=\"org.mpris.MediaPlayer\">\n"
-"    <property name=\"Identity\" type=\"s\" access=\"read\" />\n"
-"    <property name=\"DesktopEntry\" type=\"s\" access=\"read\" />\n"
-"    <property name=\"SupportedMimeTypes\" type=\"as\" access=\"read\" />\n"
-"    <property name=\"SupportedUriSchemes\" type=\"as\" access=\"read\" />\n"
-"    <property name=\"HasTrackList\" type=\"b\" access=\"read\" />\n"
-"    <property name=\"CanQuit\" type=\"b\" access=\"read\" />\n"
-"    <property name=\"CanRaise\" type=\"b\" access=\"read\" />\n"
-"    <method name=\"Quit\" />\n"
-"  </interface>\n"
-"</node>\n"
-;
-
 DBUS_METHOD( Identity )
 {
     VLC_UNUSED(p_this);
     REPLY_INIT;
     OUT_ARGUMENTS;
+
     char *psz_identity = VLC_IDENTITY;
 
-    ADD_STRING( &psz_identity );
     REPLY_SEND;
 }
 

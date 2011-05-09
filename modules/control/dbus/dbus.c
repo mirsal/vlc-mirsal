@@ -50,6 +50,7 @@
 #include "dbus_root.h"
 #include "dbus_player.h"
 #include "dbus_tracklist.h"
+#include "dbus_introspect.h"
 
 #include <vlc_common.h>
 #include <vlc_plugin.h>
@@ -784,8 +785,7 @@ MPRISEntryPoint ( DBusConnection *p_conn, DBusMessage *p_from, void *p_this )
 
     DBusError error;
 
-    if( !strcmp( psz_interface, DBUS_INTERFACE_INTROSPECTABLE ) ||
-        !strcmp( psz_interface, DBUS_INTERFACE_PROPERTIES ) )
+    if( !strcmp( psz_interface, DBUS_INTERFACE_PROPERTIES ) )
     {
         dbus_error_init( &error );
         dbus_message_get_args( p_from, &error,
@@ -800,14 +800,17 @@ MPRISEntryPoint ( DBusConnection *p_conn, DBusMessage *p_from, void *p_this )
             dbus_error_free( &error );
             return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
         }
-
-        msg_Dbg( (vlc_object_t*) p_this, "Routing %s.%s D-Bus method call to %s",
-                                         psz_interface, psz_method,
-                                         psz_interface );
     }
+
+    msg_Dbg( (vlc_object_t*) p_this, "Routing %s.%s D-Bus method call",
+                                     psz_interface, psz_method );
+
+    if( !strcmp( psz_interface, DBUS_INTERFACE_INTROSPECTABLE ) )
+        return handle_introspect( p_conn, p_from, p_this );
 
     if( !strcmp( psz_interface, DBUS_MPRIS_ROOT_INTERFACE ) )
         return handle_root( p_conn, p_from, p_this );
+
     if( !strcmp( psz_interface, DBUS_MPRIS_PLAYER_INTERFACE ) )
         return handle_player( p_conn, p_from, p_this );
 
