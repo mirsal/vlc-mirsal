@@ -1260,14 +1260,13 @@ int GetInputMeta( input_item_t* p_input,
 
     const char* ppsz_meta_items[] =
     {
-    /* MPRIS metas */
-    "mpris:trackid", "location", "title", "artist", "album", "tracknumber", "time", "mtime",
-    "genre", "rating", "date", "arturl", "mb track id",
-    "audio-bitrate", "audio-samplerate", "video-bitrate",
-    /* VLC specifics metas */
-    "audio-codec", "copyright", "description", "encodedby", "language", "length",
-    "nowplaying", "publisher", "setting", "status", "url",
-    "video-codec"
+    "mpris:trackid", "xesam:url", "xesam:title", "xesam:artist", "xesam:album",
+    "xesam:tracknumber", "vlc:time", "mpris:length", "xesam:genre",
+    "xesam:userRating", "xesam:contentCreated", "mpris:artUrl", "mb:trackId",
+    "vlc:audio-bitrate", "vlc:audio-samplerate", "vlc:video-bitrate",
+    "vlc:audio-codec", "vlc:copyright", "xesam:comment", "vlc:encodedby",
+    "language", "vlc:length", "vlc:nowplaying", "vlc:publisher", "vlc:setting",
+    "status", "vlc:url", "vlc:video-codec"
     };
 
     dbus_message_iter_open_container( args, DBUS_TYPE_ARRAY, "{sv}", &dict );
@@ -1279,7 +1278,7 @@ int GetInputMeta( input_item_t* p_input,
     ADD_VLC_META_STRING( 4,  Album );
     ADD_VLC_META_STRING( 5,  TrackNum );
     ADD_META( 6, DBUS_TYPE_UINT32, i_time );
-    ADD_META( 7, DBUS_TYPE_UINT32, i_mtime );
+    ADD_META( 7, DBUS_TYPE_INT64,  i_mtime );
     ADD_VLC_META_STRING( 8,  Genre );
     ADD_VLC_META_STRING( 9,  Rating );
     ADD_VLC_META_STRING( 10, Date );
