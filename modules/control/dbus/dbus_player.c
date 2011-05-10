@@ -669,7 +669,7 @@ DBUS_METHOD( Metadata )
     REPLY_INIT;
     OUT_ARGUMENTS;
 
-    DBusMessageIter v;
+    DBusMessageIter v, a;
     playlist_t *p_playlist = PL;
 
     if( !dbus_message_iter_open_container( &args, DBUS_TYPE_VARIANT,
@@ -684,7 +684,9 @@ DBUS_METHOD( Metadata )
 
     PL_UNLOCK;
 
-    if ( !dbus_message_iter_close_container( &args, &v ) )
+    if( !dbus_message_iter_open_container( &v, DBUS_TYPE_ARRAY, "{sv}", &a ) ||
+        !dbus_message_iter_close_container( &v, &a ) ||
+        !dbus_message_iter_close_container( &args, &v ) )
         return DBUS_HANDLER_RESULT_NEED_MEMORY;
 
     REPLY_SEND;
