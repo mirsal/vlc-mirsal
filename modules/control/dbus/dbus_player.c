@@ -684,10 +684,13 @@ DBUS_METHOD( Metadata )
 
     PL_UNLOCK;
 
-    if( !dbus_message_iter_open_container( &v, DBUS_TYPE_ARRAY, "{sv}", &a ) ||
-        !dbus_message_iter_close_container( &v, &a ) ||
-        !dbus_message_iter_close_container( &args, &v ) )
+    if( ( !p_item &&
+        ( !dbus_message_iter_open_container( &v, DBUS_TYPE_ARRAY, "{sv}", &a ) ||
+          !dbus_message_iter_close_container( &v, &a ) ) ) ||
+
+        !dbus_message_iter_close_container( &args, &v ) ) {
         return DBUS_HANDLER_RESULT_NEED_MEMORY;
+    }
 
     REPLY_SEND;
 }
