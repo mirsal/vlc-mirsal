@@ -781,6 +781,9 @@ int libvlc_InternalInit( libvlc_int_t *p_libvlc, int i_argc,
     var_Create( p_libvlc, "intf-show", VLC_VAR_BOOL );
     var_SetBool( p_libvlc, "intf-show", true );
 
+    /* Create a variable for showing the main interface */
+    var_Create( p_libvlc, "intf-show-main", VLC_VAR_BOOL );
+
     /* Create a variable for showing the right click menu */
     var_Create( p_libvlc, "intf-popupmenu", VLC_VAR_BOOL );
 

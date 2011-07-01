@@ -188,6 +188,14 @@ DBUS_METHOD( Quit )
     REPLY_SEND;
 }
 
+DBUS_METHOD( Raise )
+{/* shows vlc's main window */
+    REPLY_INIT;
+    var_ToggleBool( INTF->p_libvlc, "intf-show-main" );
+    REPLY_SEND;
+}
+
+
 #define PROPERTY_MAPPING_BEGIN if( 0 ) {}
 #define PROPERTY_FUNC( interface, property, function ) \
     else if( !strcmp( psz_interface_name, interface ) && \
@@ -246,6 +254,7 @@ handle_root ( DBusConnection *p_conn, DBusMessage *p_from, void *p_this )
     METHOD_MAPPING_BEGIN
     METHOD_FUNC( DBUS_INTERFACE_PROPERTIES, "Get",          GetProperty );
     METHOD_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "Quit",         Quit );
+    METHOD_FUNC( DBUS_MPRIS_ROOT_INTERFACE, "Raise",        Raise );
     METHOD_MAPPING_END
 }
 
