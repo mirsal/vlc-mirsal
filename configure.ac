@@ -3891,7 +3891,7 @@ PKG_ENABLE_MODULES_VLC([MTP], [mtp access_mtp], [libmtp >= 1.0.0], [MTP devices 
 dnl
 dnl UPnP Plugin (Intel SDK)
 dnl
-PKG_ENABLE_MODULES_VLC([UPNP], [upnp], [libupnp], [Intel UPNP SDK],[auto])
+PKG_ENABLE_MODULES_VLC([UPNP], [upnp], [libupnp >= 1.8.0], [Intel UPnP SDK],[auto])
 VLC_ADD_CXXFLAGS([upnp],[${UPNP_CFLAGS}])
 
 EXTEND_HELP_STRING([Misc options:])
