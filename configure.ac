@@ -3558,6 +3558,8 @@ dnl
 dnl libsamplerate plugin
 dnl
 PKG_ENABLE_MODULES_VLC([SAMPLERATE], [], [samplerate], [Resampler with libsamplerate], [auto])
+PKG_ENABLE_MODULES_VLC([UPNP], [upnp], [libupnp >= 1.8.0], [Intel UPnP SDK],[auto])
+VLC_ADD_CXXFLAGS([upnp],[${UPNP_CFLAGS}])
 
 dnl
 dnl  OS/2 KAI plugin

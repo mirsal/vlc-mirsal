@@ -6,7 +6,7 @@
  *
  * Authors: Rémi Denis-Courmont <rem # videolan.org> (original plugin)
  *          Christian Henz <henz # c-lab.de>
- *          Mirsal Ennaime <mirsal dot ennaime at gmail dot com>
+ *          Mirsal Ennaime <mirsal at mirsal fr>
  *
  * UPnP Plugin using the Intel SDK (libupnp) instead of CyberLink
  *
@@ -105,12 +105,13 @@ static int Open( vlc_object_t *p_this )
         return VLC_ENOMEM;
 
     /* Initialize on first IPv4-capable adapter and first open port
-     * TODO: use UpnpInit2() to utilize IPv6.
      */
-    i_res = UpnpInit( 0, 0 );
+    i_res = UpnpInit2( NULL, 0 );
     if( i_res != UPNP_E_SUCCESS )
     {
-        msg_Err( p_sd, "Initialization failed: %s", UpnpGetErrorMessage( i_res ) );
+        msg_Err( p_sd, "Initialization failed: %s",
+                 UpnpGetErrorMessage( i_res ) );
+
         free( p_sys );
         return VLC_EGENERIC;
     }
@@ -122,7 +123,9 @@ static int Open( vlc_object_t *p_this )
     i_res = UpnpRegisterClient( Callback, p_sd, &p_sys->client_handle );
     if( i_res != UPNP_E_SUCCESS )
     {
-        msg_Err( p_sd, "Client registration failed: %s", UpnpGetErrorMessage( i_res ) );
+        msg_Err( p_sd, "Client registration failed: %s",
+                 UpnpGetErrorMessage( i_res ) );
+
         Close( (vlc_object_t*) p_sd );
         return VLC_EGENERIC;
     }
@@ -130,9 +133,12 @@ static int Open( vlc_object_t *p_this )
     /* Search for media servers */
     i_res = UpnpSearchAsync( p_sys->client_handle, 5,
             MEDIA_SERVER_DEVICE_TYPE, p_sd );
+
     if( i_res != UPNP_E_SUCCESS )
     {
-        msg_Err( p_sd, "Error sending search request: %s", UpnpGetErrorMessage( i_res ) );
+        msg_Err( p_sd, "Error sending search request: %s",
+                 UpnpGetErrorMessage( i_res ) );
+
         Close( (vlc_object_t*) p_sd );
         return VLC_EGENERIC;
     }
@@ -143,7 +149,7 @@ static int Open( vlc_object_t *p_this )
     if( (i_res = UpnpSetMaxContentLength( INT_MAX )) != UPNP_E_SUCCESS )
     {
         msg_Err( p_sd, "Failed to set maximum content length: %s",
-                UpnpGetErrorMessage( i_res ));
+                 UpnpGetErrorMessage( i_res ) );
 
         Close( (vlc_object_t*) p_sd );
         return VLC_EGENERIC;
@@ -258,22 +264,25 @@ static int Callback( Upnp_EventType event_type, void* p_event, void* p_user_data
     case UPNP_DISCOVERY_ADVERTISEMENT_ALIVE:
     case UPNP_DISCOVERY_SEARCH_RESULT:
     {
-        struct Upnp_Discovery* p_discovery = ( struct Upnp_Discovery* )p_event;
+        const UpnpString *p_location = NULL;
+        const char *psz_location     = NULL;
+        UpnpDiscovery* p_discovery   = ( UpnpDiscovery* )p_event;
+        IXML_Document *p_description_doc = NULL;
 
-        IXML_Document *p_description_doc = 0;
+        p_location   = UpnpDiscovery_get_Location( p_discovery );
+        psz_location = UpnpString_get_String( p_location );
+        int i_res    = UpnpDownloadXmlDoc( psz_location, &p_description_doc );
 
-        int i_res;
-        i_res = UpnpDownloadXmlDoc( p_discovery->Location, &p_description_doc );
         if ( i_res != UPNP_E_SUCCESS )
         {
             msg_Warn( p_sd, "Could not download device description! "
                             "Fetching data from %s failed: %s",
-                            p_discovery->Location, UpnpGetErrorMessage( i_res ) );
+                            psz_location, UpnpGetErrorMessage( i_res ) );
             return i_res;
         }
 
         MediaServer::parseDeviceDescription( p_description_doc,
-                p_discovery->Location, p_sd );
+                                             psz_location, p_sd );
 
         ixmlDocument_free( p_description_doc );
     }
@@ -281,18 +290,19 @@ static int Callback( Upnp_EventType event_type, void* p_event, void* p_user_data
 
     case UPNP_DISCOVERY_ADVERTISEMENT_BYEBYE:
     {
-        struct Upnp_Discovery* p_discovery = ( struct Upnp_Discovery* )p_event;
-
-        p_sys->p_server_list->removeServer( p_discovery->DeviceId );
-
+        UpnpDiscovery* p_discovery = ( UpnpDiscovery* )p_event;
+        const UpnpString *p_id = UpnpDiscovery_get_DeviceID( p_discovery );
+        p_sys->p_server_list->removeServer( UpnpString_get_String( p_id ) );
     }
     break;
 
     case UPNP_EVENT_RECEIVED:
     {
-        Upnp_Event* p_e = ( Upnp_Event* )p_event;
+        UpnpEvent* p_e = ( UpnpEvent* )p_event;
+        const UpnpString *p_sid = UpnpEvent_get_SID( p_e );
+        const char *psz_sid = UpnpString_get_String( p_sid );
 
-        MediaServer* p_server = p_sys->p_server_list->getServerBySID( p_e->Sid );
+        MediaServer* p_server = p_sys->p_server_list->getServerBySID( psz_sid );
         if ( p_server ) p_server->fetchContents();
     }
     break;
@@ -302,9 +312,11 @@ static int Callback( Upnp_EventType event_type, void* p_event, void* p_user_data
     {
         /* Re-subscribe. */
 
-        Upnp_Event_Subscribe* p_s = ( Upnp_Event_Subscribe* )p_event;
+        UpnpEventSubscribe* p_s = ( UpnpEventSubscribe* )p_event;
+        const UpnpString *p_sid = UpnpEventSubscribe_get_SID( p_s );
+        const char *psz_sid = UpnpString_get_String( p_sid );
 
-        MediaServer* p_server = p_sys->p_server_list->getServerBySID( p_s->Sid );
+        MediaServer* p_server = p_sys->p_server_list->getServerBySID( psz_sid );
         if ( p_server ) p_server->subscribeToContentDirectory();
     }
     break;
