@@ -531,9 +531,10 @@ static void ProcessEvents( intf_thread_t *p_intf,
     playlist_t *p_playlist = p_intf->p_sys->p_playlist;
     bool        b_can_play = p_intf->p_sys->b_can_play;
 
-    vlc_dictionary_t player_properties, tracklist_properties;
+    vlc_dictionary_t player_properties, tracklist_properties, root_properties;
     vlc_dictionary_init( &player_properties,    0 );
     vlc_dictionary_init( &tracklist_properties, 0 );
+    vlc_dictionary_init( &root_properties,      0 );
 
     for( int i = 0; i < i_events; i++ )
     {
@@ -564,6 +565,9 @@ static void ProcessEvents( intf_thread_t *p_intf,
             break;
         case SIGNAL_RANDOM:
             vlc_dictionary_insert( &player_properties, "Shuffle", NULL );
+            break;
+        case SIGNAL_FULLSCREEN:
+            vlc_dictionary_insert( &root_properties, "Fullscreen", NULL );
             break;
         case SIGNAL_REPEAT:
         case SIGNAL_LOOP:
@@ -623,8 +627,12 @@ static void ProcessEvents( intf_thread_t *p_intf,
     if( vlc_dictionary_keys_count( &tracklist_properties ) )
         TrackListPropertiesChangedEmit( p_intf, &tracklist_properties );
 
+    if( vlc_dictionary_keys_count( &root_properties ) )
+        RootPropertiesChangedEmit( p_intf, &root_properties );
+
     vlc_dictionary_clear( &player_properties,    NULL, NULL );
     vlc_dictionary_clear( &tracklist_properties, NULL, NULL );
+    vlc_dictionary_clear( &root_properties,      NULL, NULL );
 }
 
 /**
@@ -1048,6 +1056,9 @@ static int AllCallback( vlc_object_t *p_this, const char *psz_var,
 
     else if( !strcmp( "random", psz_var ) )
         info->signal = SIGNAL_RANDOM;
+
+    else if( !strcmp( "fullscreen", psz_var ) )
+        info->signal = SIGNAL_FULLSCREEN;
 
     else if( !strcmp( "repeat", psz_var ) )
         info->signal = SIGNAL_REPEAT;
