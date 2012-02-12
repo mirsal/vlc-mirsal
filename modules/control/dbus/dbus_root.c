@@ -1,9 +1,9 @@
 /*****************************************************************************
- * dbus_root.c : dbus control module (mpris v1.0) - root object
+ * dbus_root.c : dbus control module (mpris v2.2) - root object
  *****************************************************************************
  * Copyright © 2006-2008 Rafaël Carré
- * Copyright © 2007-2011 Mirsal Ennaime
- * Copyright © 2009-2011 The VideoLAN team
+ * Copyright © 2007-2012 Mirsal Ennaime
+ * Copyright © 2009-2012 The VideoLAN team
  * $Id$
  *
  * Authors:    Mirsal Ennaime <mirsal at mirsal fr>
@@ -101,8 +101,22 @@ DBUS_METHOD( Identity )
 static int
 MarshalCanSetFullscreen( intf_thread_t *p_intf, DBusMessageIter *container )
 {
-    VLC_UNUSED( p_intf );
-    const dbus_bool_t b_ret = TRUE;
+    input_thread_t *p_input = NULL;
+    vout_thread_t  *p_vout  = NULL;
+    dbus_bool_t     b_ret = FALSE;
+
+    if( p_intf->p_sys->p_input )
+    {
+        p_input = (input_thread_t*) vlc_object_hold( p_intf->p_sys->p_input );
+        p_vout  = input_GetVout( p_input );
+        vlc_object_release( p_input );
+
+        if( p_vout )
+        {
+            b_ret = TRUE;
+            vlc_object_release( p_vout );
+        }
+    }
 
     dbus_message_iter_append_basic( container, DBUS_TYPE_BOOLEAN, &b_ret );
     return VLC_SUCCESS;
@@ -127,14 +141,14 @@ DBUS_METHOD( CanSetFullscreen )
 static void
 MarshalFullscreen( intf_thread_t *p_intf, DBusMessageIter *container )
 {
-    vout_thread_t *p_vout = (vout_thread_t *)p_intf;
-    dbus_bool_t b_fullscreen;
-    if ( p_vout ) {
-        b_fullscreen = var_GetBool( p_vout , "fullscreen" );
-    } else {
-        b_fullscreen = FALSE;
-    }
-    dbus_message_iter_append_basic( container, DBUS_TYPE_BOOLEAN, &b_fullscreen );
+    playlist_t *p_playlist   = p_intf->p_sys->p_playlist;
+    dbus_bool_t b_fullscreen = false;
+
+    if ( p_playlist )
+        b_fullscreen = var_GetBool( p_playlist , "fullscreen" );
+
+    dbus_message_iter_append_basic( container,
+            DBUS_TYPE_BOOLEAN, &b_fullscreen );
 }
 
 DBUS_METHOD( FullscreenGet )
@@ -157,17 +171,31 @@ DBUS_METHOD( FullscreenGet )
 
 DBUS_METHOD( FullscreenSet )
 {
+    dbus_bool_t     b_fullscreen = FALSE;
+    input_thread_t *p_input      = NULL;
+    vout_thread_t  *p_vout       = NULL;
+
     REPLY_INIT;
-    dbus_bool_t b_fullscreen;
 
     if( VLC_SUCCESS != DemarshalSetPropertyValue( p_from, &b_fullscreen ) )
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 
-    vout_thread_t *p_vout = (vout_thread_t *)p_this;
+    if( INTF->p_sys->p_input )
+    {
+        p_input = (input_thread_t*) vlc_object_hold( INTF->p_sys->p_input );
+        p_vout  = input_GetVout( p_input );
+        vlc_object_release( p_input );
 
-    if ( p_vout ){
-        var_SetBool( p_vout, "fullscreen", ( b_fullscreen == TRUE ) );
+        if( p_vout )
+        {
+            var_SetBool( p_vout, "fullscreen", ( b_fullscreen == TRUE ) );
+            vlc_object_release( p_vout );
+        }
+
+        if( PL )
+            var_SetBool( PL, "fullscreen", ( b_fullscreen == TRUE ) );
     }
+
     REPLY_SEND;
 }
 
@@ -560,11 +588,11 @@ handle_root ( DBusConnection *p_conn, DBusMessage *p_from, void *p_this )
 #undef METHOD_MAPPING_BEGIN
 #undef METHOD_FUNC
 #undef METHOD_MAPPING_END
+
 /**
  * PropertiesChangedSignal() synthetizes and sends the
  * org.freedesktop.DBus.Properties.PropertiesChanged signal
  */
-
 static DBusHandlerResult
 PropertiesChangedSignal( intf_thread_t    *p_intf,
                          vlc_dictionary_t *p_changed_properties )
@@ -617,10 +645,10 @@ PropertiesChangedSignal( intf_thread_t    *p_intf,
 }
 
 /*****************************************************************************
- * PropertiesChangedEmitRoot: Emits the Seeked signal
+ * RootPropertiesChangedEmit: Emits the Seeked signal
  *****************************************************************************/
 int RootPropertiesChangedEmit( intf_thread_t    * p_intf,
-                                 vlc_dictionary_t * p_changed_properties )
+                               vlc_dictionary_t * p_changed_properties )
 {
     if( p_intf->p_sys->b_dead )
         return VLC_SUCCESS;

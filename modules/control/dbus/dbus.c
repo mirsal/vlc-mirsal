@@ -232,6 +232,7 @@ static int Open( vlc_object_t *p_this )
     var_AddCallback( p_playlist, "random", AllCallback, p_intf );
     var_AddCallback( p_playlist, "repeat", AllCallback, p_intf );
     var_AddCallback( p_playlist, "loop", AllCallback, p_intf );
+    var_AddCallback( p_playlist, "fullscreen", AllCallback, p_intf );
 
     dbus_connection_set_dispatch_status_function( p_conn,
                                                   dispatch_status_cb,
