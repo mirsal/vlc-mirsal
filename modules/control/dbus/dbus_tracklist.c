@@ -37,7 +37,7 @@
 #include "dbus_common.h"
 
 DBUS_METHOD( AddTrack )
-{ /* add the string to the playlist, and play it if the boolean is true */
+{
     REPLY_INIT;
 
     DBusError error;
