@@ -1079,6 +1079,15 @@ static const char *const ppsz_prefres[] = {
     "When using the one instance only option, enqueue items to playlist " \
     "and keep playing current item.")
 
+#define UPNP_IFACE_TEXT N_("Network interface used for UPnP service discovery")
+
+#ifdef  UPNP_ENABLE_IPV6
+#define UPNP_IFACE_LONGTEXT N_("IPv6-capable network interface name or local " \
+                               "IPv4 address to use for UPnP service discovery")
+#else
+#define UPNP_IFACE_LONGTEXT N_("IPv4 address to use for UPnP service discovery")
+#endif
+
 /*****************************************************************************
  * Playlist
  ****************************************************************************/
@@ -1967,7 +1976,10 @@ vlc_module_begin ()
               INHIBIT_LONGTEXT, true )
 #endif
 
-#if defined(_WIN32) || defined(__OS2__)
+    add_string( "upnp-iface", "", UPNP_IFACE_TEXT,
+                UPNP_IFACE_LONGTEXT, false )
+
+#if defined(WIN32) || defined(__OS2__)
     add_bool( "high-priority", 0, HPRIORITY_TEXT,
               HPRIORITY_LONGTEXT, false )
 #endif

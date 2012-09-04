@@ -27,7 +27,7 @@ libmtp_plugin_la_LIBADD = $(MTP_LIBS)
 EXTRA_LTLIBRARIES += libmtp_plugin.la
 sd_LTLIBRARIES += $(LTLIBmtp)
 
-libupnp_plugin_la_SOURCES = services_discovery/upnp.cpp services_discovery/upnp.hpp
+libupnp_plugin_la_SOURCES = services_discovery/upnp.c services_discovery/upnp.h
 libupnp_plugin_la_CXXFLAGS = $(AM_CXXFLAGS) $(UPNP_CFLAGS)
 libupnp_plugin_la_LDFLAGS = $(AM_LDFLAGS) -rpath '$(sddir)'
 libupnp_plugin_la_LIBADD = $(UPNP_LIBS)
