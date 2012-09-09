@@ -21,6 +21,7 @@ endif
 
 libfilesystem_plugin_la_SOURCES = access/fs.h access/file.c access/directory.c access/fs.c
 libfilesystem_plugin_la_CPPFLAGS = $(AM_CPPFLAGS)
+
 if HAVE_WIN32
 libfilesystem_plugin_la_LIBADD = -lshlwapi
 endif
@@ -463,6 +464,8 @@ access_LTLIBRARIES += libavio_plugin.la
 endif
 endif
 
+libaccess_upnp_plugin_la_SOURCES = access/upnp.c
+access_LTLIBRARIES += libaccess_upnp_plugin.la
 
 ### Misc ###
 
