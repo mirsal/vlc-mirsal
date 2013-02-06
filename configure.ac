@@ -3981,6 +3981,13 @@ dnl
 PKG_ENABLE_MODULES_VLC([UPNP], [upnp], [libupnp], [Intel UPNP SDK],[auto])
 VLC_ADD_CXXFLAGS([upnp],[${UPNP_CFLAGS}])
 
+dnl
+dnl dLeyna UPnP A/V DLNA SD
+dnl
+PKG_ENABLE_MODULES_VLC([DLEYNA], [dleyna], [dbus-1], [dLeyna UPNP stack],[auto])
+VLC_ADD_CXXFLAGS([dleyna],[${DLEYNA_CFLAGS}])
+
+
 EXTEND_HELP_STRING([Misc options:])
 
 dnl

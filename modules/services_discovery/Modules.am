@@ -1,4 +1,5 @@
 SOURCES_upnp = upnp.cpp upnp.hpp
+SOURCES_dleyna = dleyna.h dleyna.c
 SOURCES_bonjour = bonjour.c
 SOURCES_podcast = podcast.c
 SOURCES_mtp = mtp.c
