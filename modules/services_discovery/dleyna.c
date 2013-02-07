@@ -31,6 +31,7 @@
 
 #include <vlc_common.h>
 #include <vlc_plugin.h>
+#include <vlc_threads.h>
 #include <vlc_services_discovery.h>
 
 #include <dbus/dbus.h>
@@ -66,11 +67,14 @@ vlc_module_end ()
 struct services_discovery_sys_t
 {
     DBusConnection *p_conn;
+    vlc_thread_t probe_thread;
 };
 
 /*****************************************************************************
  * Local prototypes
  *****************************************************************************/
+
+static void *Probe( void* );
 
 /*****************************************************************************
  * Open: initialize and create stuff
@@ -79,6 +83,9 @@ static int Open( vlc_object_t *p_this )
 {
     services_discovery_t *p_sd = ( services_discovery_t* )p_this;
     services_discovery_sys_t *p_sys;
+
+    if( !dbus_threads_init_default() )
+        return VLC_EGENERIC;
 
     p_sd->p_sys = p_sys = calloc( 1, sizeof( services_discovery_sys_t ) );
 
@@ -111,7 +118,8 @@ static int Open( vlc_object_t *p_this )
         goto error;
     }
 
-    return VLC_SUCCESS;
+    if( !vlc_clone( &p_sys->probe_thread, Probe, p_sd, VLC_THREAD_PRIORITY_LOW ) )
+        return VLC_SUCCESS;
 
 error:
     dbus_connection_close( p_sd->p_sys->p_conn );
@@ -128,8 +136,23 @@ static void Close( vlc_object_t *p_this )
 {
     services_discovery_t *p_sd = (services_discovery_t*) p_this;
 
+    vlc_cancel( p_sd->p_sys->probe_thread );
+    vlc_join( p_sd->p_sys->probe_thread, NULL );
+
     dbus_connection_close( p_sd->p_sys->p_conn );
     dbus_connection_unref( p_sd->p_sys->p_conn );
 
     free( p_sd->p_sys );
+}
+
+
+/*****************************************************************************
+ * Probe: find media servers
+ *****************************************************************************/
+static void *Probe( void *p_data )
+{
+    services_discovery_t *p_sd = (services_discovery_t*)p_data;
+    msg_Dbg( p_sd, "Probing dLeyna for available DLNA media servers");
+
+    return NULL;
 }
