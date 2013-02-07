@@ -22,7 +22,7 @@
  *****************************************************************************/
 
 /*****************************************************************************
- * Includes
+ * Preamble
  *****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
@@ -34,6 +34,9 @@
 #include <vlc_services_discovery.h>
 
 #include <dbus/dbus.h>
+
+#define DLEYNA_SERVICE_NAME "com.intel.media-service-upnp"
+#define DLEYNA_SERVICE_PATH "/com/intel/MediaServiceUPnP"
 
 /*****************************************************************************
  * Module descriptor
@@ -82,9 +85,37 @@ static int Open( vlc_object_t *p_this )
     if( unlikely(!p_sys) )
         return VLC_ENOMEM;
 
+    DBusError err;
+    dbus_error_init(&err);
+
+    p_sys->p_conn = dbus_bus_get_private( DBUS_BUS_SESSION, &err );
+
+    if( !p_sys->p_conn )
+    {
+        msg_Err( p_sd, "cannot connect to session bus: %s", err.message);
+        dbus_error_free( &err );
+        free( p_sys );
+        return VLC_EGENERIC;
+    }
+
+    if( !dbus_bus_name_has_owner( p_sys->p_conn, DLEYNA_SERVICE_NAME, &err ) )
+    {
+        msg_Err( p_sd, "Cannot find dLeyna" );
+
+        if( dbus_error_is_set( &err ) )
+        {
+            msg_Err( p_sd, "D-Bus error: %s", err.message );
+            dbus_error_free( &err );
+        }
+
+        goto error;
+    }
+
     return VLC_SUCCESS;
 
 error:
+    dbus_connection_close( p_sd->p_sys->p_conn );
+    dbus_connection_unref( p_sd->p_sys->p_conn );
     free( p_sys );
 
     return VLC_EGENERIC;
@@ -95,5 +126,10 @@ error:
  *****************************************************************************/
 static void Close( vlc_object_t *p_this )
 {
-    free( ((services_discovery_t*)p_this)->p_sys );
+    services_discovery_t *p_sd = (services_discovery_t*) p_this;
+
+    dbus_connection_close( p_sd->p_sys->p_conn );
+    dbus_connection_unref( p_sd->p_sys->p_conn );
+
+    free( p_sd->p_sys );
 }
