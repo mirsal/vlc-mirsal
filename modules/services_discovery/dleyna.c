@@ -147,9 +147,14 @@ static void Close( vlc_object_t *p_this )
 }
 
 
-/*****************************************************************************
- * Probe: find media servers
- *****************************************************************************/
+/**
+ * Finds media servers
+ *
+ * This is supposed to be used as a probe thread function.
+ *
+ * @param void* p_data This services_discovery_t object
+ * @return NULL
+ */
 static void *Probe( void *p_data )
 {
     services_discovery_t *p_sd = (services_discovery_t*)p_data;
