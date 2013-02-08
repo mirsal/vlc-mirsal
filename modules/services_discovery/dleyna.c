@@ -38,6 +38,7 @@
 
 #define DLEYNA_SERVICE_NAME "com.intel.media-service-upnp"
 #define DLEYNA_SERVICE_PATH "/com/intel/MediaServiceUPnP"
+#define DLEYNA_MANAGER_INTERFACE "com.intel.MediaServiceUPnP.Manager"
 
 /*****************************************************************************
  * Module descriptor
@@ -152,7 +153,36 @@ static void Close( vlc_object_t *p_this )
 static void *Probe( void *p_data )
 {
     services_discovery_t *p_sd = (services_discovery_t*)p_data;
+    DBusMessage *p_call = NULL, *p_reply = NULL;
+
+    DBusError err;
+    dbus_error_init(&err);
+
     msg_Dbg( p_sd, "Probing dLeyna for available DLNA media servers");
 
+    p_call = dbus_message_new_method_call( DLEYNA_SERVICE_NAME,
+            DLEYNA_SERVICE_PATH, DLEYNA_MANAGER_INTERFACE, "GetServers" );
+
+    if( !p_call )
+        return NULL;
+
+    p_reply = dbus_connection_send_with_reply_and_block( p_sd->p_sys->p_conn,
+            p_call, DBUS_TIMEOUT_USE_DEFAULT, &err );
+
+    dbus_message_unref( p_call );
+
+    if( !p_reply )
+    {
+        if( dbus_error_is_set( &err ) )
+        {
+            msg_Dbg( p_sd, "DBus error: %s", err.message );
+            dbus_error_free( &err );
+        }
+
+        msg_Dbg( p_sd, "Failed to retrieve a list of media servers" );
+        return NULL;
+    }
+
+    dbus_message_unref( p_reply );
     return NULL;
 }
