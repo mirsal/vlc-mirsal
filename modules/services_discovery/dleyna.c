@@ -146,7 +146,6 @@ static void Close( vlc_object_t *p_this )
     free( p_sd->p_sys );
 }
 
-
 /**
  * Finds media servers
  *
@@ -158,7 +157,10 @@ static void Close( vlc_object_t *p_this )
 static void *Probe( void *p_data )
 {
     services_discovery_t *p_sd = (services_discovery_t*)p_data;
-    DBusMessage *p_call = NULL, *p_reply = NULL;
+
+    DBusMessage *p_call    = NULL, *p_reply = NULL;
+    const char **p_servers = NULL;
+    int          i_servers = 0;
 
     DBusError err;
     dbus_error_init(&err);
@@ -188,6 +190,18 @@ static void *Probe( void *p_data )
         return NULL;
     }
 
+    if( !dbus_message_get_args( p_reply, &err,
+                DBUS_TYPE_ARRAY, DBUS_TYPE_OBJECT_PATH,
+                &p_servers, &i_servers,
+                DBUS_TYPE_INVALID) )
+    {
+        msg_Dbg( p_sd, "DBus error: %s", err.message );
+        dbus_message_unref( p_reply );
+        dbus_error_free( &err );
+        return NULL;
+    }
+
+    msg_Dbg( p_sd, "Found %d DLNA media servers", i_servers );
     dbus_message_unref( p_reply );
     return NULL;
 }
