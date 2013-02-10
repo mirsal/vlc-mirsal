@@ -34,6 +34,7 @@
 #include <vlc_threads.h>
 #include <vlc_services_discovery.h>
 
+#include <assert.h>
 #include <dbus/dbus.h>
 
 #define DLEYNA_SERVICE_NAME "com.intel.media-service-upnp"
@@ -75,7 +76,9 @@ struct services_discovery_sys_t
  * Local prototypes
  *****************************************************************************/
 
-static void *Probe( void* );
+static void  *Probe( void* );
+static int    SubscribeToMediaServer( services_discovery_t *p_sd,
+                                      const char *psz_server );
 
 /*****************************************************************************
  * Open: initialize and create stuff
@@ -158,9 +161,9 @@ static void *Probe( void *p_data )
 {
     services_discovery_t *p_sd = (services_discovery_t*)p_data;
 
-    DBusMessage *p_call    = NULL, *p_reply = NULL;
-    const char **p_servers = NULL;
-    int          i_servers = 0;
+    DBusMessage *p_call       = NULL, *p_reply = NULL;
+    const char **ppsz_servers = NULL;
+    int i_servers = 0;
 
     DBusError err;
     dbus_error_init(&err);
@@ -192,7 +195,7 @@ static void *Probe( void *p_data )
 
     if( !dbus_message_get_args( p_reply, &err,
                 DBUS_TYPE_ARRAY, DBUS_TYPE_OBJECT_PATH,
-                &p_servers, &i_servers,
+                &ppsz_servers, &i_servers,
                 DBUS_TYPE_INVALID) )
     {
         msg_Dbg( p_sd, "DBus error: %s", err.message );
@@ -202,6 +205,35 @@ static void *Probe( void *p_data )
     }
 
     msg_Dbg( p_sd, "Found %d DLNA media servers", i_servers );
+
+    for( int i = 0; i < i_servers; ++i )
+    {
+        const char *psz_server = ppsz_servers[i];
+
+        if( VLC_ENOMEM == SubscribeToMediaServer( p_sd, psz_server ) )
+            return NULL;
+    }
+
     dbus_message_unref( p_reply );
     return NULL;
+}
+
+/**
+ * Subscribes to a media server given its DBus object path
+ *
+ * @param services_discovery_t* p_sd This SD instance
+ * @param const char* psz_server A media server's DBus object path
+ *
+ * @return int VLC error code
+ */
+static int SubscribeToMediaServer( services_discovery_t *p_sd,
+                                   const char *psz_server )
+{
+    DBusError err;
+    dbus_error_init( &err );
+
+    assert( psz_server );
+    msg_Dbg( p_sd, "Subscribing to media server at %s", psz_server );
+
+    return VLC_SUCCESS;
 }
