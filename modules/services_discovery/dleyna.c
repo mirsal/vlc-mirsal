@@ -1,7 +1,7 @@
 /*****************************************************************************
  * dleyna.c: DLNA services discovery module using dLeyna
  *****************************************************************************
- * Copyright (C) 2013 the VideoLAN team
+ * Copyright (C) 2013 VLC authors and VideoLAN
  * $Id$
  *
  * Authors: Mirsal Ennaime <mirsal@mirsal.fr>
