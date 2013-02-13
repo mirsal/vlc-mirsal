@@ -86,7 +86,7 @@ static int GetDBusProperty( services_discovery_t *p_sd,
                             const char *psz_object_path,
                             const char *psz_interface,
                             const char *psz_property,
-                            DBusMessageIter *p_result );
+                            DBusMessage **pp_result );
 
 /*****************************************************************************
  * Open: initialize and create stuff
@@ -240,7 +240,9 @@ static int SubscribeToMediaServer( services_discovery_t *p_sd,
     DBusError err;
     dbus_error_init( &err );
 
-    DBusMessageIter friendly_name;
+    DBusMessage *p_friendly_name_msg;
+
+    DBusMessageIter friendly_name, variant;
     const char *psz_friendly_name;
 
     assert( psz_server );
@@ -248,28 +250,52 @@ static int SubscribeToMediaServer( services_discovery_t *p_sd,
 
     int ret = GetDBusProperty( p_sd,
             psz_server, DLEYNA_DEVICE_INTERFACE,
-            "FriendlyName", &friendly_name );
+            "FriendlyName", &p_friendly_name_msg );
 
     if( VLC_SUCCESS != ret )
         return ret;
 
+    if( !dbus_message_iter_init( p_friendly_name_msg, &variant ) )
+    {
+        msg_Err( p_sd, "Empty reply from media server" );
+        dbus_message_unref( p_friendly_name_msg );
+        return VLC_EGENERIC;
+    }
+
+    if( DBUS_TYPE_VARIANT != dbus_message_iter_get_arg_type( &variant ) )
+    {
+        msg_Err( p_sd, "Invalid reply from media server" );
+        dbus_message_unref( p_friendly_name_msg );
+        return VLC_EGENERIC;
+    }
+
+    dbus_message_iter_recurse( &variant, &friendly_name );
+
+    if( DBUS_TYPE_STRING != dbus_message_iter_get_arg_type( &friendly_name ) )
+    {
+        msg_Err( p_sd, "The media server's friendlyName is not a string" );
+        dbus_message_unref( p_friendly_name_msg );
+        return VLC_EGENERIC;
+    }
+
     dbus_message_iter_get_basic( &friendly_name, &psz_friendly_name );
 
-    msg_Dbg( p_sd, "Server at %s has %s as a friendly name",
+    msg_Dbg( p_sd, "The friendly name of \"%s\" is \"%s\"",
             psz_server, psz_friendly_name );
 
+    dbus_message_unref( p_friendly_name_msg );
     return VLC_SUCCESS;
 }
 
 /**
  * Calls the org.freedesktop.DBus.Properties.Get method synchrously
- * and opens an iterator over the returned variant.
+ * and returns the method call reply message.
  *
  * @param services_discovery_t  *p_sd             This SD instance
  * @param const char            *psz_object_path  A DBus object path
  * @param const char            *psz_interface    A DBus interface name
  * @param const char            *psz_property     A DBus property
- * @param DBusMessageIter       *p_result         Property value placeholder
+ * @param DBusMessage          **pp_result        Reply placeholder
  *
  * @return int VLC error code
  */
@@ -277,10 +303,9 @@ static int GetDBusProperty( services_discovery_t *p_sd,
                             const char *psz_object_path,
                             const char *psz_interface,
                             const char *psz_property,
-                            DBusMessageIter *p_result )
+                            DBusMessage **pp_result )
 {
     DBusMessage *p_call = NULL, *p_reply = NULL;
-    DBusMessageIter args, variant;
 
     DBusError err;
     dbus_error_init( &err );
@@ -322,11 +347,6 @@ static int GetDBusProperty( services_discovery_t *p_sd,
         return VLC_EGENERIC;
     }
 
-    if( !dbus_message_iter_init( p_reply, &args ) )
-        return VLC_EGENERIC;
-
-    dbus_message_iter_recurse( &args, &variant );
-    *p_result = variant;
-
+    *pp_result = p_reply;
     return VLC_SUCCESS;
 }
