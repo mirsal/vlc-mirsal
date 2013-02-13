@@ -40,6 +40,7 @@
 #define DLEYNA_SERVICE_NAME "com.intel.media-service-upnp"
 #define DLEYNA_SERVICE_PATH "/com/intel/MediaServiceUPnP"
 #define DLEYNA_MANAGER_INTERFACE "com.intel.MediaServiceUPnP.Manager"
+#define DLEYNA_DEVICE_INTERFACE "com.intel.UPnP.MediaDevice"
 
 /*****************************************************************************
  * Module descriptor
@@ -77,8 +78,15 @@ struct services_discovery_sys_t
  *****************************************************************************/
 
 static void  *Probe( void* );
-static int    SubscribeToMediaServer( services_discovery_t *p_sd,
-                                      const char *psz_server );
+
+static int SubscribeToMediaServer( services_discovery_t *p_sd,
+                                   const char *psz_server );
+
+static int GetDBusProperty( services_discovery_t *p_sd,
+                            const char *psz_object_path,
+                            const char *psz_interface,
+                            const char *psz_property,
+                            DBusMessageIter *p_result );
 
 /*****************************************************************************
  * Open: initialize and create stuff
@@ -232,8 +240,93 @@ static int SubscribeToMediaServer( services_discovery_t *p_sd,
     DBusError err;
     dbus_error_init( &err );
 
+    DBusMessageIter friendly_name;
+    const char *psz_friendly_name;
+
     assert( psz_server );
     msg_Dbg( p_sd, "Subscribing to media server at %s", psz_server );
+
+    int ret = GetDBusProperty( p_sd,
+            psz_server, DLEYNA_DEVICE_INTERFACE,
+            "FriendlyName", &friendly_name );
+
+    if( VLC_SUCCESS != ret )
+        return ret;
+
+    dbus_message_iter_get_basic( &friendly_name, &psz_friendly_name );
+
+    msg_Dbg( p_sd, "Server at %s has %s as a friendly name",
+            psz_server, psz_friendly_name );
+
+    return VLC_SUCCESS;
+}
+
+/**
+ * Calls the org.freedesktop.DBus.Properties.Get method synchrously
+ * and opens an iterator over the returned variant.
+ *
+ * @param services_discovery_t  *p_sd             This SD instance
+ * @param const char            *psz_object_path  A DBus object path
+ * @param const char            *psz_interface    A DBus interface name
+ * @param const char            *psz_property     A DBus property
+ * @param DBusMessageIter       *p_result         Property value placeholder
+ *
+ * @return int VLC error code
+ */
+static int GetDBusProperty( services_discovery_t *p_sd,
+                            const char *psz_object_path,
+                            const char *psz_interface,
+                            const char *psz_property,
+                            DBusMessageIter *p_result )
+{
+    DBusMessage *p_call = NULL, *p_reply = NULL;
+    DBusMessageIter args, variant;
+
+    DBusError err;
+    dbus_error_init( &err );
+
+    msg_Dbg( p_sd, "Getting DBus property %s.%s on %s",
+            psz_interface, psz_property, psz_object_path );
+
+    p_call = dbus_message_new_method_call( DLEYNA_SERVICE_NAME,
+            psz_object_path, DBUS_INTERFACE_PROPERTIES, "Get" );
+
+    if( !p_call )
+        return VLC_ENOMEM;
+
+    if( !dbus_message_append_args( p_call,
+                DBUS_TYPE_STRING, &psz_interface,
+                DBUS_TYPE_STRING, &psz_property,
+                DBUS_TYPE_INVALID ) )
+    {
+        dbus_message_unref( p_call );
+        return VLC_EGENERIC;
+    }
+
+    p_reply = dbus_connection_send_with_reply_and_block( p_sd->p_sys->p_conn,
+            p_call, DBUS_TIMEOUT_USE_DEFAULT, &err );
+
+    dbus_message_unref( p_call );
+
+    if( !p_reply )
+    {
+        if( dbus_error_is_set( &err ) )
+        {
+            msg_Err( p_sd, "DBus error: %s", err.message );
+            dbus_error_free( &err );
+        }
+
+        msg_Err( p_sd, "Failed to get DBus property %s.%s on %s",
+              psz_interface, psz_property, psz_object_path );
+
+        return VLC_EGENERIC;
+    }
+
+    if( !dbus_message_iter_init( p_reply, &args ) )
+        return VLC_EGENERIC;
+
+    dbus_message_iter_recurse( &args, &variant );
+    *p_result = variant;
 
     return VLC_SUCCESS;
 }
