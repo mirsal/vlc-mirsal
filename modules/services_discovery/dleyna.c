@@ -42,6 +42,73 @@
 #define DLEYNA_MANAGER_INTERFACE "com.intel.MediaServiceUPnP.Manager"
 #define DLEYNA_DEVICE_INTERFACE "com.intel.UPnP.MediaDevice"
 
+/**
+ * Represents a DLNA DMS device.
+ * The fields and docstrings mirror the dLeyna server object's properties
+ */
+typedef struct {
+
+    char *psz_device_type;       /* The UPnP type of the device, such as
+                                    urn:schemas-upnp-org:device:MediaServer:1 */
+
+    char *psz_udn;               /* The Unique Device Name of the server. */
+
+    char *psz_friendly_name;     /* The friendly name of the media server. */
+
+    char *psz_icon_url;          /* A URL pointing to an icon that graphically
+                                    identifies the server. (optional) */
+
+    char *psz_manufacturer;      /* A string identifying the manufacturer
+                                    of the server. */
+
+    char *psz_manufacturer_url;  /* A URL pointing to the manufacturer's
+                                   web site. (optional) */
+
+    char *psz_model_description; /* A description of the server. (optional) */
+
+    char *psz_model_name;        /* The model name of the server. */
+
+    char *psz_model_number;      /* The server's version number. (optional) */
+
+    char *psz_serial_number;     /* The server's serial number. (optional) */
+
+    char *psz_presentation_url;  /* The presentation URL of the server, that is,
+                                    a link to its HTML management interface.
+                                    (optional) */
+
+    vlc_dictionary_t *p_dlna_caps; /* Represents the device capabilities
+                                      as announced in the device description
+                                      file via the dlna:X_DLNACAP element.
+                                      A value of -1 for the
+                                      srs-rt-retention-period capability
+                                      denotes an infinite retention period. */
+
+    uint32_t i_system_update_id; /* An integer value that is incremented every
+                                    time changes are made to the DMS. */
+
+    vlc_array_t *p_search_caps;  /* List of property names that can be used
+                                    in search queries. Empty if not supported
+                                    by the device. */
+
+    vlc_array_t *p_sort_caps;    /* List of property names that can be used
+                                    to sort Search() or Browse() action results.
+                                    Empty if not supported by the device. */
+
+    vlc_array_t *p_sort_ext_caps;/* List of sort modifiers that can be used
+                                    to sort Search() or Browse() results.
+                                    Empty if not supported by the device. */
+
+    vlc_array_t *p_feature_list; /* Each element in the FeatureList array
+                                    represents a feature supported by the DMS.
+                                    Each feature contains three pieces of
+                                    information, a name, a version number
+                                    and an array of object paths that
+                                    clients can use to take advantage of the
+                                    feature. There are three standardized
+                                    feature names, BOOKMARK, EPG and TUNER.
+                                    (optional) */
+} dleyna_media_server_t;
+
 /*****************************************************************************
  * Module descriptor
  *****************************************************************************/
