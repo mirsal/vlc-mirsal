@@ -151,6 +151,11 @@ static void  *Probe( void* );
 static int SubscribeToMediaServer( services_discovery_t *p_sd,
                                    const char *psz_server );
 
+static int GetAllDBusProperties( services_discovery_t *p_sd,
+                                 const char *psz_object_path,
+                                 const char *psz_interface,
+                                 DBusMessage **pp_result );
+
 static int GetDBusProperty( services_discovery_t *p_sd,
                             const char *psz_object_path,
                             const char *psz_interface,
@@ -312,29 +317,234 @@ static int SubscribeToMediaServer( services_discovery_t *p_sd,
     DBusError err;
     dbus_error_init( &err );
 
-    DBusMessage *p_friendly_name_msg;
-    char *psz_friendly_name;
+    DBusMessageIter properties, dict, dict_entry, variant;
+    DBusMessage *p_properties_msg = NULL;
+    dleyna_media_server_t *p_dms = NULL;
+    int i_type = DBUS_TYPE_INVALID;
+    char *psz_property_name = NULL;
+    char *psz_property_value = NULL;
 
     assert( psz_server );
     msg_Dbg( p_sd, "Subscribing to media server at %s", psz_server );
 
-    int ret = GetDBusProperty( p_sd,
+    p_dms = calloc(1, sizeof( dleyna_media_server_t ) );
+
+    if( !p_dms )
+        return VLC_ENOMEM;
+
+    int ret = GetAllDBusProperties( p_sd,
             psz_server, DLEYNA_DEVICE_INTERFACE,
-            "FriendlyName", &p_friendly_name_msg );
+            &p_properties_msg );
 
     if( VLC_SUCCESS != ret )
         return ret;
 
-    psz_friendly_name = DemarshalStringPropertyValue( p_sd, p_friendly_name_msg );
-    dbus_message_unref( p_friendly_name_msg );
-
-    if( !psz_friendly_name )
+    if( !dbus_message_iter_init( p_properties_msg, &properties ) )
+    {
+        msg_Err( p_sd, "Empty reply from media server" );
         return VLC_EGENERIC;
+    }
 
-    msg_Dbg( p_sd, "The friendly name of \"%s\" is \"%s\"",
-            psz_server, psz_friendly_name );
+    if( DBUS_TYPE_ARRAY != dbus_message_iter_get_arg_type( &properties ) ||
+            strcmp( "a{sv}", dbus_message_iter_get_signature( &properties ) ) )
+    {
+        msg_Err( p_sd, "Invalid reply from media server" );
+        return VLC_EGENERIC;
+    }
 
-    free( psz_friendly_name );
+    dbus_message_iter_recurse( &properties, &dict );
+    while( ( i_type = dbus_message_iter_get_arg_type( &dict ) )
+            != DBUS_TYPE_INVALID )
+    {
+        dbus_message_iter_recurse( &dict, &dict_entry );
+        dbus_message_iter_get_basic( &dict_entry, &psz_property_name );
+
+        msg_Dbg( p_sd, "Reading property %s", psz_property_name );
+
+        dbus_message_iter_next( &dict_entry );
+        dbus_message_iter_recurse( &dict_entry, &variant );
+
+        if( !strcmp( "Location", psz_property_name ) )
+        {
+            dbus_message_iter_get_basic( &variant, &psz_property_value );
+            msg_Dbg( p_sd, "%s: %s", psz_property_name, psz_property_value );
+
+            p_dms->psz_location = strdup( psz_property_value );
+        }
+
+        else if( !strcmp( "DeviceType", psz_property_name ) )
+        {
+            dbus_message_iter_get_basic( &variant, &psz_property_value );
+            msg_Dbg( p_sd, "%s: %s", psz_property_name, psz_property_value );
+
+            p_dms->psz_device_type = strdup( psz_property_value );
+        }
+
+        else if( !strcmp( "UDN", psz_property_name ) )
+        {
+            dbus_message_iter_get_basic( &variant, &psz_property_value );
+            msg_Dbg( p_sd, "%s: %s", psz_property_name, psz_property_value );
+
+            p_dms->psz_udn = strdup( psz_property_value );
+        }
+
+        else if( !strcmp( "FriendlyName", psz_property_name ) )
+        {
+            dbus_message_iter_get_basic( &variant, &psz_property_value );
+            msg_Dbg( p_sd, "%s: %s", psz_property_name, psz_property_value );
+
+            p_dms->psz_friendly_name = strdup( psz_property_value );
+        }
+
+        else if( !strcmp( "IconURL", psz_property_name ) )
+        {
+            dbus_message_iter_get_basic( &variant, &psz_property_value );
+            msg_Dbg( p_sd, "%s: %s", psz_property_name, psz_property_value );
+
+            p_dms->psz_icon_url = strdup( psz_property_value );
+        }
+
+        else if( !strcmp( "Manufacturer", psz_property_name ) )
+        {
+            dbus_message_iter_get_basic( &variant, &psz_property_value );
+            msg_Dbg( p_sd, "%s: %s", psz_property_name, psz_property_value );
+
+            p_dms->psz_manufacturer = strdup( psz_property_value );
+        }
+
+        else if( !strcmp( "ManufacturerUrl", psz_property_name ) )
+        {
+            dbus_message_iter_get_basic( &variant, &psz_property_value );
+            msg_Dbg( p_sd, "%s: %s", psz_property_name, psz_property_value );
+
+            p_dms->psz_manufacturer_url = strdup( psz_property_value );
+        }
+
+        else if( !strcmp( "ManufacturerUrl", psz_property_name ) )
+        {
+            dbus_message_iter_get_basic( &variant, &psz_property_value );
+            msg_Dbg( p_sd, "%s: %s", psz_property_name, psz_property_value );
+
+            p_dms->psz_manufacturer_url = strdup( psz_property_value );
+        }
+
+        else if( !strcmp( "ModelDescription", psz_property_name ) )
+        {
+            dbus_message_iter_get_basic( &variant, &psz_property_value );
+            msg_Dbg( p_sd, "%s: %s", psz_property_name, psz_property_value );
+
+            p_dms->psz_model_description = strdup( psz_property_value );
+        }
+
+        else if( !strcmp( "ModelName", psz_property_name ) )
+        {
+            dbus_message_iter_get_basic( &variant, &psz_property_value );
+            msg_Dbg( p_sd, "%s: %s", psz_property_name, psz_property_value );
+
+            p_dms->psz_model_name = strdup( psz_property_value );
+        }
+
+        else if( !strcmp( "ModelNumber", psz_property_name ) )
+        {
+            dbus_message_iter_get_basic( &variant, &psz_property_value );
+            msg_Dbg( p_sd, "%s: %s", psz_property_name, psz_property_value );
+
+            p_dms->psz_model_number = strdup( psz_property_value );
+        }
+
+        else if( !strcmp( "SerialNumber", psz_property_name ) )
+        {
+            dbus_message_iter_get_basic( &variant, &psz_property_value );
+            msg_Dbg( p_sd, "%s: %s", psz_property_name, psz_property_value );
+
+            p_dms->psz_serial_number = strdup( psz_property_value );
+        }
+
+        else if( !strcmp( "PresentationURL", psz_property_name ) )
+        {
+            dbus_message_iter_get_basic( &variant, &psz_property_value );
+            msg_Dbg( p_sd, "%s: %s", psz_property_name, psz_property_value );
+
+            p_dms->psz_presentation_url = strdup( psz_property_value );
+        }
+
+        else if( !strcmp( "SystemUpdateID", psz_property_name ) )
+        {
+            dbus_message_iter_get_basic( &variant,
+                    &p_dms->i_system_update_id );
+
+            msg_Dbg( p_sd, "%s: %d", psz_property_name,
+                    p_dms->i_system_update_id );
+        }
+
+        else
+            msg_Warn( p_sd, "Unknown property %s", psz_property_name );
+
+        dbus_message_iter_next( &dict );
+    }
+
+    dbus_message_unref( p_properties_msg );
+    return VLC_SUCCESS;
+}
+
+/**
+ * Calls the org.freedesktop.DBus.Properties.GetAll method synchrously
+ * and returns the method call reply message.
+ *
+ * @param services_discovery_t  *p_sd             This SD instance
+ * @param const char            *psz_object_path  A DBus object path
+ * @param const char            *psz_interface    A DBus interface name
+ * @param DBusMessage          **pp_result        Reply placeholder
+ *
+ * @return int VLC error code
+ */
+static int GetAllDBusProperties( services_discovery_t *p_sd,
+                                 const char *psz_object_path,
+                                 const char *psz_interface,
+                                 DBusMessage **pp_result )
+{
+    DBusMessage *p_call = NULL, *p_reply = NULL;
+
+    DBusError err;
+    dbus_error_init( &err );
+
+    msg_Dbg( p_sd, "Getting DBus properties for %s on %s",
+            psz_interface, psz_object_path );
+
+    p_call = dbus_message_new_method_call( DLEYNA_SERVICE_NAME,
+            psz_object_path, DBUS_INTERFACE_PROPERTIES, "GetAll" );
+
+    if( !p_call )
+        return VLC_ENOMEM;
+
+    if( !dbus_message_append_args( p_call,
+                DBUS_TYPE_STRING, &psz_interface,
+                DBUS_TYPE_INVALID ) )
+    {
+        dbus_message_unref( p_call );
+        return VLC_EGENERIC;
+    }
+
+    p_reply = dbus_connection_send_with_reply_and_block( p_sd->p_sys->p_conn,
+            p_call, DBUS_TIMEOUT_USE_DEFAULT, &err );
+
+    dbus_message_unref( p_call );
+
+    if( !p_reply )
+    {
+        if( dbus_error_is_set( &err ) )
+        {
+            msg_Err( p_sd, "DBus error: %s", err.message );
+            dbus_error_free( &err );
+        }
+
+        msg_Err( p_sd, "Failed to get DBus properties for %s on %s",
+              psz_interface, psz_object_path );
+
+        return VLC_EGENERIC;
+    }
+
+    *pp_result = p_reply;
     return VLC_SUCCESS;
 }
 
