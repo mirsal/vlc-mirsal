@@ -48,6 +48,8 @@
  */
 typedef struct {
 
+    char *psz_location;          /* The device description XML document's URI */
+
     char *psz_device_type;       /* The UPnP type of the device, such as
                                     urn:schemas-upnp-org:device:MediaServer:1 */
 
