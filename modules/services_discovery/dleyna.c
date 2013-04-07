@@ -368,6 +368,8 @@ static int SubscribeToMediaServer( services_discovery_t *p_sd,
     if( !p_dms )
         return VLC_ENOMEM;
 
+    vlc_array_append( p_sd->p_sys->p_media_servers, p_dms );
+
     int ret = GetAllDBusProperties( p_sd,
             psz_server, DLEYNA_DEVICE_INTERFACE,
             &p_properties_msg );
@@ -520,6 +522,17 @@ static int SubscribeToMediaServer( services_discovery_t *p_sd,
     }
 
     dbus_message_unref( p_properties_msg );
+
+    input_item_t *p_input_item = input_item_New( "vlc://nop",
+            p_dms->psz_friendly_name );
+
+    input_item_SetURL( p_input_item, p_dms->psz_presentation_url );
+    input_item_SetArtURL( p_input_item, p_dms->psz_icon_url );
+    input_item_SetCopyright( p_input_item, p_dms->psz_manufacturer );
+    input_item_SetDescription( p_input_item, p_dms->psz_model_description );
+
+    services_discovery_AddItem( p_sd, p_input_item, NULL );
+
     return VLC_SUCCESS;
 }
 
