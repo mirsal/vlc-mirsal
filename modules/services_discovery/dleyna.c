@@ -140,6 +140,7 @@ struct services_discovery_sys_t
 {
     DBusConnection *p_conn;
     vlc_thread_t probe_thread;
+    vlc_array_t *p_media_servers;
 };
 
 /*****************************************************************************
@@ -181,6 +182,11 @@ static int Open( vlc_object_t *p_this )
     if( unlikely(!p_sys) )
         return VLC_ENOMEM;
 
+    p_sys->p_media_servers = vlc_array_new();
+
+    if( unlikely(!p_sys->p_media_servers) )
+        return VLC_ENOMEM;
+
     DBusError err;
     dbus_error_init(&err);
 
@@ -213,6 +219,7 @@ static int Open( vlc_object_t *p_this )
 error:
     dbus_connection_close( p_sd->p_sys->p_conn );
     dbus_connection_unref( p_sd->p_sys->p_conn );
+    vlc_array_destroy( p_sd->p_sys->p_media_servers );
     free( p_sys );
 
     return VLC_EGENERIC;
@@ -224,6 +231,7 @@ error:
 static void Close( vlc_object_t *p_this )
 {
     services_discovery_t *p_sd = (services_discovery_t*) p_this;
+    vlc_array_t* p_media_servers = p_sd->p_sys->p_media_servers;
 
     vlc_cancel( p_sd->p_sys->probe_thread );
     vlc_join( p_sd->p_sys->probe_thread, NULL );
@@ -231,6 +239,34 @@ static void Close( vlc_object_t *p_this )
     dbus_connection_close( p_sd->p_sys->p_conn );
     dbus_connection_unref( p_sd->p_sys->p_conn );
 
+    for( int i = 0; i < vlc_array_count( p_media_servers ); i++ )
+    {
+        dleyna_media_server_t *p_dms =
+            vlc_array_item_at_index( p_media_servers, i );
+
+        free( p_dms->psz_location );
+        free( p_dms->psz_device_type );
+        free( p_dms->psz_udn );
+        free( p_dms->psz_friendly_name );
+        free( p_dms->psz_icon_url );
+        free( p_dms->psz_manufacturer );
+        free( p_dms->psz_manufacturer_url );
+        free( p_dms->psz_model_description );
+        free( p_dms->psz_model_name );
+        free( p_dms->psz_model_number );
+        free( p_dms->psz_serial_number );
+        free( p_dms->psz_presentation_url );
+
+        if( p_dms->p_dlna_caps )
+            vlc_dictionary_clear( p_dms->p_dlna_caps, NULL, NULL );
+
+        vlc_array_destroy( p_dms->p_search_caps );
+        vlc_array_destroy( p_dms->p_sort_caps );
+        vlc_array_destroy( p_dms->p_sort_ext_caps );
+        vlc_array_destroy( p_dms->p_feature_list );
+    }
+
+    vlc_array_destroy( p_media_servers );
     free( p_sd->p_sys );
 }
 
