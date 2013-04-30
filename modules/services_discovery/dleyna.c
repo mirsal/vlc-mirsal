@@ -111,6 +111,20 @@ typedef struct {
                                     (optional) */
 } dleyna_media_server_t;
 
+/**
+ * Passed to a fetcher thread as a command for retrieving
+ * the list of media served by a DMS through dLeyna
+ *
+ * TODO: Add a callback and a result field
+ */
+struct fetch_media_command
+{
+    services_discovery_t *p_sd;   /* This instance */
+    dleyna_media_server_t *p_dms; /* A media server from which
+                                     content should be fetched */
+};
+
+
 /*****************************************************************************
  * Module descriptor
  *****************************************************************************/
@@ -141,6 +155,7 @@ struct services_discovery_sys_t
     DBusConnection *p_conn;
     vlc_thread_t probe_thread;
     vlc_array_t *p_media_servers;
+    vlc_array_t *p_fetcher_threads;
 };
 
 /*****************************************************************************
@@ -148,6 +163,7 @@ struct services_discovery_sys_t
  *****************************************************************************/
 
 static void  *Probe( void* );
+static void  *Fetch( void* );
 
 static int SubscribeToMediaServer( services_discovery_t *p_sd,
                                    const char *psz_server );
@@ -183,6 +199,7 @@ static int Open( vlc_object_t *p_this )
         return VLC_ENOMEM;
 
     p_sys->p_media_servers = vlc_array_new();
+    p_sys->p_fetcher_threads = vlc_array_new();
 
     if( unlikely(!p_sys->p_media_servers) )
         return VLC_ENOMEM;
@@ -220,6 +237,7 @@ error:
     dbus_connection_close( p_sd->p_sys->p_conn );
     dbus_connection_unref( p_sd->p_sys->p_conn );
     vlc_array_destroy( p_sd->p_sys->p_media_servers );
+    vlc_array_destroy( p_sd->p_sys->p_fetcher_threads );
     free( p_sys );
 
     return VLC_EGENERIC;
@@ -232,9 +250,19 @@ static void Close( vlc_object_t *p_this )
 {
     services_discovery_t *p_sd = (services_discovery_t*) p_this;
     vlc_array_t* p_media_servers = p_sd->p_sys->p_media_servers;
+    vlc_array_t* p_fetcher_threads = p_sd->p_sys->p_fetcher_threads;
 
     vlc_cancel( p_sd->p_sys->probe_thread );
     vlc_join( p_sd->p_sys->probe_thread, NULL );
+
+    for( int i = 0; i < vlc_array_count( p_fetcher_threads ); i++ )
+    {
+        vlc_thread_t *p_fetcher_thread = NULL;
+        p_fetcher_thread = vlc_array_item_at_index( p_fetcher_threads, i );
+
+        vlc_cancel( *p_fetcher_thread );
+        vlc_join( *p_fetcher_thread, NULL );
+    }
 
     dbus_connection_close( p_sd->p_sys->p_conn );
     dbus_connection_unref( p_sd->p_sys->p_conn );
@@ -267,6 +295,7 @@ static void Close( vlc_object_t *p_this )
     }
 
     vlc_array_destroy( p_media_servers );
+    vlc_array_destroy( p_fetcher_threads );
     free( p_sd->p_sys );
 }
 
@@ -336,6 +365,20 @@ static void *Probe( void *p_data )
     }
 
     dbus_message_unref( p_reply );
+
+    /* Wait for all the fetcher threads to finish
+     * before returning control */
+    vlc_array_t *p_threads = p_sd->p_sys->p_fetcher_threads;
+    int i_threads = vlc_array_count( p_threads );
+
+    for( int i = 0; i < i_threads; i++ )
+    {
+        vlc_thread_t *p_fetcher_thread = vlc_array_item_at_index( p_threads, i );
+        vlc_join( *p_fetcher_thread, NULL );
+        vlc_array_remove( p_threads, i );
+        free( p_fetcher_thread );
+    }
+
     return NULL;
 }
 
@@ -533,6 +576,25 @@ static int SubscribeToMediaServer( services_discovery_t *p_sd,
 
     services_discovery_AddItem( p_sd, p_input_item, NULL );
 
+    /* Start a new thread for fetching the media server contents */
+    vlc_thread_t *p_fetcher_thread = malloc( sizeof(vlc_thread_t) );
+    if( !p_fetcher_thread )
+        return VLC_EGENERIC;
+
+    struct fetch_media_command *cmd = NULL;
+    cmd = calloc( 1, sizeof(struct fetch_media_command) );
+    cmd->p_sd   = p_sd;
+    cmd->p_dms  = p_dms;
+
+    if( vlc_clone( p_fetcher_thread, Fetch, cmd, VLC_THREAD_PRIORITY_LOW ) )
+    {
+        free( cmd );
+        free( p_fetcher_thread );
+        return VLC_EGENERIC;
+    }
+
+    vlc_array_append( p_sd->p_sys->p_fetcher_threads, p_fetcher_thread );
+
     return VLC_SUCCESS;
 }
 
@@ -698,4 +760,28 @@ static char *DemarshalStringPropertyValue( services_discovery_t *p_sd,
 
     dbus_message_iter_get_basic( &property_value, &psz_ret );
     return strdup( psz_ret );
+}
+
+/**
+ * Fetches the contents of a media server from dLeyna
+ *
+ * This is supposed to be used as a fetcher thread function
+ *
+ * @param void* p_data A fetch_media_command data structure
+ * @return NULL
+ */
+static void *Fetch( void* p_data )
+{
+    assert( p_data );
+
+    struct fetch_media_command *cmd = (struct fetch_media_command*)p_data;
+    services_discovery_t  *p_sd  = cmd->p_sd;
+    dleyna_media_server_t *p_dms = cmd->p_dms;
+    free( cmd );
+
+    msg_Dbg( p_sd, "Fetching Data from %s", p_dms->psz_friendly_name );
+    msleep( 2000000 );
+    msg_Dbg( p_sd, "Done Fetching Data... (not really, but bear with me here)" );
+
+    return NULL;
 }
