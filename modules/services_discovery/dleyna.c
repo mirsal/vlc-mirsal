@@ -48,6 +48,8 @@
  */
 typedef struct {
 
+    char *psz_object_path;       /* The server's DBus object path */
+
     char *psz_location;          /* The device description XML document's URI */
 
     char *psz_device_type;       /* The UPnP type of the device, such as
@@ -272,6 +274,7 @@ static void Close( vlc_object_t *p_this )
         dleyna_media_server_t *p_dms =
             vlc_array_item_at_index( p_media_servers, i );
 
+        free( p_dms->psz_object_path );
         free( p_dms->psz_location );
         free( p_dms->psz_device_type );
         free( p_dms->psz_udn );
@@ -411,6 +414,7 @@ static int SubscribeToMediaServer( services_discovery_t *p_sd,
     if( !p_dms )
         return VLC_ENOMEM;
 
+    p_dms->psz_object_path = strdup( psz_server );
     vlc_array_append( p_sd->p_sys->p_media_servers, p_dms );
 
     int ret = GetAllDBusProperties( p_sd,
