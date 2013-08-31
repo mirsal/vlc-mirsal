@@ -41,6 +41,7 @@
 #define DLEYNA_SERVICE_PATH "/com/intel/MediaServiceUPnP"
 #define DLEYNA_MANAGER_INTERFACE "com.intel.MediaServiceUPnP.Manager"
 #define DLEYNA_DEVICE_INTERFACE "com.intel.UPnP.MediaDevice"
+#define DLEYNA_CONTAINER_INTERFACE "org.gnome.UPnP.MediaContainer2"
 
 /**
  * Represents a DLNA DMS device.
@@ -49,6 +50,8 @@
 typedef struct {
 
     char *psz_object_path;       /* The server's DBus object path */
+
+    input_item_t *p_input_item;  /* The server root input item */
 
     char *psz_location;          /* The device description XML document's URI */
 
@@ -183,6 +186,10 @@ static int GetDBusProperty( services_discovery_t *p_sd,
 
 static char* DemarshalStringPropertyValue( services_discovery_t *p_sd,
                                            DBusMessage *p_msg );
+
+static int FetchChildren( services_discovery_t *p_sd,
+                          input_item_node_t *p_parent,
+                          const char *psz_path );
 
 /*****************************************************************************
  * Open: initialize and create stuff
@@ -579,6 +586,7 @@ static int SubscribeToMediaServer( services_discovery_t *p_sd,
     input_item_SetDescription( p_input_item, p_dms->psz_model_description );
 
     services_discovery_AddItem( p_sd, p_input_item, NULL );
+    p_dms->p_input_item = p_input_item;
 
     /* Start a new thread for fetching the media server contents */
     vlc_thread_t *p_fetcher_thread = malloc( sizeof(vlc_thread_t) );
@@ -784,8 +792,147 @@ static void *Fetch( void* p_data )
     free( cmd );
 
     msg_Dbg( p_sd, "Fetching Data from %s", p_dms->psz_friendly_name );
-    msleep( 2000000 );
-    msg_Dbg( p_sd, "Done Fetching Data... (not really, but bear with me here)" );
+    FetchChildren( p_sd, NULL, p_dms->psz_object_path );
+    msg_Dbg( p_sd, "Done Fetching Data." );
+
 
     return NULL;
+}
+
+/**
+ * Recursively fetches child elements and their contents
+ * XXX: Only the first depth level is fetched for now
+ *
+ * @param services_discovery_t* p_sd This SD instance
+ * @param input_item_node_t* p_parent The parent input node
+ * @param const char* psz_path The parent container's DBus object path
+ *
+ * @return VLC_SUCCESS or VLC_E* on error
+ */
+static int FetchChildren( services_discovery_t *p_sd,
+                          input_item_node_t *p_parent,
+                          const char *psz_path )
+{
+    assert( p_sd );
+    assert( psz_path );
+
+    DBusError err;
+    DBusMessage *p_call = NULL, *p_reply = NULL;
+    DBusMessageIter items, item, dict, dict_entry, variant;
+    int i_type = DBUS_TYPE_INVALID;
+    char *psz_property_name, *psz_property_value;
+    dbus_int32_t i_property_value;
+
+    dbus_uint32_t i_offset = 0, i_limit = 0;
+    const char  *ppsz_filter[] = { "*" };
+    const char **ppsz_filter_p = ppsz_filter;
+
+    p_call = dbus_message_new_method_call( DLEYNA_SERVICE_NAME,
+                                           psz_path,
+                                           DLEYNA_CONTAINER_INTERFACE,
+                                           "ListChildren" );
+
+    if( unlikely(!p_call) )
+        return VLC_ENOMEM;
+
+    if( unlikely(!dbus_message_append_args( p_call,
+                DBUS_TYPE_UINT32, &i_offset,
+                DBUS_TYPE_UINT32, &i_limit,
+                DBUS_TYPE_ARRAY, DBUS_TYPE_STRING, &ppsz_filter_p, 1,
+                DBUS_TYPE_INVALID )) )
+    {
+        dbus_message_unref( p_call );
+        return VLC_ENOMEM;
+    }
+
+    dbus_error_init( &err );
+    p_reply = dbus_connection_send_with_reply_and_block( p_sd->p_sys->p_conn,
+            p_call, DBUS_TIMEOUT_USE_DEFAULT, &err );
+
+    dbus_message_unref( p_call );
+
+    if( !p_reply )
+    {
+        if( dbus_error_is_set( &err ) )
+        {
+            msg_Dbg( p_sd, "DBus error: %s", err.message );
+            dbus_error_free( &err );
+        }
+
+        msg_Dbg( p_sd, "Failed to list the contents of object %s", psz_path );
+
+        return VLC_EGENERIC;
+    }
+
+    if( !dbus_message_iter_init( p_reply, &items ) )
+    {
+        msg_Err( p_sd, "Empty reply from media server" );
+        dbus_message_unref( p_reply );
+
+        return VLC_EGENERIC;
+    }
+
+    if( DBUS_TYPE_ARRAY != dbus_message_iter_get_arg_type( &items ) ||
+            strcmp( "aa{sv}", dbus_message_iter_get_signature( &items ) ) )
+    {
+        msg_Err( p_sd, "Invalid reply from media server" );
+        dbus_message_unref( p_reply );
+
+        return VLC_EGENERIC;
+    }
+
+    while( ( i_type = dbus_message_iter_get_arg_type( &items ) )
+            != DBUS_TYPE_INVALID )
+    {
+        dbus_message_iter_recurse( &items, &item );
+        if( DBUS_TYPE_ARRAY != dbus_message_iter_get_arg_type( &item ) ||
+                strcmp( "a{sv}", dbus_message_iter_get_signature( &item ) ) )
+        {
+            msg_Err( p_sd, "Invalid reply from media server" );
+            dbus_message_unref( p_reply );
+
+            return VLC_EGENERIC;
+        }
+
+        dbus_message_iter_recurse( &item, &dict );
+        while( ( i_type = dbus_message_iter_get_arg_type( &dict ) )
+                != DBUS_TYPE_INVALID )
+        {
+            dbus_message_iter_recurse( &dict, &dict_entry );
+            dbus_message_iter_get_basic( &dict_entry, &psz_property_name );
+
+            msg_Dbg( p_sd, "Reading property %s", psz_property_name );
+
+            dbus_message_iter_next( &dict_entry );
+            dbus_message_iter_recurse( &dict_entry, &variant );
+            if( !strcmp( "DisplayName", psz_property_name ) )
+            {
+                dbus_message_iter_get_basic( &variant, &psz_property_value );
+                msg_Dbg( p_sd, "%s: %s", psz_property_name, psz_property_value );
+            }
+            else if( !strcmp( "Path", psz_property_name ) )
+            {
+                dbus_message_iter_get_basic( &variant, &psz_property_value );
+                msg_Dbg( p_sd, "%s: %s", psz_property_name, psz_property_value );
+            }
+            else if( !strcmp( "Type", psz_property_name ) )
+            {
+                dbus_message_iter_get_basic( &variant, &psz_property_value );
+                msg_Dbg( p_sd, "%s: %s", psz_property_name, psz_property_value );
+            }
+            else if( !strcmp( "ChildCount", psz_property_name ) )
+            {
+                dbus_message_iter_get_basic( &variant, &i_property_value );
+                msg_Dbg( p_sd, "%s: %d", psz_property_name, i_property_value );
+            }
+
+            dbus_message_iter_next( &dict );
+        }
+
+        dbus_message_iter_next( &items );
+    }
+
+    dbus_message_unref( p_reply );
+
+    return VLC_SUCCESS;
 }
